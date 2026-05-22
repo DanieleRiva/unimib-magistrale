@@ -12,7 +12,7 @@ Realizzata con [Astro](https://astro.build) + [Starlight](https://starlight.astr
    { label: 'Nome Mostrato', dir: 'slug-corso' },
    ```
 3. Crea un `index.md` come pagina di copertina del corso (opzionale ma consigliato) e scrivi gli `.md` delle lezioni.
-4. La sidebar si autogenera dalla cartella — niente altro da configurare.
+4. La sidebar si autogenera dalla cartella - niente altro da configurare.
 
 ## Comandi
 

@@ -1,11 +1,11 @@
 ---
-title: W3.A1 — La mia soluzione (sendMessage)
-description: Perché la mia analisi Category Partition della Telegram sendMessage è strutturata così — difesa orale.
+title: W3.A1 - La mia soluzione (sendMessage)
+description: Perché la mia analisi Category Partition della Telegram sendMessage è strutturata così - difesa orale.
 sidebar:
   order: 2
 ---
 
-> **Soluzione e difesa — Assignment W3.A1.**
+> **Soluzione e difesa - Assignment W3.A1.**
 > Argomento → vedi [Category Partition](/qualita-software/category-partition/). Traccia → screenshot `Assignment_W3_A1.png`.
 > Qui sta il *perché* di ogni scelta: è quello che devo saper dire a voce.
 
@@ -53,7 +53,7 @@ Applicare il **Category Partition** alla funzionalità `sendMessage` delle Teleg
    *Cosa dire:* metodo HTTP ed endpoint influenzano il comportamento ma non sono input controllabili del payload; tenerli fuori dalla lista dei parametri rispetta il **confine del sistema**. Metterli tra i parametri è un errore concettuale.
 
 2. **Categorie con nomi che descrivono la proprietà sotto test.**
-   *Cosa dire:* "Length" per `text`, "Formatting Option" per `parse_mode`, "Target Identifier" per `chat_id` — non etichette vuote tipo "Value". La categoria deve dire *cosa* sto testando, non ripetere il nome del campo.
+   *Cosa dire:* "Length" per `text`, "Formatting Option" per `parse_mode`, "Target Identifier" per `chat_id` - non etichette vuote tipo "Value". La categoria deve dire *cosa* sto testando, non ripetere il nome del campo.
 
 3. **Dipendenze condizionali + un vincolo globale.**
    *Cosa dire:*

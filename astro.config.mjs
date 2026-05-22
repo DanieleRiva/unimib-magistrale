@@ -8,7 +8,7 @@ import starlightThemeNova from 'starlight-theme-nova';
 //  Per aggiungere un nuovo corso:
 //    1. Crea la cartella: src/content/docs/<slug-corso>/
 //    2. Aggiungi una riga qui sotto: { label: 'Nome Mostrato', dir: 'slug-corso' }
-//    3. Scrivi gli .md dentro la cartella — la sidebar si autogenera.
+//    3. Scrivi gli .md dentro la cartella - la sidebar si autogenera.
 // =============================================================================
 const corsi = [
 	{ label: 'Qualità del Software', dir: 'qualita-del-software' },
@@ -19,7 +19,7 @@ const sidebarCorsi = [
         label: 'Qualità del Software',
         collapsed: true,
         items: [
-            { label: 'ℹ️ Introduzione al corso', link: '/qualita-del-software/' },
+            { label: 'Introduzione al corso', link: '/qualita-del-software/' },
 
             {
                 label: '📖 Teoria',
@@ -34,6 +34,10 @@ const sidebarCorsi = [
                     { 
                         label: 'Category Partition',
                         link: '/qualita-del-software/assignments/w3_a1/soluzione'
+                    },
+                    { 
+                        label: 'Structural Testing',
+                        link: '/qualita-del-software/assignments/w4_a2/soluzione'
                     },
                 ]
             },
