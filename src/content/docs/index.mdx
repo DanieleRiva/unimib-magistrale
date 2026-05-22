@@ -1,0 +1,25 @@
+---
+title: UNIMIB Magistrale
+description: Appunti e materiale dei corsi della magistrale in Informatica - UNIMIB.
+template: splash
+hero:
+  tagline: Appunti dei corsi della magistrale in Informatica all'UNIMIB. <br/> Sito di Daniele Riva
+  image:
+    file: /public/favicon.ico
+  actions:
+    - text: Vai ai corsi
+      link: '#corsi'
+      icon: right-arrow
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## Corsi
+
+<CardGrid>
+	<LinkCard
+		title="Qualità del Software"
+		description="Appunti, esercizi e materiale del corso."
+		href="/unimib-magistrale/qualita-del-software/"
+	/>
+</CardGrid>
