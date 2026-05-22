@@ -14,6 +14,33 @@ const corsi = [
 	{ label: 'Qualità del Software', dir: 'qualita-del-software' },
 ];
 
+const sidebarCorsi = [
+    {
+        label: 'Qualità del Software',
+        collapsed: true,
+        items: [
+            { label: 'ℹ️ Introduzione al corso', link: '/qualita-del-software/' },
+
+            {
+                label: '📖 Teoria',
+                collapsed: true,
+                autogenerate: { directory: 'qualita-del-software/teoria' }
+            },
+
+            {
+                label: '📝 Assignments',
+                collapsed: true,
+                items: [
+                    { 
+                        label: 'Category Partition',
+                        link: '/qualita-del-software/assignments/w3_a1/soluzione'
+                    },
+                ]
+            },
+        ]
+    }
+];
+
 export default defineConfig({
 	site: 'https://danieleriva.github.io',
 	base: '/unimib-magistrale',
@@ -74,11 +101,12 @@ export default defineConfig({
 				}
 			],
 
-			sidebar: corsi.map(({ label, dir }) => ({
-				label,
-				collapsed: true,
-				autogenerate: { directory: dir },
-			})),
+			// sidebar: corsi.map(({ label, dir }) => ({
+			// 	label,
+			// 	collapsed: true,
+			// 	autogenerate: { directory: dir },
+			// })),
+			sidebar: sidebarCorsi,
 		}),
 	],
 });
