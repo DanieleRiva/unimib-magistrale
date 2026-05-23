@@ -1,0 +1,172 @@
+---
+title: W5.A3 - La mia soluzione (rangeSearch)
+description: I grafi di dipendenza dati e controllo del programma rangeSearch - difesa orale.
+sidebar:
+  order: 6
+---
+
+import tracciaImg from './traccia.png';
+
+export const solutionPdf = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assignments/w5_a3/soluzione.pdf`;
+
+> **Soluzione e difesa - Assignment W5.A3.**
+> Argomento → vedi [Data & Control Dependence](/qualita-software/data-control-dependence/).
+> Qui sta il *perché* di ogni scelta: è quello che devo saper dire a voce. Stato: **non ancora valutato** (confronto con la soluzione del prof fatto a mano, vedi sezione dedicata).
+
+<details open>
+  <summary><strong>Traccia dell'assignment</strong></summary>
+  <img
+    src={tracciaImg.src}
+    alt="Traccia W5.A3"
+    style={{ maxWidth: '100%', height: 'auto', marginTop: '1rem', borderRadius: '6px' }}
+  />
+</details>
+
+<details open>
+  <summary><strong>La mia soluzione consegnata (PDF)</strong></summary>
+  <iframe
+    src={solutionPdf}
+    title="Soluzione W5.A3"
+    style={{ width: '100%', height: '80vh', border: '1px solid var(--sl-color-gray-5)', borderRadius: '6px', marginTop: '1rem' }}
+  />
+  <p style={{ marginTop: '0.5rem', fontSize: '0.9em' }}>
+    <a href={solutionPdf} target="_blank" rel="noopener">Apri il PDF in una nuova scheda</a>
+  </p>
+</details>
+
+## La traccia in breve
+
+Derivare i grafi di **control dependence** e **data dependence** del programma `rangeSearch`. I nodi devono contenere l'identificatore di riga indicato nel programma. La soluzione deve essere simile ai grafi visti a lezione (esempio GCD di Euclide). Suggerimento della traccia: usare uno strumento come draw.io. Più la parte di critica al GAI (le tre domande: query usata, risultato del GAI, commento sulla validità e differenze).
+
+## Il codice sotto test
+
+```java
+public class IndexRange {
+  public static int[] rangeSearch(int[] a, int loKey, int hiKey) {  // 2
+    if (a == null || a.length == 0)        // 3
+      return null;                          // 4
+    if (loKey > hiKey) {                    // 5
+      int temp = loKey;                     // 6
+      loKey = hiKey;                        // 7
+      hiKey = temp;                         // 8
+    }
+    int firstIndex = -1;                    // 10
+    int lastIndex  = -1;                    // 11
+    int i = 0;                              // 12
+    while (i < a.length) {                  // 13
+      if (a[i] >= loKey && a[i] <= hiKey) { // 14
+        if (firstIndex == -1)               // 15
+          firstIndex = i;                   // 16
+        lastIndex = i;                      // 17
+      }
+      i = i + 1;                            // 19
+    }
+    if (firstIndex == -1) {                 // 21
+      return null;                          // 22
+    } else {                                // 23
+      int[] result = new int[2];            // 24
+      result[0] = firstIndex;               // 25
+      result[1] = lastIndex;                // 26
+      return result;                        // 27
+    }
+  }
+}
+```
+
+## Cosa ho prodotto
+
+Due grafi separati, entrambi con i nodi numerati per riga come richiesto dalla traccia:
+
+- **Control Dependence Graph** - ad albero: la radice è l'intestazione del metodo (2), da cui pendono le istruzioni eseguite incondizionatamente; i nodi decisione (`if` 3, `if` 5, `while` 13, `if` 14, `if` 15, `if` 21) controllano le istruzioni dei rispettivi corpi.
+- **Data Dependence Graph** - gli archi vanno da ogni definizione all'uso che raggiunge, etichettati con la variabile (`loKey`, `hiKey`, `temp`, `firstIndex`, `lastIndex`, `i`, `result`, `a`).
+
+## Perché è strutturata così
+
+1. **Due grafi distinti, come a lezione.**
+   *Cosa dire:* la traccia chiede entrambi i tipi di dipendenza, che sono concetti diversi: il grafo di controllo mostra l'annidamento (cosa sta dentro quale decisione), quello dei dati mostra il flusso dei valori (quale definizione alimenta quale uso). Tenerli separati segue l'impostazione del corso (esempio GCD).
+
+2. **Nodi etichettati per riga.**
+   *Cosa dire:* la traccia lo richiede esplicitamente ("the name of the nodes shall contain the line statement identifier"). Ho usato la numerazione del listato (2, 3, 4, 5, …) così ogni nodo è tracciabile al codice.
+
+3. **Archi dati etichettati con la variabile.**
+   *Cosa dire:* ogni du-pair porta il nome della variabile che fluisce, come nell'esempio GCD. Esempi chiave nel mio grafo:
+   - `loKey`/`hiKey` definiti all'header (2) e usati nello swap (5–8) e nel confronto (14);
+   - lo **swap** 6→7→8: `temp` definito a 6 e usato a 8, `loKey`/`hiKey` che si incrociano;
+   - `firstIndex` definito a 10, ridefinito a 16, usato a 15, 21, 25;
+   - `lastIndex` definito a 11, ridefinito a 17, usato a 26;
+   - `i` definito a 12, ridefinito a 19, usato a 13, 14, 16, 17;
+   - `result` definito a 24, usato a 25, 26, 27.
+
+4. **Attenzione ai def-clear path con le ridefinizioni.**
+   *Cosa dire:* `firstIndex`, `lastIndex` e `i` vengono ridefiniti dentro il ciclo. Ho tracciato gli archi dati tenendo conto che una ridefinizione può "uccidere" la precedente lungo certi cammini - è il punto più delicato del data dependence graph su questo programma.
+
+## Confronto con la soluzione del professore
+
+Confronto diretto dei due grafi (la mia immagine vs `w5_a3_professors_solution.png`).
+
+### Control Dependence → corretto ✓
+
+Il mio grafo di controllo è **strutturalmente equivalente** a quello del prof. Tutti gli annidamenti coincidono:
+
+- radice `2` → statement incondizionati (3, 10, 11, 12) e nodi decisione (5, 13, 21);
+- `5` → {6, 7, 8} (corpo dello swap);
+- `13` → {14, 19} (corpo del while);
+- `14` → {15, 17};
+- `15` → {16};
+- `21` → {22, 23}, e `23` (else) → {24, 25, 26, 27}.
+
+Nessun errore sostanziale sul control dependence.
+
+### Data Dependence → corretto, con due punti da verificare
+
+La gran parte degli archi coincide col prof ed è giusta:
+
+- **swap** temp/loKey/hiKey tra 6, 7, 8 ✓
+- **`a`** dalla radice 2 → 3, 13, 14 ✓
+- **`loKey`/`hiKey`** → 14 (e verso lo swap) ✓
+- **`i`**: 12 → {13, 14, 16, 17, 19} e 19 → 13 (il giro del ciclo) ✓
+- **`result`**: 24 → {25, 26, 27} ✓
+
+:::caution[I due punti da controllare - variabili ridefinite nel ciclo]
+Il rischio, su questo programma, è uno solo: le variabili **definite due volte** (una fuori, una dentro il ciclo) devono avere archi da *entrambe* le definizioni verso *ogni* loro uso, perché entrambe lo raggiungono lungo cammini diversi (se il ciclo non entra mai vale la def iniziale; se entra, quella interna).
+
+1. **`firstIndex`** - definito a **10** (`-1`) e a **16** (`= i`); usato a **15, 21, 25**.
+2. **`lastIndex`** - definito a **11** (`-1`) e a **17** (`= i`); usato a **26**.
+
+Verifica sul tuo grafo che ci siano *tutti* gli archi della tabella qui sotto.
+:::
+
+#### Tabella du-pair da spuntare ✅
+
+| Variabile | Definizione | → Uso | Arco presente nel mio grafo? |
+|---|---|---|---|
+| firstIndex | 10 | 15 | ☐ |
+| firstIndex | 10 | 21 | ☐ |
+| firstIndex | 10 | 25 | ☐ |
+| firstIndex | 16 | 15 | ☐ |
+| firstIndex | 16 | 21 | ☐ |
+| firstIndex | 16 | 25 | ☐ |
+| lastIndex | 11 | 26 | ☐ |
+| lastIndex | 17 | 26 | ☐ |
+
+> Nota: anche `i` è ridefinito (12 e 19), ma i suoi archi risultavano già completi nel confronto. Se per `firstIndex`/`lastIndex` ogni casella è spuntata, il data dependence graph è completo. Gli archi più facili da dimenticare sono **10→21**, **10→25** e **17→26** (le def "incrociate" tra l'iniziale e quella nel ciclo).
+
+### Esito complessivo
+
+Soluzione **sostanzialmente corretta e allineata al prof**. Control dependence a posto; data dependence corretto salvo l'eventuale completamento delle du-pair doppie qui sopra. Nessun errore concettuale.
+
+## La critica all'output GAI (richiesta dalla traccia)
+
+La traccia chiede di riportare: la query usata, il risultato del GAI, il commento sulla validità, e le differenze rispetto alla propria soluzione - segnalando se *o* il GAI ha prodotto la soluzione completa, *oppure* è incompleto perché manca/sbaglia qualcosa.
+
+*Schema da seguire all'orale:* indicare quale modello, mostrare il grafo prodotto dal GAI, e valutarlo sui punti tipici di fallimento su questo tipo di compito - tipicamente: du-pair mancanti per le variabili ridefinite nel ciclo, confusione tra dipendenza di dati e di controllo, archi non etichettati, o struttura di annidamento errata nel control graph.
+
+## Domande di difesa probabili
+
+1. Qual è la differenza tra il tuo control dependence graph e il data dependence graph? Cosa cattura ciascuno?
+2. Mostrami una du-pair che attraversa il ciclo: come hai gestito la ridefinizione (es. `i` a riga 19)?
+3. Nello swap (righe 5-8), traccia le dipendenze dati di `temp`, `loKey`, `hiKey`. Perché servono?
+4. Perché la riga 16 (`firstIndex = i`) dipende *di controllo* da 14 e 15, ma dipende *di dati* da 12/19 (per `i`)?
+5. Cos'è un def-clear path e dove, in `rangeSearch`, una ridefinizione uccide una definizione precedente?
+6. Il parametro `a` dove è usato? Quali archi dati genera?
+7. Perché il control dependence graph è (quasi) un albero mentre il data dependence graph no?

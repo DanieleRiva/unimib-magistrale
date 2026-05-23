@@ -10,7 +10,7 @@ import tracciaImg from './traccia.png';
 export const solutionPdf = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assignments/w4_a2/soluzione.pdf`;
 
 > **Soluzione e difesa - Assignment W4.A2.**
-> Argomento → vedi [Structural Testing](/qualita-software/structural-testing/). Traccia → screenshot `W4_A2.png`.
+> Argomento → vedi [Structural Testing](/qualita-software/structural-testing/).
 > Qui sta il *perché* di ogni scelta: è quello che devo saper dire a voce. Voto: **9/10**.
 
 <details open>
@@ -103,28 +103,40 @@ Ho confrontato la mia soluzione con quella di **ChatGPT** (prompt = traccia copi
 
 *Conclusione difendibile:* il GAI riempie una tabella che *sembra* MC/DC, ma viola sia il vincolo numerico sia la coerenza logica tra le condizioni accoppiate.
 
-## ⚠️ Il punto delicato - le condizioni accoppiate (probabile motivo del −1)
+## Confronto con la soluzione del professore
 
-Questo è l'aspetto più sofisticato della consegna ed è **quasi certamente ciò che l'esaminatore andrà a toccare**. Tre coppie di condizioni condividono la stessa variabile:
+Il professore ha pubblicato la sua tabella di riferimento. Confrontarla con la mia è il modo migliore per capire dove ho preso il punto pieno e dove no.
 
-- **C4 = `isWeekday`** e **C8 = `!isWeekday`** → C8 è *esattamente la negazione* di C4. Non sono indipendenti: fissato C4, C8 è determinato.
-- **C1 = `age < 13`** e **C7 = `age >= 60`** → mutuamente esclusive (non possono essere entrambe vere).
-- **C2 = `movieRating <= 8`** e **C9 = `movieRating > 6`** → range *sovrapposti* (rating 7 o 8 le rende entrambe vere).
+**Cosa coincide (e conferma il mio approccio):**
 
-:::caution[Cosa significa per MC/DC]
-MC/DC nella sua forma classica assume condizioni **indipendenti**: per ogni condizione devi poterla cambiare *tenendo ferme tutte le altre*. Ma se C8 = ¬C4, non puoi cambiare C4 lasciando C8 fermo - cambiano insieme. Questo è il problema noto delle **strongly coupled conditions**, su cui MC/DC ha difficoltà riconosciute in letteratura. Trattare C4 e C8 come 9 condizioni del tutto indipendenti (e quindi imporre n+1 = 10) è una **semplificazione**: il numero "vero" di condizioni *indipendenti* è inferiore, perché alcune sono legate.
+- Anche il prof usa **10 test** e tratta le **9 condizioni come indipendenti** (n+1 = 10). Quindi il conteggio non era l'errore: l'impostazione di fondo è corretta e allineata alla sua.
+- Anche lui struttura la suite con tre righe TRUE che attivano i tre blocchi OR e sette righe FALSE per le coppie di indipendenza.
+- Anche lui usa valori "neutri" (rating 8, hasStudentID costante, ecc.) per mascherare i blocchi non sotto test.
+
+:::tip[La conseguenza importante]
+Il problema delle **condizioni accoppiate** (C4/C8 sulla stessa variabile, C1/C7, C2/C9) **non** ha penalizzato la soluzione: il prof stesso le tratta come 9 condizioni sintattiche indipendenti. Resta un'osservazione *intelligente* da fare all'orale se l'argomento esce, ma **non** è un errore della consegna. (Nella prima versione di questa scheda l'avevo indicata come probabile causa del −1: alla luce della soluzione del prof, quell'ipotesi è da scartare.)
 :::
 
-**Come gestirlo all'orale (onestà + consapevolezza).** Non difendere il "10" come dogma. La risposta forte è: *"Ho applicato il criterio n+1 come da lezione contando le 9 condizioni sintattiche; sono però consapevole che C4 e C8 sono accoppiate (C8 = ¬C4) e che C1/C7 e C2/C9 condividono la variabile. In presenza di condizioni fortemente accoppiate MC/DC va trattato con cura, perché non si possono variare in modo davvero indipendente; un'analisi più rigorosa ragionerebbe sul numero di condizioni effettivamente indipendenti."* Mostrare di **vedere** l'accoppiamento vale più del numero in sé.
+**Possibili differenze di dettaglio da controllare** (è qui che può annidarsi il mezzo punto):
 
-> Nota onesta: il commento di valutazione non riporta la motivazione scritta del −1, quindi questa è la spiegazione *più probabile*, non una certezza. Vale comunque la pena padroneggiarla, perché è il cuore tecnico dell'assignment.
+- **Quali coppie di indipendenza** ha scelto per ogni condizione. MC/DC ammette più suite valide: il prof può aver isolato una condizione con una coppia di righe diversa dalla mia. Vale la pena verificare riga per riga che, per *ogni* condizione, esista nella mia tabella la coppia che ne mostra l'effetto (due righe che differiscono solo in quella condizione e nell'esito).
+- **I valori concreti**: il prof usa `ticketPrice` e `hasStudentID` con valori costanti ben precisi (es. studentID=13 quasi ovunque). Coerenza booleano↔concreto identica al mio approccio.
+
+:::note[Onestà sul −1]
+Il commento di valutazione non riporta la motivazione scritta del punto mancante. Confrontando le due tabelle, l'impianto è equivalente; la differenza più probabile sta in **una singola coppia di indipendenza** costruita in modo non ottimale, o in un valore concreto al limite. Vale la pena ripercorrere la mia tabella condizione per condizione e individuare quale delle 9 ha la coppia più "fragile".
+:::
+
+### La tabella del professore (per riferimento)
+
+Disponibile come immagine in `w4_a2_professors_solution.png`. Schema: stesse 9 condizioni in colonna, 10 test (T1–T10), celle delle coppie MC/DC evidenziate, più la tabella dei valori concreti sotto.
 
 ## Domande di difesa probabili
 
-1. Quante condizioni elementari ha l'`if`? Come le hai contate?
+1. Quante condizioni elementari ha l'`if`? Come le hai contate? (9 → n+1 = 10 test, come il prof.)
 2. Spiega il masking sulla tua TC5: quale condizione stai isolando e perché gli altri due blocchi sono falsi?
-3. C8 è `!isWeekday` e C4 è `isWeekday`: sono davvero due condizioni indipendenti? Cosa implica per MC/DC? *(la domanda chiave)*
-4. Perché MC/DC e non compound condition coverage su questo codice? Quanti test servirebbero con compound? (2⁹ = 512)
-5. Perché il rating concreto `7` compare spesso? (Rende C2 e C9 entrambe vere, stato "neutro" per mascherare quel ramo.)
-6. Il GAI ha prodotto un caso con rating insieme >8 e ≤6: perché è impossibile e come lo hai evitato tu?
-7. MC/DC subsume branch coverage: questa tua suite copre quindi anche tutti i rami? Perché?
+3. Per la condizione X, mostrami la coppia di righe che ne dimostra l'effetto indipendente. *(verifica per ognuna delle 9)*
+4. C8 è `!isWeekday` e C4 è `isWeekday`: sono davvero indipendenti? *(osservazione bonus: condizioni accoppiate - il prof le tratta comunque come indipendenti, ma saperlo notare è un plus)*
+5. Perché MC/DC e non compound condition coverage su questo codice? Quanti test servirebbero con compound? (2⁹ = 512)
+6. Perché il rating concreto `7`/`8` compare spesso? (Rende C2 e C9 entrambe vere, stato "neutro" per mascherare quel ramo.)
+7. Il GAI ha prodotto un caso con rating insieme >8 e ≤6: perché è impossibile e come lo hai evitato tu?
+8. MC/DC subsume branch coverage: questa tua suite copre quindi anche tutti i rami? Perché?

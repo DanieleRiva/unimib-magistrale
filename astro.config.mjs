@@ -39,6 +39,10 @@ const sidebarCorsi = [
                         label: 'Structural Testing',
                         link: '/qualita-del-software/assignments/w4_a2/soluzione'
                     },
+                    { 
+                        label: 'Data Control Dependence',
+                        link: '/qualita-del-software/assignments/w5_a3/soluzione'
+                    },
                 ]
             },
         ]
