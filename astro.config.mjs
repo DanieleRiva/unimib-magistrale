@@ -32,15 +32,15 @@ const sidebarCorsi = [
                 collapsed: true,
                 items: [
                     { 
-                        label: 'Category Partition',
+                        label: '[W3_A1] Category Partition',
                         link: '/qualita-del-software/assignments/w3_a1/soluzione'
                     },
                     { 
-                        label: 'Structural Testing',
+                        label: '[W4_A2] Structural Testing',
                         link: '/qualita-del-software/assignments/w4_a2/soluzione'
                     },
                     { 
-                        label: 'Data Control Dependence',
+                        label: '[W5_A3] Data & Control Dependence',
                         link: '/qualita-del-software/assignments/w5_a3/soluzione'
                     },
                 ]
