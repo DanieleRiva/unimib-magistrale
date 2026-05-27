@@ -1,6 +1,8 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightThemeNova from 'starlight-theme-nova';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 // =============================================================================
 //  CORSI
@@ -11,7 +13,7 @@ import starlightThemeNova from 'starlight-theme-nova';
 //    3. Scrivi gli .md dentro la cartella - la sidebar si autogenera.
 // =============================================================================
 const corsi = [
-	{ label: 'Qualità del Software', dir: 'qualita-del-software' },
+    { label: 'Qualità del Software', dir: 'qualita-del-software' },
 ];
 
 const sidebarCorsi = [
@@ -31,17 +33,21 @@ const sidebarCorsi = [
                 label: '📝 Assignments',
                 collapsed: true,
                 items: [
-                    { 
+                    {
                         label: '[W3_A1] Category Partition',
                         link: '/qualita-del-software/assignments/w3_a1/soluzione'
                     },
-                    { 
+                    {
                         label: '[W4_A2] Structural Testing',
                         link: '/qualita-del-software/assignments/w4_a2/soluzione'
                     },
-                    { 
+                    {
                         label: '[W5_A3] Data & Control Dependence',
                         link: '/qualita-del-software/assignments/w5_a3/soluzione'
+                    },
+                    {
+                        label: '[W6_A4] Data-Flow Analysis',
+                        link: '/qualita-del-software/assignments/w6_a4/soluzione'
                     },
                 ]
             },
@@ -50,32 +56,38 @@ const sidebarCorsi = [
 ];
 
 export default defineConfig({
-	site: 'https://danieleriva.github.io',
-	base: '/unimib-magistrale',
+    site: 'https://danieleriva.github.io',
+    base: '/unimib-magistrale',
 
-	integrations: [
-		starlight({
-			title: 'UNIMIB Magistrale',
-			logo: {
-				src: './public/favicon.ico',
-			},
-			favicon: './public/favicon.ico',
-			customCss: [
-				'./src/custom.css',
-			],
-			description: 'Appunti e materiale dei corsi della magistrale in Informatica - UNIMIB',
-			social: [
-				{ icon: 'github', label: 'GitHub', href: 'https://github.com/DanieleRiva' }
-			],
+    markdown: {
+        remarkPlugins: [remarkMath],
+        rehypePlugins: [rehypeKatex],
+    },
 
-			plugins: [
-				starlightThemeNova(),
-			],
+    integrations: [
+        starlight({
+            title: 'UNIMIB Magistrale',
+            logo: {
+                src: './public/favicon.ico',
+            },
+            favicon: './public/favicon.ico',
+            customCss: [
+                './src/custom.css',
+                'katex/dist/katex.min.css'
+            ],
+            description: 'Appunti e materiale dei corsi della magistrale in Informatica - UNIMIB',
+            social: [
+                { icon: 'github', label: 'GitHub', href: 'https://github.com/DanieleRiva' }
+            ],
 
-			head: [
-				{
-					tag: 'script',
-					content: `
+            plugins: [
+                starlightThemeNova(),
+            ],
+
+            head: [
+                {
+                    tag: 'script',
+                    content: `
                         function initProgressBar() {
                             let bar = document.getElementById('scroll-progress');
                             if (!bar) {
@@ -106,15 +118,15 @@ export default defineConfig({
 
                         document.addEventListener('DOMContentLoaded', initProgressBar);
                     `
-				}
-			],
+                }
+            ],
 
-			// sidebar: corsi.map(({ label, dir }) => ({
-			// 	label,
-			// 	collapsed: true,
-			// 	autogenerate: { directory: dir },
-			// })),
-			sidebar: sidebarCorsi,
-		}),
-	],
+            // sidebar: corsi.map(({ label, dir }) => ({
+            // 	label,
+            // 	collapsed: true,
+            // 	autogenerate: { directory: dir },
+            // })),
+            sidebar: sidebarCorsi,
+        }),
+    ],
 });

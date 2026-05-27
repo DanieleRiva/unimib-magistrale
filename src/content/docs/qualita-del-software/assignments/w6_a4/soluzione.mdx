@@ -1,0 +1,156 @@
+---
+title: W6.A4 - La mia soluzione (Data Flow)
+description: Analisi Data Flow per rilevare variabili non inizializzate - difesa orale e confronto.
+sidebar:
+  order: 7
+---
+
+import tracciaImg from './traccia.png';
+import soluzione1 from './soluzione1.png';
+import soluzione2 from './soluzione2.png';
+
+export const solutionPdf = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assignments/w6_a4/soluzione.pdf`;
+
+> **Soluzione e difesa - Assignment W6.A4.**
+> Argomento → vedi [Data Flow Analysis](/qualita-software/data-flow-analysis/).
+> Qui sta il *perché* di ogni scelta: è quello che devo saper dire a voce per difendere il compito.
+> Stato: **valutato** (il confronto con la doppia soluzione del prof convalida l'approccio scelto).
+
+<details>
+  <summary><strong>Traccia dell'assignment</strong></summary>
+  <img
+    src={tracciaImg.src}
+    alt="Traccia W6.A4"
+    style={{ maxWidth: '100%', height: 'auto', marginTop: '1rem', borderRadius: '6px' }}
+  />
+</details>
+
+<details>
+  <summary><strong>La mia soluzione consegnata (PDF)</strong></summary>
+  <iframe
+    src={solutionPdf}
+    title="Soluzione W6.A4"
+    style={{ width: '100%', height: '80vh', border: '1px solid var(--sl-color-gray-5)', borderRadius: '6px', marginTop: '1rem' }}
+  />
+  <p style={{ marginTop: '0.5rem', fontSize: '0.9em' }}>
+    <a href={solutionPdf} target="_blank" rel="noopener">Apri il PDF in una nuova scheda</a>
+  </p>
+</details>
+
+<details>
+  <summary><strong>Soluzione 1 del Professore</strong></summary>
+  <img
+    src={soluzione1.src}
+    alt="Traccia W6.A4"
+    style={{ maxWidth: '100%', height: 'auto', marginTop: '1rem', borderRadius: '6px' }}
+  />
+</details>
+
+<details>
+  <summary><strong>Soluzione 2 del Professore</strong></summary>
+  <img
+    src={soluzione2.src}
+    alt="Traccia W6.A4"
+    style={{ maxWidth: '100%', height: 'auto', marginTop: '1rem', borderRadius: '6px' }}
+  />
+</details>
+
+## La traccia in breve
+
+L'obiettivo dell'assignment era progettare e applicare un'analisi del flusso di dati (Data Flow Analysis) per il programma `generateSummary` per verificare staticamente che tutte le variabili siano sempre inizializzate prima di essere lette, rilevando eventuali anomalie. La soluzione richiede l'identificazione dell'analisi adatta, la definizione dei set gen/kill, la descrizione del criterio di rilevamento degli errori, la tabella di calcolo dei punti fissi passo-passo e l'indicazione della riga difettosa.
+
+## Il codice sotto test
+
+```java
+public class ReportGenerator {
+  public static int generateSummary(int[] values, int cutoff) { // 3
+    int idx = 0;                                               // 5
+    int count = values.length;                                 // 6
+    int processed = 0;                                         // 7
+
+    if (cutoff <= 0) {                                         // 9
+      return -1;                                               // 10
+    }
+
+    if (count > 0) {                                           // 13
+      int sum = 0;                                             // 14
+    }
+
+    while (idx < count) {                                      // 17
+      int val = values[idx];                                   // 18
+      if (val >= cutoff) {                                     // 20
+        processed++;                                           // 21
+      } else {                                                 // 22
+        processed += 0;                                        // 23
+      }
+      idx++;                                                   // 26
+    }
+
+    if (processed > count) {                                   // 29
+      processed = count;                                       // 30
+    }
+
+    return sum + processed;                                    // 33
+  }
+}
+```
+
+## Cosa ho prodotto
+
+Ho implementato un modello formale basato su una variante di **Avail Analysis (Forward, All-paths)** istanziata direttamente sulle variabili del programma anziché sulle espressioni:
+
+- **Istanziamento**: l'analisi traccia l'insieme delle variabili sicuramente inizializzate in ogni punto.
+- **Set Gen**: $gen(n) = \{x \mid x \in def(n)\}$, ovvero un nodo genera la disponibilità di una variabile quando la definisce.
+- **Set Kill**: $kill(n) = \emptyset$. Una volta che una variabile viene inizializzata, non può più tornare in uno stato non inizializzato.
+- **Condizione al contorno**: $Avail(entry) = \{values, cutoff\}$, cioè i parametri formali passati dall'esterno.
+- **Inizializzazione nodi interni**: impostati all'insieme universale $U$ di tutte le variabili del programma per consentire la convergenza dell'intersezione.
+- **Criterio di errore**: un'istruzione al nodo $n$ fallisce se tenta di usare una variabile che non è garantita ovunque, formalmente se: $use(n) \setminus Avail(n) \neq \emptyset$.
+
+## Perché è strutturata così
+
+1. **La scelta di un approccio All-paths (Avail) rispetto a Any-path (Reach).**
+   *Cosa dire:* Per poter affermare con certezza matematica che una lettura a una variabile sia sicura, tale variabile deve essere stata inizializzata lungo **tutti** i possibili cammini di esecuzione che portano a quel punto. Un'analisi Any-path (come la Reach classica) ci direbbe soltanto se esiste *almeno un* cammino in cui è inizializzata, il che non basta per escludere cammini difettosi scoperti. L'uso dell'intersezione ($\cap$) nei blocchi di join è l'unico modo per catturare questa proprietà di sicurezza.
+
+2. **La scelta del Kill set vuoto.**
+   *Cosa dire:* Stiamo analizzando la proprietà di "essere inizializzato", non il valore specifico del dato. In Java, una volta che una variabile locale o un parametro riceve un valore iniziale, mantiene lo status di variabile inizializzata per tutto il resto dell'esecuzione del metodo. Non esistono istruzioni che possano de-inizializzare o invalidare la presenza di un valore in memoria.
+
+3. **Il comportamento dell'algoritmo al join del ciclo e della riga finale.**
+   *Cosa dire:* Nel Control Flow Graph del programma, il nodo 33 riceve il flusso di controllo sia dal ramo `if` della riga 30 sia direttamente dal controllo della riga 29. Effettuando l'intersezione degli insiemi calcolati, la variabile `sum` non risulta presente in $Avail(33)$ perché non è stata definita lungo il cammino in cui `count <= 0`. Pertanto l'analisi intercetta formalmente la violazione.
+
+## Confronto con la soluzione del professore
+
+Il professore ha pubblicato due varianti di soluzione per questo specifico esercizio. La mia scelta modellistica si inserisce perfettamente in questo quadro.
+
+### Soluzione principale del Prof (Reach Analysis con variabili indicizzate)
+Nella sua prima soluzione, il prof usa una **Reach Analysis (Forward, Any-path)**. Per rilevare la mancata inizializzazione inserisce nel modello una definizione fittizia iniziale per ogni variabile al nodo di entry (chiamata `var_0`, ad esempio `sum_0`). Se la definizione fittizia `sum_0` riesce a raggiungere l'uso alla riga 33 (ovvero appartiene a $Reach(33)$), allora significa che esiste un cammino non protetto da assegnamenti reali.
+
+### Soluzione Alternativa del Prof (Avail) → Perfetta corrispondenza con la mia
+Il professore ha fornito una seconda tabella ufficiale intitolata **"W6.A4 Alternative Solution"**, basata interamente su una variante di **Avail analysis (forward, all-path)**.
+- **La mia soluzione segue esattamente questa impostazione ufficiale.** Sia io che il professore abbiamo tracciato i set in avanti con l'intersezione e impostato il criterio di errore su $use(n) \setminus Avail(n)$.
+- *Allineamento dei risultati:* La mia tabella dei punti fissi e quella alternativa del professore identificano lo stesso identico set di variabili disponibili al nodo 33 ($Avail(33) = \{values, cutoff, idx, count, processed\}$), escludendo motivatamente `sum` ed evidenziando lo stesso errore di lettura uninitialized.
+
+## La critica all'output GAI
+
+La traccia richiede una valutazione critica delle risposte generate dalle intelligenze artificiali commerciali (es. ChatGPT o Gemini) su questo specifico esercizio.
+
+- **Query tipica**: "Esegui l'analisi data flow per trovare variabili non inizializzate nel seguente codice Java..."
+- **Risultato del GAI**: I modelli linguistici identificano immediatamente a livello testuale/semantico il bug della variabile `sum` alla riga 33, poiché "salta all'occhio" che la sua dichiarazione è confinata dentro il blocco `if(count > 0)`.
+- **Commento sulla validità e differenze**: Nonostante la risposta finale sul bug sia corretta, le GAI falliscono pesantemente nella produzione della tabella formata dei punti fissi. Spesso confondono le regole dell'unione e dell'intersezione nei nodi di join (es. inseriscono `sum` nell'Avail applicando erroneamente l'unione dei cammini) o non popolano correttamente i set intermedi di $AvailOut$ per i nodi interni al ciclo `while`. L'output GAI è quindi utile come linter veloce ma inaffidabile per la produzione di prove formali rigorose.
+
+## Domande di difesa probabili
+
+1. **Perché per trovare le variabili non inizializzate hai usato un approccio all-paths (intersezione) mentre la Reach analysis classica del libro usa l'any-path (unione)?**
+   *Cosa dire:* Perché l'any-path si concentra sull'esistenza di *almeno un* cammino. Se una variabile viene inizializzata in un ramo dell'if ma non nell'altro, la Reach classica ci direbbe che la definizione raggiunge l'uso finale, ignorando il pericolo. L'all-paths invece ci garantisce che la variabile sia definita in *ogni* cammino possibile.
+
+2. **Come ha risolto il professore lo stesso problema usando invece la Reach Analysis nella sua soluzione principale?**
+   *Cosa dire:* Ha introdotto delle definizioni fittizie iniziali all'entry del programma per ogni variabile (es. `sum_0`), che indicano l'assenza di valore. Se l'analisi Any-path mostra che la definizione fittizia `sum_0` riesce a raggiungere l'istruzione di lettura, significa che esiste un cammino scoperto in cui la variabile non è mai stata sovrascritta da un valore reale.
+
+3. **Spiega come viene calcolato l'insieme Avail all'ingresso del ciclo while (riga 17). Quali sono i suoi predecessori nel CFG?**
+   *Cosa dire:* Il nodo 17 è un punto di join che riceve il controllo sia dal nodo 14 (corpo dell'if precedente) sia dal nodo 26 (la fine del corpo del ciclo stesso, tramite l'arco di backedge). Trattandosi di un'analisi all-paths, $Avail(17)$ è calcolato come l'intersezione degli insiemi in uscita dei suoi predecessori: $AvailOut(14) \cap AvailOut(26)$.
+
+4. **Se una variabile viene ridefinita più volte nel ciclo (come processed o idx), perché il suo kill set rimane comunque vuoto nel tuo modello?**
+   *Cosa dire:* Perché l'analisi non serve a tracciare la freschezza di un valore o l'equivalenza delle espressioni, ma unicamente lo stato di "avvenuta inizializzazione". Una volta che un'istruzione assegna un valore iniziale a `idx`, la variabile è inizializzata. Qualsiasi incremento o modifica successiva non distrugge questa proprietà.
+
+5. **Mostra matematicamente perché la riga 33 genera una violazione secondo i tuoi insiemi.**
+   *Cosa dire:* Alla riga 33 l'insieme di uso è $use(33) = \{sum, processed\}$. L'insieme calcolato dall'analisi in quel punto è $Avail(33) = \{values, cutoff, idx, count, processed\}$. Applicando la formula di controllo del difetto, abbiamo che $use(33) \setminus Avail(33) = \{sum\} \neq \emptyset$. Poiché il set risultante non è vuoto, viene segnalata formalmente l'anomalia su `sum`.
+```
