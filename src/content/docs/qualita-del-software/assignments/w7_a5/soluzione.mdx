@@ -73,12 +73,6 @@ else if (paymentAmount > 0 && paymentAmount < totalCost) { ... }
 ```
 Se il flusso di esecuzione fallisce il primo controllo e passa al blocco `else if`, è matematicamente certo che la variabile `paymentAmount` sia già strettamente minore di `totalCost`. Di conseguenza, la seconda parte della condizione composto (`paymentAmount < totalCost`) è un'istruzione ridondante che risulterà sempre vera. Il ramo in cui questa sotto-condizione fallisce è logicamente irraggiungibile (dead branch), impedendo di fatto il raggiungimento del 100% di branch coverage e segnalando un'opportunità di refactoring del software[cite: 905, 914]."
 
-## La critica all'output GAI
-
-- **Query tipica**: "Genera 10 mutanti utili ed equivalenti per questo codice Java e scrivi i test per ucciderli..."
-- **Risultato del GAI**: I modelli di intelligenza artificiale commerciali automatizzano molto bene la creazione sintattica di mutanti semplici (invertire i segni matematici o i confronti relazionali)[cite: 582].
-- **Commento sulla validità e differenze**: Le GAI mostrano forti limiti strutturali davanti al problema dei mutanti equivalenti[cite: 909]. Spesso non riconoscono che la rimozione di un'inizializzazione di un booleano a false in Java o la mutazione da `<` a `!=` in un ciclo lineare non alterano la semantica del programma[cite: 910, 911]. L'AI tenderà a generare test inutili o asserzioni errate nel tentativo di uccidere mutanti che sono per loro natura immortali, richiedendo l'analisi critica di un operatore umano per validare i dati della tabella[cite: 909].
-
 ## Domande di difesa probabili
 
 1. **Nella tabella hai classificato M9 e M10 come equivalenti. Cosa significa esattamente e perché non si possono uccidere?**

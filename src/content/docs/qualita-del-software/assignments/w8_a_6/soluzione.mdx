@@ -68,13 +68,6 @@ Ho tradotto le direttive dello schema XML (`xs:sequence`, `xs:element`) nelle pr
 Per la lista dei dipartimenti, lo schema XSD dava un limite fisso (`maxOccurs="3"`), che io ho tradotto annotando la produzione con un bound chiuso `[3]`.
 Per le liste `skills` e `projects`, lo schema indicava `maxOccurs="unbounded"`. Tuttavia, per poter eseguire il test delle boundary conditions (come spiegato nelle slide di teoria con le regole min, min+1, max-1, max), l'infinito non è testabile. Ho quindi adottato e dichiarato una bound convenzionale fissa `[10]`, seguendo la best practice e in totale linea con la soluzione ufficiale del professore per l'assignment `W7.H6`. Questo mi permette di generare stringhe ai limiti in modo deterministico.
 
-## La critica all'output GAI (Intelligenza Artificiale)
-
-Se ti chiedono un commento sui risultati di un LLM (ChatGPT/Gemini) applicato a questo assignment:
-
-- **Dove fallisce il GAI (Parte I - Tabella):** I modelli linguistici faticano enormemente a generare Decision Tables compresse correttamente. Tendono a dimenticare i vincoli impliciti, generando colonne "fantasma" in cui un utente VIP noleggia un'Economy (violando il constraint esplicito) o inventando prezzi in cui sommano additivamente il 10% e il 5% restituendo uno sconto del 15% netto, ignorando brutalmente il vincolo "multiplicatively". 
-- **Dove fallisce il GAI (Parte II - Grammatica):** Le AI traducono bene da XML a BNF, ma raramente applicano i tag di bounding `[k]` alle regole di ripetizione (come `unbounded`). Consegnano una grammatica pura, che però è inservibile in un contesto accademico di testing perché impedisce la generazione formale dei Boundary test cases. Serve sempre l'intervento umano per chiudere e annotare le regole ricorsive.
-
 ## Domande di difesa probabili
 
 1. **Perché hai limitato a 15 il numero delle colonne della tua Decision Table? Potevano essercene di più?**
