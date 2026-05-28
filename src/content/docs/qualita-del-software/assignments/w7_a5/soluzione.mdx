@@ -1,0 +1,91 @@
+---
+title: W7.A5 - La mia soluzione (Fault-based Testing)
+description: Creazione di mutanti, classificazione e test suite per HotelReservationSystem.
+sidebar:
+  order: 9
+---
+
+import tracciaImg from './traccia.png';
+
+export const solutionPdf = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assignments/w7_a5/soluzione.pdf`;
+export const projectZip = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assignments/w7_a5/HotelReservationSystem.zip`;
+
+> **Soluzione e difesa - Assignment W7.A5.**
+> Argomento → vedi [Fault-based Testing (Mutation)](/qualita-software/fault-based-testing/).
+> Qui sta il *perché* di ogni scelta: è la guida alla difesa orale di un assignment eccellente (con scoperte di "dead code" reali).
+> Stato: **non ancora valutato dal professore**.
+
+<details>
+  <summary><strong>Traccia dell'assignment</strong></summary>
+  <img
+    src={tracciaImg.src}
+    alt="Traccia W7.A5"
+    style={{ maxWidth: '100%', height: 'auto', marginTop: '1rem', borderRadius: '6px' }}
+  />
+</details>
+
+<details>
+  <summary><strong>La mia soluzione consegnata (PDF)</strong></summary>
+  <iframe
+    src={solutionPdf}
+    title="Soluzione W7.A5"
+    style={{ width: '100%', height: '80vh', border: '1px solid var(--sl-color-gray-5)', borderRadius: '6px', marginTop: '1rem' }}
+  />
+  <p style={{ marginTop: '0.5rem', fontSize: '0.9em' }}>
+    <a href={solutionPdf} target="_blank" rel="noopener">Apri il PDF in una nuova scheda</a> | <a href={projectZip} download>Scarica il file ZIP del codice sorgente</a>
+  </p>
+</details>
+
+## La traccia in breve
+
+L'obiettivo dell'assignment era progettare e applicare una Mutation Analysis manuale sulla classe `Reservation` del progetto `HotelReservationSystem`[cite: 582, 588]. La traccia richiedeva nello specifico di generare 10 mutanti introducendo modifiche sintattiche singole, identificare l'operatore di mutazione associato, classificarli in utili o equivalenti e scrivere una suite di test JUnit in grado di isolare e uccidere i mutanti non equivalenti, misurando infine la copertura dei rami e delle istruzioni[cite: 582, 583, 584].
+
+## Il target sotto test
+
+Il sistema gestisce la prenotazione di stanze d'albergo, l'applicazione di sconti (VIP o basati sul numero e sul costo totale delle stanze), la verifica della colazione inclusa e l'elaborazione dei pagamenti[cite: 3, 4]. Il file `HotelReservationSystem.java` conteneva solo un metodo main non strutturato per il testing[cite: 582, 899]. Di conseguenza, l'analisi e la suite di test si sono concentrate sulla classe logica `Reservation.java`[cite: 582, 900].
+
+## Cosa ho prodotto: I Mutanti scelti
+
+Ho creato e testato 10 mutanti, di cui 8 utili (Useful) e 2 equivalenti (Equivalent), raggiungendo un Mutation Score del 100% poiché tutti i mutanti non equivalenti sono stati intercettati e uccisi dalla suite di test[cite: 892, 895].
+
+I tre esempi più significativi da citare in sede d'esame sono:
+
+- **Il Mutante di Confine (M1 - ROR):** In `applyDiscount`, ho modificato la condizione `rooms.size() >= 3` in `rooms.size() > 3`[cite: 889]. Questo è l'uso classico dell'operatore ROR (Relational Operator Replacement)[cite: 883, 889]. Simula il tipico errore off-by-one dei programmatori ed è stato ucciso da un test (`testD`) che istanziava esattamente 3 stanze, dove il comportamento diverge dall'originale[cite: 889].
+- **Il Mutante Matematico (M8 - AOR):** In `processPayment`, nel blocco dedicato al pagamento parziale, ho trasformato l'operatore di decremento `totalCost -= paymentAmount` in un incremento `totalCost += paymentAmount`[cite: 889]. Questo sfrutta l'operatore AOR (Arithmetic Operator Replacement) e simula un bug logico grave in cui un pagamento parziale aumenta il debito del cliente anziché ridurlo[cite: 883, 889]. È stato ucciso verificando che il costo finale si abbassi correttamente[cite: 889].
+- **Il Mutante da Connettore Logico (M5 - LCR):** In `applyDiscount`, ho sostituito l'operatore AND (`&&`) con un OR (`||`) nella condizione composta[cite: 889]. Questo fa riferimento all'operatore LCR (Logical Connector Replacement) e simula un fraintendimento delle specifiche di business[cite: 883, 889]. Il test per ucciderlo (`testE`) forniva 3 stanze ma un costo totale inferiore a 500: nel mutante lo sconto scattava ugualmente, fallendo l'asserzione sul prezzo pieno[cite: 889].
+
+## La logica dei Mutanti Equivalenti
+
+Saper riconoscere e isolare i mutanti equivalenti è fondamentale per dimostrare di aver compreso la parte profonda del capitolo[cite: 909].
+
+- **Il ciclo a terminazione equivalente (M9 - ROR):** Nel ciclo di scansione delle stanze dentro `canCancelReservation`, ho mutato la condizione di permanenza da `i < rooms.size()` a `i != rooms.size()`[cite: 889]. Dato che la variabile di controllo `i` parte da 0 e incrementa linearmente di 1 ad ogni iterazione, essa incontrerà sempre il valore di controllo esatto senza mai scavalcarlo[cite: 889]. Di conseguenza, il numero di cicli e il comportamento a runtime rimangono identici. È un mutante equivalente impossibile da uccidere[cite: 889].
+- **Lo Statement Deletion ridondante (M10 - SDL):** Nel costruttore della classe `Reservation`, ho applicato l'operatore SDL (Statement Deletion) eliminando l'assegnamento esplicito `this.isPaid = false;`[cite: 883, 889]. Per specifica del linguaggio Java, i campi di istanza di tipo primitivo booleano vengono inizializzati automaticamente a `false` al momento dell'allocazione dell'oggetto in memoria[cite: 911]. Rimuovere questa riga non altera in alcun modo lo stato semantico iniziale dell'oggetto, configurando un perfetto mutante equivalente[cite: 911].
+
+## Il riscontro sul Branch Coverage: Analisi del Dead Code
+
+La test suite sviluppata ha raggiunto il 100% di Statement Coverage e il 95.8% di Branch Coverage[cite: 902, 903]. Questa mancanza non è dovuta a un'omissione nei test, ma rivela un problema strutturale nel codice originale fornito[cite: 904, 914].
+
+*Come argomentare la difesa:*
+"Professore, analizzando il report di copertura generato con JaCoCo, ho riscontrato l'impossibilità di coprire un singolo ramo nel metodo `processPayment`[cite: 885, 905]. Il codice originale presenta la seguente struttura condizionale:
+```java
+if (paymentAmount >= totalCost) { ... }
+else if (paymentAmount > 0 && paymentAmount < totalCost) { ... }
+```
+Se il flusso di esecuzione fallisce il primo controllo e passa al blocco `else if`, è matematicamente certo che la variabile `paymentAmount` sia già strettamente minore di `totalCost`. Di conseguenza, la seconda parte della condizione composto (`paymentAmount < totalCost`) è un'istruzione ridondante che risulterà sempre vera. Il ramo in cui questa sotto-condizione fallisce è logicamente irraggiungibile (dead branch), impedendo di fatto il raggiungimento del 100% di branch coverage e segnalando un'opportunità di refactoring del software[cite: 905, 914]."
+
+## La critica all'output GAI
+
+- **Query tipica**: "Genera 10 mutanti utili ed equivalenti per questo codice Java e scrivi i test per ucciderli..."
+- **Risultato del GAI**: I modelli di intelligenza artificiale commerciali automatizzano molto bene la creazione sintattica di mutanti semplici (invertire i segni matematici o i confronti relazionali)[cite: 582].
+- **Commento sulla validità e differenze**: Le GAI mostrano forti limiti strutturali davanti al problema dei mutanti equivalenti[cite: 909]. Spesso non riconoscono che la rimozione di un'inizializzazione di un booleano a false in Java o la mutazione da `<` a `!=` in un ciclo lineare non alterano la semantica del programma[cite: 910, 911]. L'AI tenderà a generare test inutili o asserzioni errate nel tentativo di uccidere mutanti che sono per loro natura immortali, richiedendo l'analisi critica di un operatore umano per validare i dati della tabella[cite: 909].
+
+## Domande di difesa probabili
+
+1. **Nella tabella hai classificato M9 e M10 come equivalenti. Cosa significa esattamente e perché non si possono uccidere?**
+   *Cosa dire:* Un mutante si definisce equivalente quando la modifica introdotta altera la sintassi del codice ma lascia la semantica e il comportamento del programma totalmente inalterati rispetto alla versione originale[cite: 847, 909]. Non si possono uccidere perché, producendo gli stessi identici output per qualunque input possibile, nessuna asserzione di test potrà mai fallire[cite: 822, 911].
+
+2. **Perché per l'operatore ROR del mutante M1 hai dovuto usare un test case con esattamente 3 stanze per ucciderlo?**
+   *Cosa dire:* Perché l'operatore cambia `>= 3` in `> 3`[cite: 889]. Se avessi usato un caso di test con 4 o più stanze, sia il programma originale che il mutante avrebbero valutato la condizione come vera, applicando lo sconto e facendo sopravvivere il bug[cite: 889]. Solo testando il valore di frontiera esatto (3 stanze) il programma originale applica lo sconto mentre il mutante lo salta, generando la discrepanza necessaria a ucciderlo[cite: 889].
+
+3. **In cosa differiscono la Competent Programmer Hypothesis e la Coupling Effect Hypothesis?**
+   *Cosa dire:* La Competent Programmer Hypothesis assume che i programmatori producano codice quasi corretto e che i bug reali siano piccole variazioni sintattiche dovute a distrazioni[cite: 826, 827]. La Coupling Effect Hypothesis afferma invece che una suite di test abbastanza accurata da individuare ed eliminare questi piccoli difetti atomici sarà indirettamente in grado di intercettare anche i bug complessi e combinati presenti nel software[cite: 831, 832].

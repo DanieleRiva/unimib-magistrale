@@ -49,6 +49,14 @@ const sidebarCorsi = [
                         label: '[W6_A4] Data-Flow Analysis',
                         link: '/qualita-del-software/assignments/w6_a4/soluzione'
                     },
+                    {
+                        label: '[W7_A5] Fault-Based Testing',
+                        link: '/qualita-del-software/assignments/w7_a5/soluzione'
+                    },
+                    {
+                        label: '[W8_A6] Model-Based Testing',
+                        link: '/qualita-del-software/assignments/w8_a6/soluzione'
+                    },
                 ]
             },
         ]

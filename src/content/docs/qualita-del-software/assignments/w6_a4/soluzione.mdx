@@ -14,7 +14,7 @@ export const solutionPdf = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assig
 > **Soluzione e difesa - Assignment W6.A4.**
 > Argomento → vedi [Data Flow Analysis](/qualita-software/data-flow-analysis/).
 > Qui sta il *perché* di ogni scelta: è quello che devo saper dire a voce per difendere il compito.
-> Stato: **valutato** (il confronto con la doppia soluzione del prof convalida l'approccio scelto).
+> Stato: **non valutato**.
 
 <details>
   <summary><strong>Traccia dell'assignment</strong></summary>
@@ -38,19 +38,19 @@ export const solutionPdf = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assig
 </details>
 
 <details>
-  <summary><strong>Soluzione 1 del Professore</strong></summary>
+  <summary><strong>Soluzione 1 del Professore (Reach Analysis)</strong></summary>
   <img
     src={soluzione1.src}
-    alt="Traccia W6.A4"
+    alt="Soluzione 1 Prof W6.A4"
     style={{ maxWidth: '100%', height: 'auto', marginTop: '1rem', borderRadius: '6px' }}
   />
 </details>
 
 <details>
-  <summary><strong>Soluzione 2 del Professore</strong></summary>
+  <summary><strong>Soluzione 2 del Professore (Avail Analysis)</strong></summary>
   <img
     src={soluzione2.src}
-    alt="Traccia W6.A4"
+    alt="Soluzione 2 Prof W6.A4"
     style={{ maxWidth: '100%', height: 'auto', marginTop: '1rem', borderRadius: '6px' }}
   />
 </details>
@@ -95,62 +95,78 @@ public class ReportGenerator {
 }
 ```
 
-## Cosa ho prodotto
+## La logica del Control Flow Graph (CFG)
 
-Ho implementato un modello formale basato su una variante di **Avail Analysis (Forward, All-paths)** istanziata direttamente sulle variabili del programma anziché sulle espressioni:
+Prima di applicare qualsiasi formula matematica, è indispensabile mappare il codice sotto forma di grafo (il Control Flow Graph visibile a pagina 3 del PDF).
 
-- **Istanziamento**: l'analisi traccia l'insieme delle variabili sicuramente inizializzate in ogni punto.
-- **Set Gen**: $gen(n) = \{x \mid x \in def(n)\}$, ovvero un nodo genera la disponibilità di una variabile quando la definisce.
-- **Set Kill**: $kill(n) = \emptyset$. Una volta che una variabile viene inizializzata, non può più tornare in uno stato non inizializzato.
-- **Condizione al contorno**: $Avail(entry) = \{values, cutoff\}$, cioè i parametri formali passati dall'esterno.
-- **Inizializzazione nodi interni**: impostati all'insieme universale $U$ di tutte le variabili del programma per consentire la convergenza dell'intersezione.
-- **Criterio di errore**: un'istruzione al nodo $n$ fallisce se tenta di usare una variabile che non è garantita ovunque, formalmente se: $use(n) \setminus Avail(n) \neq \emptyset$.
+*Cosa dire all'orale:* Il CFG scompone il programma in nodi decisionali ed esecutivi, tracciando con precisione i rami True (T) e False (F). Questo passaggio è fondamentale perché la Data Flow Analysis lavora sulla topologia dei cammini. Senza un CFG non potremmo identificare i predecessori di un nodo (`pred(n)`), l'unione dei cammini lineari, i cicli di ritorno (il backedge che da riga 26 risale a riga 17) o i punti in cui flussi separati tornano a fondersi (come le righe 17 e 33).
 
-## Perché è strutturata così
+## Istanziamento dell'Analisi: Gen, Kill e Boundary Conditions
 
-1. **La scelta di un approccio All-paths (Avail) rispetto a Any-path (Reach).**
-   *Cosa dire:* Per poter affermare con certezza matematica che una lettura a una variabile sia sicura, tale variabile deve essere stata inizializzata lungo **tutti** i possibili cammini di esecuzione che portano a quel punto. Un'analisi Any-path (come la Reach classica) ci direbbe soltanto se esiste *almeno un* cammino in cui è inizializzata, il che non basta per escludere cammini difettosi scoperti. L'uso dell'intersezione ($\cap$) nei blocchi di join è l'unico modo per catturare questa proprietà di sicurezza.
+Per intercettare le letture a variabili non inizializzate, ho adattato l'algoritmo classico della **Avail Analysis (Forward, All-paths)**. Nella teoria pura l'Avail traccia la disponibilità delle espressioni matematiche, ma modificando la semantica dei set è possibile istanziarla direttamente sulla sicurezza delle variabili.
 
-2. **La scelta del Kill set vuoto.**
-   *Cosa dire:* Stiamo analizzando la proprietà di "essere inizializzato", non il valore specifico del dato. In Java, una volta che una variabile locale o un parametro riceve un valore iniziale, mantiene lo status di variabile inizializzata per tutto il resto dell'esecuzione del metodo. Non esistono istruzioni che possano de-inizializzare o invalidare la presenza di un valore in memoria.
+### Set Gen: $gen(n) = \{x \mid x \in def(n)\}$
+Un nodo $n$ genera la "disponibilità" (ovvero l'avvenuta inizializzazione) di una variabile `x` se in quella specifica riga di codice la variabile viene definita o riceve un assegnamento ($def(n)$). 
+- *Esempio:* Al nodo 5 (`int idx = 0;`), l'azione scrive sulla lavagna dell'analizzatore che `idx` è inizializzata, quindi $gen(5) = \{idx\}$.
 
-3. **Il comportamento dell'algoritmo al join del ciclo e della riga finale.**
-   *Cosa dire:* Nel Control Flow Graph del programma, il nodo 33 riceve il flusso di controllo sia dal ramo `if` della riga 30 sia direttamente dal controllo della riga 29. Effettuando l'intersezione degli insiemi calcolati, la variabile `sum` non risulta presente in $Avail(33)$ perché non è stata definita lungo il cammino in cui `count <= 0`. Pertanto l'analisi intercetta formalmente la violazione.
+### Set Kill: $kill(n) = \emptyset$
+*Punto chiave d'esame:* A differenza dell'Avail classica (dove un assegnamento uccide le espressioni che contengono la variabile modificata), in questa analisi il set Kill è **tassativamente vuoto per ogni nodo**. La logica è semplice: stiamo tracciando lo stato di "essere inizializzato". In Java, una volta che una variabile riceve un valore iniziale, essa rimane inizializzata per tutto il resto del programma. Non esistono istruzioni nel linguaggio che possano de-inizializzare o cancellare una variabile dalla memoria primitiva per farla tornare allo stato `uninitialized`.
+
+### Boundary Condition: $Avail(entry) = \{values, cutoff\}$
+È la condizione al contorno che stabilisce lo stato iniziale all'ingresso del metodo (nodo `entry`). I parametri formali dichiarati nella firma della funzione (`values` e `cutoff`) sono considerati inizializzati per definizione, poiché è compito del chiamante passare dei valori reali. Tutte le altre variabili locali del metodo non compaiono in questo insieme di partenza.
+
+### Cos'è il set Use(n) e come si rileva l'errore?
+Il set $use(n)$ indica l'insieme delle variabili che vengono *lette* (utilizzate) all'interno del nodo $n$. 
+L'anomalia viene intercettata matematicamente applicando la sottrazione insiemistica:
+$$use(n) \setminus Avail(n) \neq \emptyset$$
+*Significato logico:* Prendo le variabili che il codice tenta di leggere in quel punto ($use(n)$) e tolgo quelle che l'analisi mi garantisce essere sicuramente inizializzate ($Avail(n)$). Se l'insieme risultante contiene ancora qualcosa (non è vuoto), significa che il programma sta leggendo una variabile potenzialmente priva di valore iniziale.
+
+## La Tabella dei Punti Fissi e la Derivazione Nodo per Nodo
+
+La tabella riportata nel punto 4 del PDF rappresenta l'applicazione iterativa delle due equazioni cardine della DFA su ogni statement, partendo dall'alto e procedendo verso il basso (Forward).
+
+1. **L'equazione di Join (Fusione dei cammini):**
+   $$Avail(n) = \bigcap_{m \in pred(n)} AvailOut(m)$$
+   Prima di valutare una riga $n$, l'analizzatore guarda tutti i suoi predecessori immediati (`pred(n)`). Trattandosi di un'analisi *All-paths*, applica l'**intersezione** ($\cap$): una variabile è considerata inizializzata all'ingresso del nodo $n$ solo se era stata inizializzata in *tutti* i percorsi che portano a quel nodo. Se un percorso non la contiene, l'intersezione la cancella.
+   
+2. **L'equazione di Trasferimento (Uscita dal nodo):**
+   $$AvailOut(n) = (Avail(n) \setminus kill(n)) \cup gen(n)$$
+   L'insieme in uscita dal nodo è calcolato prendendo l'ingresso ($Avail(n)$), togliendo il $kill(n)$ (che è vuoto) e aggiungendo il $gen(n)$ della riga corrente.
+
+### Esempio di calcolo passo-passo sui punti critici:
+
+- **Al nodo 14:** Arriva l'ingresso delle righe precedenti dove sono attive `{V, C, I, N, P}` (ovvero values, cutoff, idx, count, processed). La riga 14 esegue `int sum = 0;`, quindi $gen(14) = \{S\}$. L'output del nodo diventa $AvailOut(14) = \{V, C, I, N, P, S\}$.
+- **Al nodo 17 (Join del ciclo):** I predecessori di 17 sono il nodo $13_F$ (il cammino che salta l'if di riga 13), il nodo 14 (il corpo dell'if) e il nodo 26 (la fine del ciclo while). Calcolando l'intersezione:
+  $$AvailOut(13_F) \cap AvailOut(14) \cap AvailOut(26)$$
+  Poiché nel cammino che passa da $13_F$ la variabile `sum` ($S$) non è mai stata generata, essa viene tagliata fuori dall'intersezione. Pertanto, l'ingresso al ciclo risulta $Avail(17) = \{V, C, I, N, P\}$. La variabile `sum` viene "persa" per tutta la durata del ciclo.
+- **Al nodo 33 (Il punto di fallimento):** La riga esegue `return sum + processed;`, di conseguenza il set di uso è $use(33) = \{sum, processed\}$. L'insieme calcolato in ingresso al nodo tramite l'intersezione dei suoi predecessori finali è $Avail(33) = \{V, C, I, N, P\}$. 
+  Applicando il criterio di errore:
+  $$use(33) \setminus Avail(33) = \{sum, processed\} \setminus \{values, cutoff, idx, count, processed\} = \{sum\}$$
+  Dato che il risultato contiene $\{sum\}$ e non è vuoto, l'analisi dimostra formalmente che la riga 33 tenta di leggere una variabile non inizializzata. Il cammino critico che scatena il bug (triggering path) è quello in cui `count <= 0`, che impedisce l'esecuzione sia dell'if a riga 13 sia del corpo del while, arrivando direttamente al return finale con la variabile `sum` priva di allocazione.
 
 ## Confronto con la soluzione del professore
 
-Il professore ha pubblicato due varianti di soluzione per questo specifico esercizio. La mia scelta modellistica si inserisce perfettamente in questo quadro.
+L'analisi svolta si integra perfettamente con il materiale ufficiale d'esame, validando la correttezza dell'approccio strutturale scelto.
 
-### Soluzione principale del Prof (Reach Analysis con variabili indicizzate)
-Nella sua prima soluzione, il prof usa una **Reach Analysis (Forward, Any-path)**. Per rilevare la mancata inizializzazione inserisce nel modello una definizione fittizia iniziale per ogni variabile al nodo di entry (chiamata `var_0`, ad esempio `sum_0`). Se la definizione fittizia `sum_0` riesce a raggiungere l'uso alla riga 33 (ovvero appartiene a $Reach(33)$), allora significa che esiste un cammino non protetto da assegnamenti reali.
+### Soluzione 1 del Professore (Reach Analysis)
+Nella sua prima soluzione, il docente affronta il problema da una prospettiva any-path. Inserisce una definizione fittizia chiamata `varName_0` (es. `sum_0`) all'entry point del programma per indicare l'assenza originaria di un valore. Se l'analisi mostra che la definizione fittizia `sum_0` riesce a raggiungere l'istruzione di lettura a riga 33 senza essere intercettata da una definizione reale, allora viene segnalato il bug.
 
-### Soluzione Alternativa del Prof (Avail) → Perfetta corrispondenza con la mia
-Il professore ha fornito una seconda tabella ufficiale intitolata **"W6.A4 Alternative Solution"**, basata interamente su una variante di **Avail analysis (forward, all-path)**.
-- **La mia soluzione segue esattamente questa impostazione ufficiale.** Sia io che il professore abbiamo tracciato i set in avanti con l'intersezione e impostato il criterio di errore su $use(n) \setminus Avail(n)$.
-- *Allineamento dei risultati:* La mia tabella dei punti fissi e quella alternativa del professore identificano lo stesso identico set di variabili disponibili al nodo 33 ($Avail(33) = \{values, cutoff, idx, count, processed\}$), escludendo motivatamente `sum` ed evidenziando lo stesso errore di lettura uninitialized.
-
-## La critica all'output GAI
-
-La traccia richiede una valutazione critica delle risposte generate dalle intelligenze artificiali commerciali (es. ChatGPT o Gemini) su questo specifico esercizio.
-
-- **Query tipica**: "Esegui l'analisi data flow per trovare variabili non inizializzate nel seguente codice Java..."
-- **Risultato del GAI**: I modelli linguistici identificano immediatamente a livello testuale/semantico il bug della variabile `sum` alla riga 33, poiché "salta all'occhio" che la sua dichiarazione è confinata dentro il blocco `if(count > 0)`.
-- **Commento sulla validità e differenze**: Nonostante la risposta finale sul bug sia corretta, le GAI falliscono pesantemente nella produzione della tabella formata dei punti fissi. Spesso confondono le regole dell'unione e dell'intersezione nei nodi di join (es. inseriscono `sum` nell'Avail applicando erroneamente l'unione dei cammini) o non popolano correttamente i set intermedi di $AvailOut$ per i nodi interni al ciclo `while`. L'output GAI è quindi utile come linter veloce ma inaffidabile per la produzione di prove formali rigorose.
+### Soluzione 2 del Professore (Alternative Solution) -> Identica alla mia
+Nella seconda soluzione ("W6.A4 Alternative Solution"), il professore adotta esattamente lo stesso approccio basato su **Avail Analysis (Forward, All-paths)** applicata alle variabili.
+- I set Gen ed i set Kill ($\emptyset$) coincidono punto per punto.
+- Il criterio di rilevamento $use(n) \setminus Avail(n)$ segue la medesima logica formale.
+- La tabella dei punti fissi porta allo stesso identico risultato matematico: al nodo 33 l'insieme delle variabili disponibili esclude `sum`, isolando il medesimo errore di inizializzazione uninitialized.
 
 ## Domande di difesa probabili
 
-1. **Perché per trovare le variabili non inizializzate hai usato un approccio all-paths (intersezione) mentre la Reach analysis classica del libro usa l'any-path (unione)?**
-   *Cosa dire:* Perché l'any-path si concentra sull'esistenza di *almeno un* cammino. Se una variabile viene inizializzata in un ramo dell'if ma non nell'altro, la Reach classica ci direbbe che la definizione raggiunge l'uso finale, ignorando il pericolo. L'all-paths invece ci garantisce che la variabile sia definita in *ogni* cammino possibile.
+1. **Perché per trovare le variabili non inizializzate hai usato un approccio all-paths (intersezione) invece della Reach analysis classica (unione)?**
+   *Cosa dire:* Perché l'inizializzazione richiede una garanzia assoluta. Devo essere certo che la variabile sia definita in *tutti* i cammini possibili. Se usassi l'unione (any-path), basterebbe che la variabile fosse inizializzata in un solo ramo fortunato dell'if per far credere all'analisi che sia sicura ovunque, nascondendo l'errore presente negli altri cammini scoperti.
 
-2. **Come ha risolto il professore lo stesso problema usando invece la Reach Analysis nella sua soluzione principale?**
-   *Cosa dire:* Ha introdotto delle definizioni fittizie iniziali all'entry del programma per ogni variabile (es. `sum_0`), che indicano l'assenza di valore. Se l'analisi Any-path mostra che la definizione fittizia `sum_0` riesce a raggiungere l'istruzione di lettura, significa che esiste un cammino scoperto in cui la variabile non è mai stata sovrascritta da un valore reale.
+2. **Cosa succede all'insieme delle variabili disponibili all'ingresso del nodo 17 e perché sum viene esclusa?**
+   *Cosa dire:* Il nodo 17 riceve il flusso da più rami. Essendo un'analisi all-paths, calcolo l'intersezione delle uscite dei predecessori. Poiché nel cammino che salta il blocco della riga 13 la variabile `sum` non viene mai generata, essa non è presente in tutti gli insiemi di arrivo. L'intersezione cancella tutto ciò che non è comune, escludendo legittimamente `sum`.
 
-3. **Spiega come viene calcolato l'insieme Avail all'ingresso del ciclo while (riga 17). Quali sono i suoi predecessori nel CFG?**
-   *Cosa dire:* Il nodo 17 è un punto di join che riceve il controllo sia dal nodo 14 (corpo dell'if precedente) sia dal nodo 26 (la fine del corpo del ciclo stesso, tramite l'arco di backedge). Trattandosi di un'analisi all-paths, $Avail(17)$ è calcolato come l'intersezione degli insiemi in uscita dei suoi predecessori: $AvailOut(14) \cap AvailOut(26)$.
+3. **Perché il set Kill è stato impostato a vuoto per ogni statement del programma?**
+   *Cosa dire:* Perché l'analisi monitora unicamente la proprietà di "avvenuta inizializzazione". In Java, una volta che una variabile locale riceve un valore iniziale, essa è inizializzata per sempre. Eventuali assegnamenti successivi modificano il valore memorizzato, ma non invalidano lo status di sicurezza della variabile. Non essendoci istruzioni in grado di riportare la variabile allo stato uninitialized, nessun nodo ha la capacità di uccidere questa informazione.
 
-4. **Se una variabile viene ridefinita più volte nel ciclo (come processed o idx), perché il suo kill set rimane comunque vuoto nel tuo modello?**
-   *Cosa dire:* Perché l'analisi non serve a tracciare la freschezza di un valore o l'equivalenza delle espressioni, ma unicamente lo stato di "avvenuta inizializzazione". Una volta che un'istruzione assegna un valore iniziale a `idx`, la variabile è inizializzata. Qualsiasi incremento o modifica successiva non distrugge questa proprietà.
-
-5. **Mostra matematicamente perché la riga 33 genera una violazione secondo i tuoi insiemi.**
-   *Cosa dire:* Alla riga 33 l'insieme di uso è $use(33) = \{sum, processed\}$. L'insieme calcolato dall'analisi in quel punto è $Avail(33) = \{values, cutoff, idx, count, processed\}$. Applicando la formula di controllo del difetto, abbiamo che $use(33) \setminus Avail(33) = \{sum\} \neq \emptyset$. Poiché il set risultante non è vuoto, viene segnalata formalmente l'anomalia su `sum`.
-```
+4. **In cosa differisce l'uso dell'Avail Analysis in questo esercizio rispetto all'applicazione classica descritta nel libro di testo?**
+   *Cosa dire:* Nella teoria classica l'Avail analizza le *espressioni matematiche* per evitare che la CPU esegua calcoli duplicati, e il set Kill elimina le espressioni quando cambiano i loro operandi. In questo assignment, l'analisi è stata traslata ed istanziata direttamente sulle *variabili* per monitorare la sicurezza di lettura dello stato di inizializzazione, azzerando di conseguenza il set Kill.

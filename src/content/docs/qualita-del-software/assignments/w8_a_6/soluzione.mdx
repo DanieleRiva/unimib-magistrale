@@ -1,0 +1,87 @@
+---
+title: W8.A6 - La mia soluzione (Model Based)
+description: Derivazione di Decision Tables e Grammatiche XML per il testing.
+sidebar:
+  order: 11
+---
+
+import tracciaImg from './traccia.png';
+
+export const solutionPdf = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assignments/w8_a6/soluzione.pdf`;
+
+> **Soluzione e difesa - Assignment W8.A6.**
+> Argomento → vedi [Model-Based Testing](/qualita-software/model-based-testing/).
+> Qui sta il *perché* di ogni scelta: è la guida alla difesa orale di un assignment complesso. Il calcolo degli sconti e i limiti grammaticali sono punti di forza assoluti.
+> Stato: **non ancora valutato dal professore**.
+
+<details>
+  <summary><strong>Traccia dell'assignment</strong></summary>
+  <img
+    src={tracciaImg.src}
+    alt="Traccia W8.A6"
+    style={{ maxWidth: '100%', height: 'auto', marginTop: '1rem', borderRadius: '6px' }}
+  />
+</details>
+
+<details>
+  <summary><strong>La mia soluzione consegnata (PDF)</strong></summary>
+  <iframe
+    src={solutionPdf}
+    title="Soluzione W8.A6"
+    style={{ width: '100%', height: '80vh', border: '1px solid var(--sl-color-gray-5)', borderRadius: '6px', marginTop: '1rem' }}
+  />
+  <p style={{ marginTop: '0.5rem', fontSize: '0.9em' }}>
+    <a href={solutionPdf} target="_blank" rel="noopener">Apri il PDF in una nuova scheda</a>
+  </p>
+</details>
+
+## La traccia in breve
+
+L'assignment è diviso in due parti che testano due tecniche distinte di Model-Based Testing:
+1. **Part I (Decision Table):** Date le specifiche di pricing di un autonoleggio (classe veicolo, durata, tipo cliente, sconti impilabili, add-ons e limitazioni), derivare una Decision Table completa, pulirla con i Constraints (vincoli) ed estrarre i test cases per la Basic Condition Coverage.
+2. **Part II (Grammar-based):** Dato un frammento di XML Schema (XSD) per il profilo di un impiegato HR (con limiti come `maxOccurs="3"` o `unbounded`), derivare la grammatica in formato BNF adatta per il testing.
+
+## Difesa della Parte I: La Decision Table (Car Rental)
+
+Ho strutturato la tabella isolando prima tutte le "Condizioni Elementari" a sinistra (Economy, Standard, SUV, 1-2 giorni, Regular, VIP, Weekday, ecc.) e calcolando i prezzi finali nella riga in basso. Ho prodotto 15 colonne (15 Test Cases). 
+
+### I tre punti di forza da esporre all'orale
+
+1. **L'applicazione rigorosa dei Constraints (Vincoli logici)**
+   *Cosa dire:* Le combinazioni teoriche di queste variabili sarebbero migliaia. Per ridurle ai 15 casi sensati, ho applicato e dichiarato formalmente i vincoli di business.
+   - Ho usato `exactly-one` per i gruppi mutuamente esclusivi (es. un noleggio è o di 1-2 giorni, o 3-5, o 6+, non può essere due cose insieme).
+   - Ho usato le implicazioni logiche per i vincoli di business: `VIP -> (Standard V SUV)` per gestire il fatto che ai VIP è vietata la classe Economy, e `SUV -> (3 to 5 days V 6+ days)` per gestire il noleggio minimo di 3 giorni.
+
+2. **Il calcolo degli sconti Multiplicativi (Stacking)**
+   *Cosa dire:* La traccia specificava esplicitamente "Discounts stack multiplicatively, not additively". Un errore classico è sommare le percentuali. Io ho modellato il calcolo correttamente. Ad esempio, se un Member (sconto 5%) noleggia per 3-5 giorni (sconto 10%), lo sconto finale non è 15%. Il calcolo corretto che ho inserito è $1 - (0.90 \times 0.95) = 14.5\%$. Aver inserito questo schema nella legenda dimostra di aver letto con attenzione le specifiche.
+
+3. **L'ordine di applicazione delle tariffe**
+   *Cosa dire:* Ho usato la variabile ausiliaria `p` (prezzo scontato) per separare concettualmente la fase di noleggio base dai sovrapprezzi (Weekend, Airport) e dagli add-ons (GPS, Child Seat), applicandoli alla fine come richiesto ("Surcharges are applied after all discounts", "Add-ons are never discounted").
+
+## Difesa della Parte II: La Grammatica XML (HR Profile)
+
+Ho tradotto le direttive dello schema XML (`xs:sequence`, `xs:element`) nelle produzioni canoniche in stile Backus-Naur Form (BNF).
+
+### Il punto di forza da esporre all'orale: I Bound convenzionali
+
+*Cosa dire:* Il punto più critico del grammar-based testing è la gestione della ricorsione e dei limiti. 
+Per la lista dei dipartimenti, lo schema XSD dava un limite fisso (`maxOccurs="3"`), che io ho tradotto annotando la produzione con un bound chiuso `[3]`.
+Per le liste `skills` e `projects`, lo schema indicava `maxOccurs="unbounded"`. Tuttavia, per poter eseguire il test delle boundary conditions (come spiegato nelle slide di teoria con le regole min, min+1, max-1, max), l'infinito non è testabile. Ho quindi adottato e dichiarato una bound convenzionale fissa `[10]`, seguendo la best practice e in totale linea con la soluzione ufficiale del professore per l'assignment `W7.H6`. Questo mi permette di generare stringhe ai limiti in modo deterministico.
+
+## La critica all'output GAI (Intelligenza Artificiale)
+
+Se ti chiedono un commento sui risultati di un LLM (ChatGPT/Gemini) applicato a questo assignment:
+
+- **Dove fallisce il GAI (Parte I - Tabella):** I modelli linguistici faticano enormemente a generare Decision Tables compresse correttamente. Tendono a dimenticare i vincoli impliciti, generando colonne "fantasma" in cui un utente VIP noleggia un'Economy (violando il constraint esplicito) o inventando prezzi in cui sommano additivamente il 10% e il 5% restituendo uno sconto del 15% netto, ignorando brutalmente il vincolo "multiplicatively". 
+- **Dove fallisce il GAI (Parte II - Grammatica):** Le AI traducono bene da XML a BNF, ma raramente applicano i tag di bounding `[k]` alle regole di ripetizione (come `unbounded`). Consegnano una grammatica pura, che però è inservibile in un contesto accademico di testing perché impedisce la generazione formale dei Boundary test cases. Serve sempre l'intervento umano per chiudere e annotare le regole ricorsive.
+
+## Domande di difesa probabili
+
+1. **Perché hai limitato a 15 il numero delle colonne della tua Decision Table? Potevano essercene di più?**
+   *Cosa dire:* Certo, il prodotto cartesiano di tutti i booleani produrrebbe centinaia di colonne. Le ho ridotte a 15 perché ho puntato alla "Basic condition adequacy criterion", ovvero assicurare almeno un caso di test per ogni colonna valida rimasta dopo l'applicazione spietata dei vincoli di consistenza (mutua esclusione e regole di business restrittive).
+
+2. **Cosa significa l'annotazione `[3] <departmentList>` nella tua grammatica? A cosa serve operativamente nel testing?**
+   *Cosa dire:* Significa che la produzione può applicarsi ricorsivamente al massimo 3 volte. Nel contesto del grammar-based testing, mi serve per l'Adequacy criterion dei "Boundary conditions". Sapendo che il limite è 3, genererò casi di test che ripetono il dipartimento 0 volte (minimo), 1 volta (min+1), 2 volte (max-1) e 3 volte (massimo).
+
+3. **Fammi vedere come hai calcolato lo sconto per un VIP che noleggia per 7 giorni (Test Case T9).**
+   *Cosa dire:* Il VIP ha diritto al 12% di sconto sul cliente. Un noleggio di 6+ giorni garantisce il 20% di sconto sulla durata. Essendo cumulabili in modo moltiplicativo, il cliente paga l'88% dell'80% del totale. Il calcolo è $(0.80 \times 0.88) = 0.704$, ovvero il cliente paga il 70.4%, ottenendo uno sconto effettivo del 29.6%, esattamente come riportato nella mia tabella per C9.
