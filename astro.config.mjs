@@ -76,7 +76,7 @@ export default defineConfig({
         starlight({
             title: 'UNIMIB Magistrale',
             logo: {
-                src: '/favicon.ico',
+                src: './src/assets/logo.png',
             },
             favicon: '/favicon.ico',
             customCss: [

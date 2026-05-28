@@ -1,44 +1,28 @@
-/* =========================================
-   TEMA SCURO (Default)
-   ========================================= */
 :root,
 :root[data-theme='dark'] {
-    /* Il rosso UNIMIB originale è troppo scuro. 
-       Uso una variante più luminosa e pastello (#d95e73) per garantire leggibilità e accessibilità. */
-    --sl-color-accent: #d95e73 !important;
-    --sl-color-accent-high: #f5dce1 !important;
-    /* Testo in altissimo contrasto (quasi bianco/rosato) */
-    --sl-color-accent-low: #4a1320 !important;
-    /* Sfondi tenui per badge, hover o elementi attivi */
+    --sl-color-accent: #a71e3b !important;
+    --sl-color-accent-high: #d9274d !important;
+    --sl-color-accent-low: #3a0813 !important;
 
-    /* Rimosse le dominanti blu. Uso grigi neutri e profondi 
-       per non "fare a pugni" col rosso dell'accento. */
-    --sl-color-bg: #111010 !important;
-    --sl-color-bg-nav: #1a1818 !important;
-    --sl-color-bg-sidebar: #1a1818 !important;
+    --sl-color-bg: #1e1e24 !important;
+    --sl-color-bg-nav: #16161b !important;
+    --sl-color-bg-sidebar: #16161b !important;
+    
+    --sl-color-text-accent: #a71e3b !important; 
 }
 
-/* =========================================
-   TEMA CHIARO
-   ========================================= */
 :root[data-theme='light'] {
-    /* Rosso ufficiale UNIMIB */
     --sl-color-accent: #a71e3b !important;
-    /* Colore per testi o bordi ad alto contrasto (rosso scurissimo/marrone) */
     --sl-color-accent-high: #591020 !important;
-    /* Sfondi per hover o badge (rosso chiarissimo/rosato) */
     --sl-color-accent-low: #fae6ea !important;
 
-    /* Sfondi vicini al bianco, resi neutri o leggermente caldi 
-       per intonarsi perfettamente al bordeaux istituzionale. */
     --sl-color-bg: #fdfcfc !important;
     --sl-color-bg-nav: #f5f4f4 !important;
     --sl-color-bg-sidebar: #f5f4f4 !important;
+    
+    --sl-color-text-accent: #a71e3b !important;
 }
 
-/* =========================================
-   FORZATURA STRUTTURALE (Fix per Tema Nova)
-   ========================================= */
 #starlight__sidebar,
 #starlight__sidebar .sidebar-content,
 #starlight__sidebar .nova-scroll-container {
@@ -50,10 +34,19 @@ header.header,
     background-color: var(--sl-color-bg-nav) !important;
 }
 
-/* =========================================
-   FIX PROGRESS BAR
-   ========================================= */
+:root[data-theme='dark'] .sl-markdown-content a:not(:hover) {
+    color: var(--sl-color-accent) !important;
+    text-decoration-color: rgba(167, 30, 59, 0.5) !important;
+}
+
+:root[data-theme='dark'] .sl-markdown-content a:hover {
+    color: #d9274d !important;
+    text-decoration-color: #a71e3b !important;
+    background-color: rgba(167, 30, 59, 0.2);
+    border-radius: 2px;
+}
+
 #scroll-progress {
     background-color: var(--sl-color-accent) !important;
-    box-shadow: 0 0 10px var(--sl-color-accent) !important;
+    box-shadow: 0 0 12px 2px rgba(167, 30, 59, 0.7) !important;
 }
