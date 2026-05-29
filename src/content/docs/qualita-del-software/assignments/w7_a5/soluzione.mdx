@@ -25,6 +25,19 @@ export const projectZip = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assign
 </details>
 
 <details>
+  <summary><strong>Codice sorgente allegato (ZIP)</strong></summary>
+  <div style={{ padding: '1rem', borderRadius: '6px', marginTop: '1rem', border: '1px solid var(--sl-color-gray-5)' }}>
+    <p style={{ margin: 0 }}>
+      Scarica il materiale di partenza fornito per l'assignment:
+      <br />
+      <a href={projectZip} download style={{ fontWeight: 'bold', display: 'inline-block', marginTop: '0.5rem' }}>
+        📁 HotelReservationSystem.zip
+      </a>
+    </p>
+  </div>
+</details>
+
+<details>
   <summary><strong>La mia soluzione consegnata (PDF)</strong></summary>
   <iframe
     src={solutionPdf}
@@ -42,7 +55,109 @@ L'obiettivo dell'assignment era progettare e applicare una Mutation Analysis man
 
 ## Il target sotto test
 
-Il sistema gestisce la prenotazione di stanze d'albergo, l'applicazione di sconti (VIP o basati sul numero e sul costo totale delle stanze), la verifica della colazione inclusa e l'elaborazione dei pagamenti. Il file `HotelReservationSystem.java` conteneva solo un metodo main non strutturato per il testing. Di conseguenza, l'analisi e la suite di test si sono concentrate sulla classe logica `Reservation.java`.
+Il sistema gestisce la prenotazione di stanze d'albergo, l'applicazione di sconti (VIP o basati sul numero e sul costo totale delle stanze), la verifica della colazione inclusa e l'elaborazione dei pagamenti. 
+
+Ecco il codice sorgente completo della classe `Reservation.java` analizzata:
+
+```java
+package org.example;
+
+import java.util.ArrayList;
+import java.util.List;
+
+class Room {
+    private String type;
+    private double price;
+
+    public Room(String type, double price) {
+        this.type = type;
+        this.price = price;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+}
+
+public class Reservation {
+    private List<Room> rooms;
+    private double totalCost;
+    private boolean discountApplied;
+    private boolean isPaid;
+
+    public Reservation() {
+        this.rooms = new ArrayList<>();
+        this.totalCost = 0;
+        this.discountApplied = false;
+        this.isPaid = false;
+    }
+
+    // Add a room to the reservation
+    public void addRoom(Room room) {
+        rooms.add(room);
+        totalCost += room.getPrice();
+    }
+
+    // Apply a discount based on certain conditions
+    public void applyDiscount(boolean isVIP) {
+        if (isVIP) {
+            totalCost *= 0.85; // 15% VIP discount
+            discountApplied = true;
+        } else if (rooms.size() >= 3 && totalCost > 500) {
+            totalCost *= 0.90; // 10% discount for 3+ rooms and total > $500
+            discountApplied = true;
+        } else if (rooms.size() == 2) {
+            totalCost *= 0.95; // 5% discount for exactly 2 rooms
+            discountApplied = true;
+        }
+    }
+
+    // Check if breakfast is included based on room types
+    public boolean isBreakfastIncluded() {
+        for (int i = 0; i < rooms.size(); i++) {
+            if (rooms.get(i).getType().equals("Suite")) {
+                return true; // Breakfast included with Suite room
+            }
+        }
+        return false;
+    }
+
+    // Process payment
+    public boolean processPayment(double paymentAmount) {
+        if (paymentAmount >= totalCost) {
+            isPaid = true;
+            return true;
+        } else if (paymentAmount > 0 && paymentAmount < totalCost) {
+            totalCost -= paymentAmount; // Partial payment reduces the total cost
+            return false;
+        } else {
+            return false; // Invalid or zero payment
+        }
+    }
+
+    // Check if the reservation can be canceled based on the payment and room types
+    public boolean canCancelReservation() {
+        if (isPaid) {
+            return false; // Cannot cancel after payment
+        }
+        for (int i = 0; i < rooms.size(); i++) {
+            if (rooms.get(i).getType().equals("Non-refundable")) {
+                return false; // Cannot cancel if any room is non-refundable
+            }
+        }
+        return true; // Otherwise, reservation can be canceled
+    }
+
+    // Get the total cost of the reservation
+    public double getTotalCost() {
+        return totalCost;
+    }
+}
+```
 
 ## La logica dietro la scelta dei mutanti (Non sono casuali!)
 
@@ -58,7 +173,7 @@ La scelta dell'operatore dipende esclusivamente dal tipo di istruzione bersaglio
 
 ## Cosa ho prodotto: I Mutanti scelti
 
-Seguendo questa logica, ho creato e testato 10 mutanti, di cui 8 utili (Useful) e 2 equivalenti (Equivalent), raggiungendo un Mutation Score del 100% poiché tutti i mutanti non equivalenti sono stati intercettati e uccisi dalla suite di test.
+Ho creato e testato 10 mutanti, di cui 8 utili (Useful) e 2 equivalenti (Equivalent), raggiungendo un Mutation Score del 100% poiché tutti i mutanti non equivalenti sono stati intercettati e uccisi dalla suite di test.
 
 I tre esempi più significativi da citare in sede d'esame sono:
 
@@ -66,16 +181,212 @@ I tre esempi più significativi da citare in sede d'esame sono:
 - **Il Mutante Matematico (M8 - AOR):** In `processPayment`, nel blocco dedicato al pagamento parziale, ho trasformato l'operatore di decremento `totalCost -= paymentAmount` in un incremento `totalCost += paymentAmount`. Simula un bug logico grave in cui un pagamento parziale aumenta il debito del cliente anziché ridurlo. È stato ucciso verificando che il costo finale si abbassi correttamente.
 - **Il Mutante da Connettore Logico (M5 - LCR):** In `applyDiscount`, ho sostituito l'operatore AND (`&&`) con un OR (`||`) nella condizione composta. Simula un fraintendimento delle specifiche. Il test per ucciderlo (`testE`) forniva 3 stanze ma un costo totale inferiore a 500: nel mutante lo sconto scattava ugualmente, fallendo l'asserzione sul prezzo pieno.
 
-## La caccia ai Mutanti Equivalenti
+## La logica dei Mutanti Equivalenti
 
-Saper riconoscere e isolare i mutanti equivalenti è fondamentale per dimostrare di aver compreso la differenza tra un cambiamento *sintattico* (il testo cambia) e un cambiamento *semantico* (il comportamento non cambia affatto).
+Saper riconoscere e isolare i mutanti equivalenti è fondamentale per dimostrare di avantaggiarsi della differenza tra un cambiamento *sintattico* (il testo cambia) e un cambiamento *semantico* (il comportamento non cambia affatto).
 
 - **Il ciclo a terminazione equivalente (M9 - ROR):** Nel ciclo di scansione delle stanze dentro `canCancelReservation`, ho mutato la condizione di permanenza da `i < rooms.size()` a `i != rooms.size()`. Dato che la variabile di controllo `i` parte da 0 e incrementa linearmente di 1 ad ogni iterazione, essa incontrerà sempre il valore di controllo esatto senza mai scavalcarlo. Di conseguenza, il numero di cicli e il comportamento a runtime rimangono identici. È un mutante equivalente impossibile da uccidere.
 - **Lo Statement Deletion ridondante (M10 - SDL):** Nel costruttore della classe `Reservation`, ho applicato l'operatore SDL (Statement Deletion) eliminando l'assegnamento esplicito `this.isPaid = false;`. Per specifica del linguaggio Java, i campi di istanza di tipo primitivo booleano vengono inizializzati automaticamente a `false` al momento dell'allocazione dell'oggetto in memoria. Rimuovere questa riga non altera in alcun modo lo stato semantico iniziale dell'oggetto, configurando un perfetto mutante equivalente.
 
+## La Test Suite JUnit 5
+
+Per uccidere i mutanti non equivalenti ho implementato una suite di 21 test utilizzando il framework JUnit 5, strutturata per validare in modo atomico ogni singolo metodo della classe sotto esame.
+
+Ecco l'implementazione completa della suite di test (`ReservationTest.java`):
+
+```java
+package org.example;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class ReservationTest {
+
+    private Reservation reservation;
+    private static final double DELTA = 0.001;
+
+    @BeforeEach
+    void setup() {
+        reservation = new Reservation();
+    }
+
+    // --- addRoom ---
+
+    @Test
+    void testA_addRoom_singleRoom_increasesTotalCost() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        assertEquals(100.0, reservation.getTotalCost(), DELTA);
+    }
+
+    @Test
+    void testB_addRoom_multipleRooms_sumsCosts() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        reservation.addRoom(new Room("Double Room", 200.0));
+        reservation.addRoom(new Room("Suite", 400.0));
+        assertEquals(700.0, reservation.getTotalCost(), DELTA);
+    }
+
+    // --- applyDiscount ---
+
+    @Test
+    void testC_applyDiscount_VIP_appliesFifteenPercent() {
+        reservation.addRoom(new Room("Suite", 1000.0));
+        reservation.applyDiscount(true);
+        assertEquals(850.0, reservation.getTotalCost(), DELTA);
+    }
+
+    @Test
+    void testD_applyDiscount_nonVIP_threeRoomsAndCostOver500() {
+        reservation.addRoom(new Room("Single Room", 200.0));
+        reservation.addRoom(new Room("Single Room", 200.0));
+        reservation.addRoom(new Room("Single Room", 200.0));
+        reservation.applyDiscount(false);
+        assertEquals(540.0, reservation.getTotalCost(), DELTA);
+    }
+
+    @Test
+    void testE_applyDiscount_nonVIP_threeRoomsLowCost_noDiscount() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        reservation.addRoom(new Room("Single Room", 100.0));
+        reservation.addRoom(new Room("Single Room", 100.0));
+        reservation.applyDiscount(false);
+        assertEquals(300.0, reservation.getTotalCost(), DELTA);
+    }
+
+    @Test
+    void testF_applyDiscount_nonVIP_exactlyTwoRooms_appliesFivePercent() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        reservation.addRoom(new Room("Single Room", 100.0));
+        reservation.applyDiscount(false);
+        assertEquals(190.0, reservation.getTotalCost(), DELTA);
+    }
+
+    @Test
+    void testG_applyDiscount_nonVIP_exactlyThreeRooms_boundary() {
+        reservation.addRoom(new Room("Single Room", 200.0));
+        reservation.addRoom(new Room("Single Room", 200.0));
+        reservation.addRoom(new Room("Single Room", 200.0));
+        reservation.applyDiscount(false);
+        assertEquals(540.0, reservation.getTotalCost(), DELTA);
+    }
+
+    @Test
+    void testH_applyDiscount_nonVIP_costJustOver500_boundary() {
+        reservation.addRoom(new Room("Single Room", 137.5));
+        reservation.addRoom(new Room("Single Room", 137.5));
+        reservation.addRoom(new Room("Single Room", 137.5));
+        reservation.addRoom(new Room("Single Room", 137.5));
+        reservation.applyDiscount(false);
+        assertEquals(495.0, reservation.getTotalCost(), DELTA);
+    }
+
+    @Test
+    void testI_applyDiscount_nonVIP_oneRoom_noDiscount() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        reservation.applyDiscount(false);
+        assertEquals(100.0, reservation.getTotalCost(), DELTA);
+    }
+
+    // --- isBreakfastIncluded ---
+
+    @Test
+    void testJ_isBreakfastIncluded_withSuite_returnsTrue() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        reservation.addRoom(new Room("Suite", 400.0));
+        assertTrue(reservation.isBreakfastIncluded());
+    }
+
+    @Test
+    void testK_isBreakfastIncluded_noSuite_returnsFalse() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        reservation.addRoom(new Room("Double Room", 200.0));
+        assertFalse(reservation.isBreakfastIncluded());
+    }
+
+    @Test
+    void testL_isBreakfastIncluded_noRooms_returnsFalse() {
+        assertFalse(reservation.isBreakfastIncluded());
+    }
+
+    // --- processPayment ---
+
+    @Test
+    void testM_processPayment_exactAmount_succeeds() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        assertTrue(reservation.processPayment(100.0));
+    }
+
+    @Test
+    void testN_processPayment_aboveAmount_succeeds() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        assertTrue(reservation.processPayment(200.0));
+    }
+
+    @Test
+    void testO_processPayment_partialPayment_reducesTotalCost() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        boolean result = reservation.processPayment(40.0);
+        assertFalse(result);
+        assertEquals(60.0, reservation.getTotalCost(), DELTA);
+    }
+
+    @Test
+    void testP_processPayment_zeroPayment_returnsFalse() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        assertFalse(reservation.processPayment(0.0));
+    }
+
+    @Test
+    void testQ_processPayment_negativePayment_returnsFalse() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        assertFalse(reservation.processPayment(-50.0));
+    }
+
+    // --- canCancelReservation ---
+
+    @Test
+    void testR_canCancelReservation_default_returnsTrue() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        assertTrue(reservation.canCancelReservation());
+    }
+
+    @Test
+    void testS_canCancelReservation_afterPayment_returnsFalse() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        reservation.processPayment(100.0);
+        assertFalse(reservation.canCancelReservation());
+    }
+
+    @Test
+    void testT_canCancelReservation_nonRefundableRoom_returnsFalse() {
+        reservation.addRoom(new Room("Single Room", 100.0));
+        reservation.addRoom(new Room("Non-refundable", 200.0));
+        assertFalse(reservation.canCancelReservation());
+    }
+
+    @Test
+    void testU_canCancelReservation_emptyRooms_returnsTrue() {
+        assertTrue(reservation.canCancelReservation());
+    }
+}
+```
+
+## Come funziona JaCoCo nella pratica
+
+Per misurare l'efficacia di questa suite di test, ho utilizzato **JaCoCo**, una libreria open-source che calcola la code coverage lavorando non sui file sorgenti `.java`, ma direttamente sul codice compilato, effettuando un processo chiamato **instrumentazione del bytecode**. 
+
+Il ciclo di funzionamento si sviluppa in tre momenti distinti:
+
+1. **L'Instrumentazione (On-the-fly):** Quando la suite di test viene avviata, JaCoCo intercetta le classi compilate (`.class`) prima che vengano caricate in memoria dalla JVM. Inietta dinamicamente delle "sonde" (*probes*), ovvero dei contatori booleani leggerissimi, all'interno di ogni blocco lineare di codice e in corrispondenza di ogni punto di decisione (archi del grafo di controllo).
+2. **L'Esecuzione dei Test:** Durante l'esecuzione dei metodi JUnit, ogni volta che un test attraversa una riga di codice, la sonda ad essa associata si attiva impostando il proprio stato a `true`. Tutti i dati di tracciamento vengono memorizzati in tempo reale e scaricati in un file binario di sessione chiamato `jacoco.exec`.
+3. **La Generazione del Report:** Al termine del processo, il motore di JaCoCo prende il file binario `.exec` e lo incrocia con il codice sorgente originale. Genera così un report visivo interattivo in formato HTML dove le righe di codice vengono colorate: *Verde* (riga interamente coperta), *Rosso* (riga mai eseguita) e *Giallo* (ramo logico condizionale valutato solo parzialmente).
+
+Nei progetti reali il processo è completamente automatizzato tramite build tool (come Maven o Gradle); basta lanciare il comando di test per trovare il report aggiornato riga per riga all'interno della cartella di build `target/site/jacoco/`.
+
 ## Il riscontro sul Branch Coverage: Analisi del Dead Code
 
-La test suite sviluppata ha raggiunto il 100% di Statement Coverage e il 95.8% di Branch Coverage. Questa mancanza non è dovuta a un'omissione nei test, ma rivela un problema strutturale nel codice originale fornito.
+Incrociando i dati di JaCoCo, la test suite sviluppata ha raggiunto il **100% di Statement Coverage** e il **95.8% di Branch Coverage**. Questa mancanza non è dovuta a un'omissione nei test, ma rivela un problema strutturale (un blocco di codice morto) nel codice originale fornito.
 
 *Come argomentare la difesa:*
 "Professore, analizzando il report di copertura generato con JaCoCo, ho riscontrato l'impossibilità di coprire un singolo ramo nel metodo `processPayment`. Il codice originale presenta la seguente struttura condizionale:
@@ -91,4 +402,7 @@ Se il flusso di esecuzione fallisce il primo controllo e passa al blocco `else i
    *Cosa dire:* Un mutante si definisce equivalente quando la modifica introdotta altera la sintassi del codice ma lascia la semantica e il comportamento del programma totalmente inalterati rispetto alla versione originale. Non si possono uccidere perché, producendo gli stessi identici output per qualunque input possibile, nessuna asserzione di test potrà mai fallire.
 
 2. **Perché per l'operatore ROR del mutante M1 hai dovuto usare un test case con esattamente 3 stanze per ucciderlo?**
-   *Cosa dire:* Perché l'operatore cambia `>= 3` in `> 3`. Se avessi usato un caso di test con 4 o più stanze, sia il programma originale che il mutante avrebbero valutato la condizione come vera, applicando lo sconto e facendo sopravvivere il bug. Solo testando il valore di frontiera esatto
+   *Cosa dire:* Perché l'operatore cambia `>= 3` in `> 3`. Se avessi usato un caso di test con 4 o più stanze, sia il programma originale che il mutante avrebbero valutato la condizione come vera, applicando lo sconto e facendo sopravvivere il bug. Solo testando il valore di frontiera esatto (3 stanze) il programma originale applica lo sconto mentre il mutante lo salta, generando la discrepanza necessaria a ucciderlo.
+
+3. **In cosa differiscono la Competent Programmer Hypothesis e la Coupling Effect Hypothesis?**
+   *Cosa dire:* La Competent Programmer Hypothesis assume che i programmatori producano codice quasi corretto e che i bug reali siano piccole variazioni sintattiche dovute a distrazioni. La Coupling Effect Hypothesis afferma invece che una suite di test abbastanza accurata da individuare ed eliminare questi piccoli difetti atomici sarà indirettamente in grado di intercettare anche i bug complessi e combinati presenti nel software.
