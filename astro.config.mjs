@@ -57,6 +57,18 @@ const sidebarCorsi = [
                         label: '[W8_A6] Model-Based Testing',
                         link: '/qualita-del-software/assignments/w8_a6/soluzione'
                     },
+                    {
+                        label: '[W9_A7] Test Oracles',
+                        link: '/qualita-del-software/assignments/w9_a7/soluzione'
+                    },
+                    {
+                        label: '[W10_A8] Symbolic Execution',
+                        link: '/qualita-del-software/assignments/w10_a8/soluzione'
+                    },
+                    {
+                        label: '[W11_A9] Dynamic Symbolic Execution',
+                        link: '/qualita-del-software/assignments/w11_a9/soluzione'
+                    },
                 ]
             },
         ]

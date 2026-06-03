@@ -1,0 +1,233 @@
+---
+title: W9.A7 - La mia soluzione (Oracles)
+description: Derivazione di oracoli assiomatici (Pre, Post ed Exceptional conditions) per metodi Java.
+sidebar:
+  order: 13
+---
+
+import tracciaImg from './traccia.png';
+
+export const solutionPdf = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assignments/w9_a7/soluzione.pdf`;
+
+> **Soluzione e difesa - Assignment W9.A7.**
+> Argomento → vedi [Test Oracles](/unimib-magistrale/qualita-del-software/teoria/07-test-oracles/).
+> Qui sta il *perché* di ogni scelta: è la guida per la difesa all'orale in cui spiego la traduzione rigorosa dal linguaggio naturale (Javadoc) alla logica booleana formale (Oracoli Assiomatici), con un focus fortissimo sull'uso dell'implicazione logica.
+> Stato: **Non valutato** ⏳
+
+<details>
+  <summary><strong>Traccia dell'assignment</strong></summary>
+  <img
+    src={tracciaImg.src}
+    alt="Traccia W9.A7"
+    style={{ maxWidth: '100%', height: 'auto', marginTop: '1rem', borderRadius: '6px' }}
+  />
+</details>
+
+<details>
+  <summary><strong>La mia soluzione consegnata (PDF)</strong></summary>
+  <iframe
+    src={solutionPdf}
+    title="Soluzione W9.A7"
+    style={{ width: '100%', height: '80vh', border: '1px solid var(--sl-color-gray-5)', borderRadius: '6px', marginTop: '1rem' }}
+  />
+  <p style={{ marginTop: '0.5rem', fontSize: '0.9em' }}>
+    <a href={solutionPdf} target="_blank" rel="noopener">Apri il PDF in una nuova scheda</a>
+  </p>
+</details>
+
+## La traccia in breve
+
+L'obiettivo dell'assignment era analizzare quattro metodi Java (completi di implementazione e commenti Javadoc) e derivare per ciascuno i relativi **Oracoli Assiomatici**. 
+Un oracolo assiomatico formalizza il *Design by Contract* di un metodo, scomponendolo in tre espressioni booleane valutabili a runtime:
+1.  **Pre-conditions:** Cosa si aspetta il metodo in ingresso (i vincoli da rispettare).
+2.  **Post-conditions:** Cosa garantisce il metodo in uscita (lo stato o il valore di ritorno).
+3.  **Exceptional conditions:** Quando e perché il metodo deve sollevare un'eccezione (solitamente in risposta a una violazione della precondizione).
+
+## La logica dietro le scelte: Tradurre Javadoc in Logica Booleana
+
+L'esercizio richiede precisione chirurgica. Non si tratta di riassumere il codice, ma di costruire una "barriera" matematica attorno al metodo. 
+
+**Il punto cardine della mia soluzione (Punto per l'orale):**
+Nelle *Postconditions* ho sistematicamente utilizzato l'operatore ternario di Java: `true ? postcondizione : true;`.
+Perché l'ho fatto? Nel testing formale, una Postcondizione è subordinata al rispetto della Precondizione. Si tratta di un'**Implicazione Logica** ($A \rightarrow B$). 
+Scrivere `true ? (result > 0) : true` significa: valuta se `result > 0` solo se la condizione base è vera. L'uso di questa struttura dimostra che non sto solo controllando brutalmente l'output, ma sto modellando il contratto logico del metodo in modo formalmente ineccepibile.
+
+---
+
+## Metodo 1: `isValidIndex`
+
+<details>
+<summary><strong>Mostra il codice del metodo</strong></summary>
+
+```java
+/**
+ * Checks if the specified index is within the bounds of the array.
+ * * @param array the array to check, not null
+ * @param index the index to check
+ * @return true if index is valid (0 <= index < array.length)
+ * @throws IllegalArgumentException if array is null
+ */
+public static boolean isValidIndex(Object[] array, int index) {
+    if (array == null) {
+        throw new IllegalArgumentException("Array cannot be null");
+    }
+    return index >= 0 && index < array.length;
+}
+```
+
+</details>
+
+### Le mie derivazioni e le motivazioni profonde
+- **Preconditions:** `array != null;`
+  *Perché l'ho scelto:* La regola base del Design by Contract è che la precondizione si estrae dal blocco `@param`. Il Javadoc recita esplicitamente `the array to check, not null`. È il vincolo minimo imposto al chiamante.
+- **Postconditions:** `true ? result == (index >= 0 && index < array.length) : true;`
+  *Perché l'ho scelto:* Il tag `@return` non lascia spazio a interpretazioni, fornisce direttamente la disuguaglianza matematica. L'oracolo deve assertare che la variabile di ritorno (`result`) sia *esattamente uguale* all'esito della formula booleana `(index >= 0 && index < array.length)`.
+- **Exceptional conditions:** `array == null;`
+  *Perché l'ho scelto:* Estratto in modo "White-box" dal codice (la guardia `if` in cima) e validato in modo "Black-box" dal Javadoc (`@throws IllegalArgumentException if array is null`).
+
+---
+
+## Metodo 2: `parsePositiveInt`
+
+<details>
+<summary><strong>Mostra il codice del metodo</strong></summary>
+
+```java
+/**
+ * Parses a positive integer from the string.
+ * Leading/trailing whitespace ignored.
+ * * @param str the string to parse, not null
+ * @return the integer value
+ * @throws NumberFormatException if not a valid positive integer
+ */
+public static int parsePositiveInt(String str) {
+    String trimmed = str.trim();
+    if (trimmed.isEmpty() || !trimmed.matches("\\d+")) {
+        throw new NumberFormatException("Invalid positive integer");
+    }
+    int value = Integer.parseInt(trimmed);
+    if (value <= 0) {
+        throw new NumberFormatException("Value must be positive");
+    }
+    return value;
+}
+```
+
+</details>
+
+### Le mie derivazioni e le motivazioni profonde
+- **Preconditions:** `str != null;`
+  *Perché l'ho scelto:* È scritto nel `@param str... not null`. Più importante ancora, a livello logico, se la precondizione non vietasse il `null`, la primissima riga di codice `str.trim()` provocherebbe una `NullPointerException`. Un NPE è un oracolo implicito non gestito, sintomo di un contratto violato brutalmente.
+- **Postconditions:** `true ? result > 0 : true;`
+  *Perché l'ho scelto:* Il metodo si chiama `parsePositiveInt` e il `@return` promette "the integer value". Insieme alla semantica del metodo, l'assioma forte è che l'output ritornato (`result`) deve essere *strettamente maggiore* di zero.
+- **Exceptional conditions:** `str.trim().isEmpty() || !str.trim().matches("\\d+") || Integer.parseInt(str.trim()) <= 0;`
+  *Perché l'ho scelto:* In questo caso l'eccezione `NumberFormatException` viene sollevata in due punti diversi del codice per motivi diversi (o è una stringa non numerica, o è un numero negativo/zero). Per costruire un oracolo solido ho combinato logicamente le condizioni dei due `if` usando l'operatore OR (`||`). Se *almeno una* di queste condizioni è vera, mi aspetto il lancio dell'eccezione.
+
+---
+
+## Metodo 3: `filterEvens`
+
+<details>
+<summary><strong>Mostra il codice del metodo</strong></summary>
+
+```java
+/**
+ * Filters list to even numbers only.
+ * * @param list input list of integers, not null
+ * @param capacity max size of output list
+ * @return filtered list, never null
+ * @throws IllegalArgumentException if list null or capacity < 0
+ */
+public static List<Integer> filterEvens(List<Integer> list, int capacity) {
+    if (list == null || capacity < 0) {
+        throw new IllegalArgumentException("Invalid input");
+    }
+    List<Integer> result = new ArrayList<>();
+    for (Integer num : list) {
+        if (num != null && num % 2 == 0) {
+            if (result.size() < capacity) {
+                result.add(num);
+            } else {
+                break;
+            }
+        }
+    }
+    return result;
+}
+```
+
+</details>
+
+### Le mie derivazioni e le motivazioni profonde
+- **Preconditions:** `list != null && capacity >= 0;`
+  *Perché l'ho scelto:* Questo è il duale logico perfetto (Negazione di De Morgan) delle condizioni di eccezione. Affinché il metodo possa fare il suo lavoro, l'input deve essere sano: la lista non deve essere nulla AND la capacità deve essere maggiore o uguale a zero.
+- **Postconditions:** 1. `true ? result != null && result.size() <= capacity : true;`
+  2. `true ? result.stream().allMatch(n -> n != null && n % 2 == 0) : true;`
+  *Perché l'ho scelto:* Questo metodo promette *due* cose distinte nel Javadoc e nel codice. La prima riga del mio oracolo verifica il `@return` sulla struttura (la lista in uscita non deve essere nulla e non deve sfondare il tetto massimo della `capacity`). La seconda riga verifica l'integrità del *contenuto* tramite Java Stream API: controlla brutalmente che nessun elemento all'interno sia nullo e che tutti siano matematicamente pari (`n % 2 == 0`).
+- **Exceptional conditions:** `list == null || capacity < 0;`
+  *Perché l'ho scelto:* È la copia esatta del blocco difensivo in testa al metodo. L'ho estratto in modalità White-box.
+
+---
+
+## Metodo 4: `isValidUsername`
+
+<details>
+<summary><strong>Mostra il codice del metodo</strong></summary>
+
+```java
+/**
+ * Validates a username for account creation.
+ *
+ * A valid username:
+ * - is not null
+ * - has length between 4 and 12 characters inclusive
+ * - starts with a letter
+ * - contains only letters, digits, or underscore
+ *
+ * @param username the username to validate
+ * @return true if the username is valid, false otherwise
+ * @throws IllegalArgumentException if username is null
+ */
+public static boolean isValidUsername(String username) {
+    if (username == null) {
+        throw new IllegalArgumentException("Username cannot be null");
+    }
+    if (username.length() < 4 || username.length() > 12) {
+        return false;
+    }
+    char first = username.charAt(0);
+    if (!Character.isLetter(first)) {
+        return false;
+    }
+    for (int i = 0; i < username.length(); i++) {
+        char c = username.charAt(i);
+        if (!(Character.isLetterOrDigit(c) || c == '_')) {
+            return false;
+        }
+    }
+    return true;
+}
+```
+
+</details>
+
+### Le mie derivazioni e le motivazioni profonde
+- **Preconditions:** `username != null;`
+  *Perché l'ho scelto:* Di nuovo, precondizione esplicitata dalla presenza della `IllegalArgumentException` nel Javadoc.
+- **Postconditions:** `true ? result == (username.length() >= 4 && username.length() <= 12 && Character.isLetter(username.charAt(0)) && username.chars().allMatch(c -> Character.isLetterOrDigit(c) || c == '_')) : true;`
+  *Perché l'ho scelto:* Invece di fare una traduzione discorsiva, ho optato per un oracolo fortemente matematico. Il metodo promette di valutare 4 regole specifiche. Ho concatenato logicamente tutte e 4 le regole (lunghezza, primo carattere, match dei caratteri successivi) usando `&&`. Il risultato del metodo (`result`) deve coincidere col risultato di questa mostruosa espressione. Se la regex passa ma il metodo ritorna `false`, c'è un bug.
+- **Exceptional conditions:** `username == null;`
+  *Perché l'ho scelto:* Unica eccezione documentata (`@throws`) per input invalido, mappata direttamente.
+
+---
+
+## Domande di difesa probabili (Roleplay)
+
+1. **Professore:** "Noto che in tutte le Postconditions hai usato la sintassi con l'operatore ternario `true ? espressione : true;`. Qual è il significato logico di questa scelta in un Oracolo Assiomatico?"
+   **Risposta:** "È la traduzione in linguaggio di programmazione dell'implicazione logica ($Pre \rightarrow Post$). Nel Design by Contract, il metodo promette di rispettare la Postcondizione *solamente* se il chiamante ha rispettato la Precondizione. Se l'input fornito fosse nullo (violando la precondizione), la formula diventa banale (Vacuously True, ritorna `true` di default ignorando il controllo), poiché il sistema andrà giustamente in blocco tramite le Exceptional conditions senza mai raggiungere o dover rispettare le Postconditions."
+
+2. **Professore:** "Nel metodo 3 (`filterEvens`), perché hai separato le Postconditions in due formule distinte invece di fare un enorme blocco con un operatore AND?"
+   **Risposta:** "Per una questione di leggibilità e di scomposizione della logica dell'oracolo. Il metodo garantiva due insiemi di proprietà molto distinte: una riguardava i limiti architetturali e i null pointer (la capacity e il result != null), l'altra riguardava la correttezza del dominio matematico (i numeri devono essere pari). Dividerli permette, in caso di test fallito, di capire immediatamente *quale* garanzia del contratto sia saltata."
+
+3. **Professore:** "Nel metodo 4 (`isValidUsername`), la sua Postcondition usa l'API Stream (`username.chars().allMatch(...)`). Avrebbe potuto descriverla in modo più semplice?"
+   **Risposta:** "Si sarebbe potuta semplificare sacrificando il rigore. L'obiettivo di un Oracolo è essere valutabile da una macchina. Usare l'API Stream mi ha permesso di condensare in una singola formula elegante ed eseguibile il terzo bullet-point del Javadoc (*'contains only letters, digits, or underscore'*), creando un oracolo che non lascia spazio all'ambiguità tipica del linguaggio umano."
