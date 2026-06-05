@@ -6,6 +6,7 @@ sidebar:
 ---
 
 import tracciaImg from './traccia.png';
+import c10_15_Img from './1780676723949.jpeg';
 
 export const solutionPdf = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assignments/w8_a6/soluzione.pdf`;
 
@@ -38,84 +39,64 @@ export const solutionPdf = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assig
 ## La traccia in breve
 
 L'assignment è diviso in due parti che esplorano tecniche distinte di Model-Based Testing per tradurre i requisiti in modelli verificabili:
-1. **Parte I (Decision Table):** Date le specifiche logiche per le tariffe di un autonoleggio (classe del veicolo, durata del noleggio, tipo di cliente, regole sugli sconti impilabili, opzioni aggiuntive e restrizioni), derivare una Decision Table completa, pulirla eliminando le combinazioni impossibili tramite i Constraints (vincoli) ed estrarre i casi di test per coprire adeguatamente le condizioni.
-2. **Parte II (Grammar-based):** Dato un frammento di XML Schema (XSD) che definisce il profilo HR di un impiegato, derivare la grammatica equivalente in formato BNF e predisporla per il test delle *boundary conditions*.
-
----
+1. **Parte I (Decision Table):** Date le specifiche logiche per le tariffe di un autonoleggio (classe del veicolo, durata del noleggio, tipo di cliente, regole sugli sconti impilabili, opzioni aggiuntive e restrizioni), derivare una Decision Table completa, pulirla eliminando le combinazioni impossibili tramite i Constraints (vincoli) ed estrarre i casi di test per coprire adeguatamente le condizioni logiche.
+2. **Parte II (Grammar-based):** Dato un frammento di XML Schema (XSD) che definisce il profilo HR di un impiegato (con limiti numerici come `maxOccurs="3"` o `unbounded`), derivare la grammatica equivalente in formato BNF e predisporla per il test delle *boundary conditions*.
 
 ## Difesa della Parte I: La Decision Table (Car Rental)
 
-### 1. Come ho gestito le variabili infinite: I Constraints
-*Il problema:* Con dozzine di condizioni booleane (Economy, SUV, 1-2 days, VIP, ecc.), il prodotto cartesiano genererebbe centinaia di righe inutili. 
-*Come l'ho risolto:* Ho applicato un'analisi rigorosa dichiarando esplicitamente i vincoli di business alla fine del mio documento:
+Ho strutturato la Decision Table isolando tutte le condizioni elementari booleane a sinistra (Economy, Standard, SUV, Regular, VIP, Weekday, ecc.) e calcolando i prezzi finali attesi nella riga di output in basso. Ho prodotto una tabella compressa di 15 colonne (da C1 a C15), che corrispondono a 15 Clienti Immaginari o 15 Casi di Test.
 
-```text
-Constraints
-- exactly-one (Economy, Standard, SUV)
-- exactly-one (1 to 2 days, 3 to 5 days, 6+ days)
-- exactly-one (Regular, Member, VIP)
-- SUV -> (3 to 5 days V 6+ days) [SUV requires a minimum of 3 days]
-- VIP -> (Standard V SUV) [VIP cannot rent Economy]
-```
+### 1. La logica della lettura in Verticale e dei Don't Care (`-`)
 
-*Cosa dire all'orale:* "Per evitare un'esplosione combinatoria, ho ripulito il modello prima di generare i test. Ho usato operatori come `exactly-one` per le scelte mutualmente esclusive (un'auto non può essere un SUV e un'Economy insieme). Inoltre, ho formalizzato i vincoli aziendali usando l'implicazione logica: scrivendo `VIP -> (Standard V SUV)`, ho garantito matematicamente che nessuna colonna della mia tabella potesse associare un cliente VIP a un'utilitaria, eliminando i test case illegali."
+Per evitare un'esplosione combinatoria, ho usato un design avanzato per la tabella, in particolare per le colonne dei servizi extra. Le tabelle si leggono *esclusivamente in verticale*.
 
-### 2. Il cuore dell'esercizio: Gli sconti Multiplicativi
-*Il problema:* La traccia diceva "Discounts stack multiplicatively, not additively". Le AI o gli studenti disattenti fanno 10% + 5% = 15%. Questo distrugge il bilancio aziendale.
-*Come l'ho risolto:* Ho creato una Legenda in cui ho calcolato le aliquote esatte incrociando i coefficienti di sconto. Ecco un estratto reale dal mio PDF:
+Prendiamo come esempio la colonna **C11**, progettata per testare specificamente la regola aziendale del sovrapprezzo per il ritiro in aeroporto (Airport pickup):
 
-> **Combined discount values:** > - at 1 to 2 days Member = 5%, VIP = 12%; 
-> - at 3 to 5 days Regular = 10%, **Member = $1 - 0.9 \cdot 0.95 = 14.5\%$**, VIP = $1 - 0.9 \cdot 0.88 = 20.8\%$; 
-> - at 6+ days Regular = 20%, Member = $1 - 0.8 \cdot 0.95 = 24\%$, **VIP = $1 - 0.8 \cdot 0.88 = 29.6\%$**.
+<img
+  src={c10_15_Img.src}
+  alt="Sezione Add-ons Decision Table"
+  style={{ maxWidth: '100%', height: 'auto', marginTop: '1rem', borderRadius: '6px', border: '1px solid var(--sl-color-gray-5)' }}
+/>
 
-*Cosa dire all'orale:* "Ho calcolato lo *stacking* in sequenza sul prezzo residuo. Se un cliente è VIP (sconto 12%) e noleggia per più di 6 giorni (sconto 20%), ho fatto in modo che il modello pagasse prima l'80% e poi l'88% di quell'80%. Calcolando $(0.80 \times 0.88) = 0.704$, ho dimostrato che lo sconto effettivo combinato non è 32%, ma esattamente il **29.6%**."
+*Cosa rispondere all'orale su questa colonna:*
+"Scendendo lungo la colonna C11, il programma incontra una serie di trattini (`-`). Questi sono i **Don't Care conditions**. Significa che per testare il sovrapprezzo dell'aeroporto, non mi importa per quanti giorni il cliente noleggia o se è VIP: assumo che queste scelte generino un prezzo base già scontato, indicato in basso con la variabile `$p`. 
+Tuttavia, ho dovuto mettere una `F` (Falso) in corrispondenza dell'auto 'Economy'. Perché? Perché i vincoli di business forniti vietavano il ritiro in aeroporto per le auto Economy. Se avessi messo un trattino, un tester avrebbe potuto scrivere un caso di test illegale e incoerente con le direttive dell'autonoleggio."
 
-### 3. I Test Cases finali
-*Come li ho estratti:* Ho preso le 15 colonne valide sopravvissute ai constraints e le ho tradotte in Test Cases concreti. Ho anche separato le opzioni che "non si scontano" (come il GPS). 
-Ecco un esempio dal mio PDF, il **TC9**, che è la prova regina del calcolo corretto:
+Arrivato in fondo alla colonna C11, il prezzo atteso diventa la somma logica a cascata della colonna: `$p` (il prezzo base) + `25` (il sovrapprezzo fisso per l'aeroporto richiesto dalla T).
 
-```text
-TC9: 
-Vehicle: SUV | Days: 7 | Customer: VIP | Pickup: Weekday | Add-ons: none
-Expected price: $630 - 29.6% = $443.52
-```
+### 2. L'applicazione rigorosa dei Constraints (Vincoli logici)
 
----
+Le combinazioni matematiche teoriche di 16 variabili booleane sarebbero immense. Per ridurre la tabella ai soli 15 casi realistici e sensati, ho applicato e dichiarato formalmente alla base del PDF i vincoli di business e fisici:
+- Ho utilizzato il vincolo logico `exactly-one` per i gruppi di condizioni mutuamente esclusive (ad esempio, un noleggio appartiene alla fascia 1-2 giorni, oppure 3-5, oppure 6+ giorni; è fisicamente impossibile che appartenga a due fasce temporali contemporaneamente).
+- Ho tradotto in logica matematica le restrizioni aziendali usando l'implicazione logica: `VIP -> (Standard V SUV)` per formalizzare che ai clienti VIP è vietato il noleggio della fascia Economy, e `SUV -> (3 to 5 days V 6+ days)` per gestire il requisito del noleggio minimo di 3 giorni per quella categoria. Tutte le colonne che violavano questi vincoli sono state eliminate dal modello.
+
+### 3. Il calcolo degli sconti Multiplicativi (Stacking)
+
+La traccia specificava a chiare lettere *"Discounts stack multiplicatively, not additively"*. Questo è l'errore più comune in cui cadono gli studenti. Io ho modellato il calcolo del prezzo rispettando rigidamente la matematica richiesta.
+Se un cliente Member (sconto base 5%) noleggia un'auto per 3-5 giorni (sconto durata 10%), lo sconto finale non è una semplice somma (15%). Il calcolo corretto applicato in tabella per quel caso specifico è una moltiplicazione progressiva degli importi residui:
+$$ScontoEffettivo = 1 - ( (1 - 0.10) \times (1 - 0.05) ) = 1 - (0.90 \times 0.95) = 1 - 0.855 = 14.5\%$$
+Aver esplicitato questi calcoli complessi (come il 14.5% o il 29.6% per il caso peggiore) nella legenda dimostra una comprensione profonda delle specifiche aziendali.
 
 ## Difesa della Parte II: La Grammatica XML (HR Profile)
 
-### 1. La derivazione da XSD a BNF
-*Come ho fatto:* Ho preso la struttura nidificata del file XML e l'ho appiattita in regole di produzione BNF lineari. 
+Ho letto la definizione strutturale del file XSD (costrutti `<xs:sequence>` e `<xs:element>`) e l'ho tradotta fedelmente nelle regole di produzione tipiche della grammatica Backus-Naur Form (BNF).
 
-```bnf
-<employee> ::= <emp_id> <first_name> <last_name> <email> <departments> <skills> <certifications> <projects>
-```
+*Cosa rispondere all'orale:*
+"Ho tradotto le sequenze XML concatenando i tag in orizzontale. La sfida era gestire le liste XML senza usare i cicli, sfruttando la *ricorsione* (es. una lista è formata da un dipartimento attaccato a un'altra lista, oppure da un singolo dipartimento terminale che chiude la regola)."
 
-*Cosa dire all'orale:* "Ogni `<xs:sequence>` dello schema XML è stata mappata in una produzione grammaticale concatenata. L'obiettivo era creare un motore in grado di generare stringhe di dipendenti valide per alimentare il sistema in fase di test."
+### Il punto di forza per l'orale: I Bound (Limiti) convenzionali
 
-### 2. Il colpo di genio: La chiusura dell'infinito (Bounds)
-*Il problema:* L'elemento XML `<skills>` aveva l'attributo `maxOccurs="unbounded"`. Per fare i test sulle "Boundary conditions" devo testare il valore `max` e il valore `max-1`. Come faccio a testare l'infinito meno uno? Non posso.
-*Come l'ho risolto:* Ho forzato un limite massimo convenzionale. Nel PDF l'ho giustificato esplicitamente così:
+Il punto cruciale del *grammar-based testing* è gestire le ripetizioni (le regole con il Pipe `|` per la ricorsione) per poter eseguire i test sui confini (*boundary testing*).
+- Per la lista dei dipartimenti, lo schema XSD forniva un limite fisso (`maxOccurs="3"`). L'ho tradotto annotando la regola di produzione con un bound chiuso e invalicabile: `[3] <departmentList>`.
+- Il problema sorge per le liste `skills` e `projects`, definite dallo schema con `maxOccurs="unbounded"`. L'infinito è logicamente non testabile quando si applica la metrica del Boundary (che richiede di generare test con lunghezze minime e massime esatte, come *max* e *max-1*). Per risolvere l'impasse tecnica, ho adottato e documentato un limite **convenzionale** ragionevole: `[10]`. Questa scelta trasforma una grammatica teoricamente infinita in una controllabile e testabile sistematicamente.
 
-> "Bounded recursive productions are annotated in square brackets [k] with the maximum number of times the production may be applied. For collections that the schema declares maxOccurs='unbounded'... **a conventional bound [10] is adopted for boundary-condition test generation**, in line with the W7.H6 sample solution."
+## Domande di difesa probabili
 
-E l'ho applicato così alla grammatica:
-```bnf
-[10] <skillList> ::= <skillInfo> <skillList> 
-                 ::= <skillInfo>
-```
+1. **Perché hai limitato a 15 il numero delle colonne della tua Decision Table? Potevano essercene di più?**
+   *Cosa rispondere:* Certo, il prodotto cartesiano di tutti i booleani a disposizione produrrebbe migliaia di colonne teoriche. Le ho ridotte a 15 perché ho mirato al "Basic condition adequacy criterion", che richiede almeno un caso di test per ogni colonna sensata e coerente. Ho applicato duramente i vincoli di business e fisici (tramite costrutti come `exactly-one` o le implicazioni) eliminando tutte le colonne che descrivevano scenari impossibili.
 
-*Cosa dire all'orale:* "Per rendere la grammatica testabile secondo i criteri di adeguatezza dei Boundary visti nel libro, un limite *unbounded* è inutilizzabile. Dovevo chiudere la produzione ricorsiva. Ho applicato e documentato un Bound convenzionale di `[10]`. Grazie a questa annotazione sintattica, ora il mio generatore di test sa che per stressare il confine superiore dovrà creare una stringa con esattamente 9 skills (max-1) e una con 10 skills (max)."
+2. **Cosa significa l'annotazione `[3] <departmentList>` nella tua grammatica BNF? A cosa serve operativamente per derivare i test?**
+   *Cosa rispondere:* Quell'annotazione indica che la regola di produzione ricorsiva può essere espansa e applicata al massimo 3 volte di fila prima di dover usare il ramo destro dell'OR per terminare la lista. Operativamente, nel Model-Based testing, mi serve per il criterio dei *Boundary conditions*. Sapendo che il limite formale superiore è 3, genererò casi di test per stressare l'algoritmo creando XML con 0 dipartimenti (minimo), 1 (min+1), 2 (max-1) e esattamente 3 dipartimenti (massimo).
 
----
-
-## Domande di difesa probabili (Roleplay)
-
-1. **Professore:** "Noto che nella sua Decision Table per i prezzi non ci sono test in cui si sceglie un'Economy e l'opzione Airport pickup. Perché ha saltato questa combinazione?"
-   **Risposta:** "Non l'ho saltata per distrazione, ma l'ho scartata matematicamente applicando il Constraint di business `Airport pickup -> (Standard V SUV)`. Questo vincolo logico impedisce alla tabella di generare una regola impossibile per l'azienda."
-
-2. **Professore:** "Come mai nella grammatica per `certList` ha usato il bound `[5]` mentre per `projectList` ha usato `[10]`?"
-   **Risposta:** "Il bound `[5]` per i certificati è stato dettato direttamente dal file schema originario che indicava `maxOccurs='5'`. Per i progetti, lo schema originale indicava `unbounded`. Avendo necessità di eseguire il test delle boundary conditions, ho imposto io il limite arbitrario di 10 per poter derivare test case calcolabili finiti."
-
-3. **Professore:** "Se le chiedo di calcolarmi il prezzo finale del Test Case T12 (Standard, 3 giorni, Regular, Weekday, GPS), come ci arriva al $186?"
-   **Risposta:** "Per prima cosa calcolo la base: 3 giorni di Standard ($60/day) fanno $180. Essendo un noleggio di 3-5 giorni per un utente Regular, applico lo sconto durata del 10%. Il prezzo scontato `$p` diventa $162. Infine, come da specifiche aziendali, aggiungo il GPS senza sconti: $8 al giorno per 3 giorni = $24. Il totale esatto è 162 + 24 = $186."
+3. **Fammi vedere come hai calcolato lo sconto per un VIP che noleggia un SUV per 7 giorni (Test Case T9).**
+   *Cosa rispondere:* Un cliente VIP ha diritto a uno sconto base del 12%. Un noleggio superiore a 6 giorni sblocca un ulteriore sconto del 20%. Essendo gli sconti formalmente definiti come cumulabili in modo moltiplicativo (e non additivo), il cliente paga l'88% dell'80% del totale base. Il calcolo matematico da eseguire è $(0.80 \times 0.88) = 0.704$, il che significa che il cliente paga il 70.4% del totale, ottenendo di conseguenza uno sconto effettivo del 29.6%, valore che ho fedelmente riportato nella riga del prezzo per la colonna C9.

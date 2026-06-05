@@ -22,11 +22,22 @@ A seconda della natura dei requisiti, si utilizzano tre tipologie principali di 
 ### 1. Decision Tables (Tabelle di Decisione)
 Si usano quando le specifiche descrivono regole di business basate su complesse combinazioni di condizioni logiche (tipico dei sistemi di calcolo prezzi, assicurazioni, sconti e idoneità).
 
-- **Come funzionano:** Costruiscono una griglia in cui si elencano in verticale le "Condizioni" (le variabili di input) e le "Azioni" (gli output o risultati attesi). Ogni colonna rappresenta una singola regola o caso di test, ovvero una combinazione specifica di condizioni che scaturisce in un determinato output.
-- **L'importanza dei Vincoli (Constraints):** Se abbiamo 5 condizioni booleane, le combinazioni matematiche sarebbero $2^5 = 32$. Tuttavia, spesso le condizioni non possono verificarsi tutte insieme nella realtà. Ad esempio, un cliente non può essere contemporaneamente "VIP" e "Utente Guest". Si usano i vincoli formali per sfoltire la tabella ed eliminare le combinazioni impossibili o illogiche:
-  - `exactly-one(A, B, C)`: solo uno degli elementi può essere vero (es. la classe dell'auto noleggiata).
+- **Come si legge una Decision Table:** 
+  A differenza di un normale foglio Excel, una Decision Table **si legge esclusivamente in verticale, dall'alto verso il basso**. 
+  - La prima colonna a sinistra elenca le "domande" (Condizioni) e il risultato atteso (Azione/Output).
+  - Le colonne successive (C1, C2, C3...) rappresentano i **Singoli Casi di Test**. Ogni colonna è un "Cliente Immaginario" indipendente con una sua specifica combinazione di risposte. La riga in fondo alla colonna è "la fattura" calcolata per quel cliente.
+
+- **T, F e i Trattini (Don't Care):**
+  Nelle celle inseriamo:
+  - `T` (True) se quella condizione è attiva per quel cliente.
+  - `F` (False) se la condizione non è attiva.
+  - `-` (**Don't Care Condition**). Questo è il segreto delle tabelle. Il trattino significa: *"Per questo specifico test, non mi interessa il valore di questa variabile, il risultato sarà lo stesso"*. Serve a comprimere la tabella evitando centinaia di colonne inutili o ridondanti. Quando devi scrivere il codice Java per una colonna con un trattino, sei libero di scegliere a tuo piacimento se passare `T` o `F`.
+
+- **L'importanza dei Vincoli (Constraints):** Se abbiamo 5 condizioni booleane, le combinazioni matematiche sarebbero $2^5 = 32$. Tuttavia, spesso le condizioni non possono verificarsi tutte insieme. Ad esempio, un'auto noleggiata non può essere contemporaneamente un "SUV" e un'"Economy". Si usano i vincoli formali per sfoltire la tabella ed eliminare le colonne illogiche:
+  - `exactly-one(A, B, C)`: solo uno degli elementi può essere vero.
   - `at-most-one(A, B)`: o uno, o nessuno, ma mai entrambi.
   - `A -> B`: se è vero A, allora deve per forza essere vero anche B (Implicazione).
+
 - **Criteri di copertura:**
   - *Basic condition adequacy criterion:* Richiede almeno un caso di test per ogni colonna valida e sensata della tabella (dopo aver rimosso quelle rese impossibili dai constraints).
 
@@ -39,39 +50,47 @@ Si usano quando le specifiche descrivono il ciclo di vita di un'entità, in cui 
   - *Transition coverage:* Criterio più forte; la test suite deve percorrere almeno una volta tutti gli archi (transizioni) del grafo, per verificare che il sistema sappia passare da uno stato all'altro correttamente per ogni evento ammissibile.
 
 ### 3. Grammar-based Testing (Test su Grammatiche)
-Si usa quando il sistema deve accettare, interpretare e validare input testuali o strutturati complessi (es. file XML, JSON, frammenti HTML, file di configurazione proprietari).
+Si usa quando il sistema deve accettare, interpretare e validare input testuali o strutturati complessi (es. file XML, JSON, frammenti HTML, file di configurazione proprietari). Non puoi testare questi sistemi passandogli testo a caso; devi usare un generatore che parli la loro lingua.
 
-- **Come funzionano:** Si definisce una grammatica formale (solitamente in formato BNF - Backus Naur Form), con regole di produzione del tipo `<Elemento> ::= <SottoElemento>`. I casi di test sono le stringhe valide (e invalide) generate seguendo queste regole grammaticali.
-- **Criteri di copertura:**
-  - *Production coverage:* Ogni regola di produzione definita nella grammatica deve essere utilizzata per generare almeno un frammento di input nei casi di test.
-  - *Boundary conditions sulle produzioni ricorsive:* È la metrica più critica per l'esame. Quando un elemento grammaticale può ripetersi $N$ volte (es. una lista di certificazioni di un dipendente), occorre testare i limiti di ripetizione. Si annota la produzione ricorsiva con un vincolo numerico $[min, max]$ (es. `[0, 5]`) e si generano input testuali che stressano questi confini:
-    - Minimo (0)
-    - Minimo + 1 (1)
-    - Massimo - 1 (4)
-    - Massimo (5)
+- **Come funzionano le regole (BNF):** Si definisce una grammatica formale (Backus-Naur Form). È una "ricetta" che insegna al generatore come costruire stringhe valide.
+  - `<nome>`: Le parole tra parentesi angolari (Non-terminali) sono i "contenitori" astratti da espandere (es. `<pasto>`).
+  - `::=`: Si legge "è composto da" o "si espande in".
+  - `|`: È l'OR logico. Significa "oppure". Esempio: `<pasto> ::= <pizza> | <hamburger>`.
+
+- **Il trucco della Ricorsione:** I file XML contengono spesso liste (es. lista di dipartimenti). Nelle grammatiche non esistono i cicli `for`, quindi per generare una lista si usa la ricorsione. Si dice che una `<lista>` è composta da un singolo `<elemento>` attaccato a un'altra `<lista>`, *oppure* da un singolo `<elemento>` che chiude la catena.
+  Esempio: `<departmentList> ::= <department> <departmentList> | <department>`
+
+- **Criteri di copertura e "Bounds":**
+  - *Boundary conditions sulle produzioni ricorsive:* È la metrica più critica per l'esame. Se una lista XML non ha limiti (`unbounded`), l'unico modo per fare test ingegneristici è imporre un limite convenzionale (Bound) scrivendolo tra parentesi quadre prima della regola (es. `[10] <departmentList>`). Questo dice al tester di generare casi limite per stressare la struttura:
+    - Minimo (0 ripetizioni)
+    - Minimo + 1 (1 ripetizione)
+    - Massimo - 1 (9 ripetizioni)
+    - Massimo (10 ripetizioni)
 
 ## Trappole d'esame
 
 :::caution[Gli errori classici da evitare all'orale]
 - **Dimenticare i vincoli (Constraints) nella Decision Table:** Se consegni una tabella con combinazioni illogiche (es. un cliente ha noleggiato un SUV ma la classe dell'auto è contemporaneamente Economy), dimostri di aver fatto un mero prodotto cartesiano senza applicare la logica di business. I constraints servono proprio a pulire il modello.
 - **Fare la somma degli sconti invece di moltiplicarli:** Negli assignment sui prezzi (vedi Car Rental), se i requisiti dicono che gli sconti si applicano in sequenza in modo moltiplicativo (*"Discounts stack multiplicatively"*), è un errore grave sommarli brutalmente (es. 10% + 5% = 15%). Bisogna applicare la formula: $(1 - 0.10) \times (1 - 0.05)$, ovvero calcolare lo sconto percentuale cumulato.
-- **Ignorare i "Boundary" infiniti nella grammatica:** Se un elemento XML ha un attributo `maxOccurs="unbounded"` (ovvero può ripetersi all'infinito), il testing formale dei limiti diventa impossibile. Per procedere, è necessario imporre un limite **convenzionale** (es. 10) e dichiararlo esplicitamente per generare i test di confine.
+- **Leggere le Decision Tables in orizzontale:** È un errore concettuale grave. Ricorda: si scende colonna per colonna, calcolando la fattura finale (l'Azione) in base alle "T" e alle "F" incontrate durante la discesa.
 :::
 
 ## Autotest
 
 1. Qual è lo scopo primario del Model-Based testing rispetto alle tecniche di Structural Testing basate sul codice?
-2. In una Decision Table, a cosa servono i vincoli logici come `exactly-one` o le implicazioni (`->`)?
-3. Fai un esempio di sistema reale in cui useresti una Macchina a Stati Finiti (FSM) per derivare i test anziché una Decision Table.
-4. Quali sono i quattro valori di confine da testare secondo il criterio delle *boundary conditions* per una produzione ricorsiva in una grammatica?
-5. Se un elemento in uno schema XML è definito come `maxOccurs="unbounded"`, come adatti la grammatica per soddisfare i test sui limiti?
+2. Nelle Decision Tables, come si leggono i dati e cosa rappresenta ogni colonna?
+3. A cosa serve il trattino `-` (Don't Care condition) in una colonna e che vantaggio pratico porta?
+4. Fai un esempio pratico in cui useresti una Macchina a Stati Finiti (FSM) per derivare i test anziché una Decision Table.
+5. In una grammatica BNF, come fai a dire al generatore di test di creare un elemento ripetuto al massimo 5 volte?
+6. Quali sono i quattro valori di confine da testare secondo il criterio delle *boundary conditions* per una produzione ricorsiva in una grammatica?
 
 ## Glossario
 
 - **Model-based Testing** - Tecnica formale che deriva sistematicamente i test da modelli astratti del software, partendo dai requisiti.
-- **Decision Table** - Modello tabulare utile per analizzare complesse regole di business combinando condizioni e azioni risultanti.
-- **Constraints (Vincoli)** - Regole matematico-logiche applicate alle tabelle di decisione per invalidare combinazioni di input impossibili nel dominio reale.
+- **Decision Table** - Modello tabulare utile per analizzare complesse regole di business combinando condizioni e azioni risultanti. Si legge verticalmente.
+- **Don't Care Condition (`-`)** - Simbolo che indica l'irrilevanza di una specifica condizione in un caso di test, utile per comprimere la tabella riducendo le colonne duplicate.
+- **Constraints (Vincoli)** - Regole matematico-logiche applicate alle tabelle di decisione per invalidare e rimuovere combinazioni di input impossibili nel dominio reale.
 - **Finite State Machine (FSM)** - Modello matematico che descrive il ciclo di vita di un sistema tramite stati e transizioni azionate da eventi.
 - **Grammar-based Testing** - Tecnica per modellare gli input di un sistema come regole grammaticali formali (BNF), usate per generare stringhe di test valide e stressare i limiti strutturali.
-- **Production (Produzione)** - Singola regola formale di derivazione all'interno di una grammatica.
-- **Boundary Condition (Grammatica)** - Test sistematico dei limiti estremi di ripetizione per le regole grammaticali ricorsive.
+- **Production (Produzione)** - Singola regola formale di derivazione all'interno di una grammatica (es. `::=`).
+- **Boundary Condition (Grammatica)** - Test sistematico dei limiti estremi di ripetizione per le regole grammaticali ricorsive chiuse da un Bound numerico (es. `[10]`).
