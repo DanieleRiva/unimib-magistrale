@@ -1,6 +1,6 @@
 ---
 title: W10.A8 - La mia soluzione (Symbolic)
-description: Analisi formale riga per riga tramite Esecuzione Simbolica Pura del metodo computeFinalBalance.
+description: Analisi formale, risposte alle domande Q1/Q3 e svisceramento dell'albero di esecuzione per computeFinalBalance.
 sidebar:
   order: 15
 ---
@@ -12,7 +12,7 @@ export const solutionXlsx = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assi
 
 > **Soluzione e difesa - Assignment W10.A8.**
 > Argomento → vedi [Symbolic Execution](/qualita-software/symbolic-execution/).
-> Questa è la guida strategica definitiva per l'orale. Analizzeremo il reale metodo della consegna e **scoveremo il motivo esatto per cui l'assignment è stato valutato 9/10 anziché 10**.
+> Questa è la guida definitiva per l'orale. Contiene lo svisceramento completo delle domande formali Q1 e Q3 e dei commenti strutturali presenti nel file consegnato.
 > Stato: **Valutato (9/10)** 🏆
 
 <details>
@@ -42,11 +42,11 @@ export const solutionXlsx = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assi
   </div>
 </details>
 
-## La traccia reale sotto esame
+## Il codice reale sotto esame
 
-L'obiettivo dell'assignment era applicare l'**Esecuzione Simbolica Pura** al metodo `computeFinalBalance` per studiare formalmente se le esecuzioni che completano il ciclo `while` **esattamente due volte** possano o meno causare una vulnerabilità di **Buffer Overflow alla riga 8**[cite: 89].
+L'obiettivo dell'assignment era applicare l'**Esecuzione Simbolica Pura** al metodo `computeFinalBalance` per dimostrare se le esecuzioni che completano il ciclo `while` **esattamente due volte** possano causare un **Buffer Overflow alla riga 8**.
 
-Il codice ufficiale della consegna prevede le seguenti istruzioni[cite: 89]:
+Il codice analizzato è il seguente:
 
 ```java
 public static double computeFinalBalance(double[] transactions, int count) {
@@ -56,9 +56,9 @@ public static double computeFinalBalance(double[] transactions, int count) {
     double minimum = balance;      // Line 4
     int steps = 0;                 // Line 5
 
-    while (i < count && !overdrawn) {        // Line 6 - ATTENZIONE QUI!
+    while (i < count && !overdrawn) {        // Line 6
         steps = steps + 1;                   // Line 7
-        double amount = transactions[i];     // Line 8 - Riga critica sotto analisi
+        double amount = transactions[i];     // Line 8 (Punto critico)
         balance = balance + amount;          // Line 9
         boolean isNegative = (balance < 0);  // Line 10
         if (isNegative) {                    // Line 11
@@ -76,71 +76,115 @@ public static double computeFinalBalance(double[] transactions, int count) {
 }
 ```
 
-La traccia imponeva di mappare le variabili del codice usando le seguenti identità simboliche maiuscole[cite: 89]:
-* `balance` = `B`, `i` = `I`, `overdrawn` = `O`, `minimum` = `M`, `steps` = `S`, `count` = `C`, `amount` = `A`, `isNegative` = `IN`.
+La traccia imponeva l'uso di specifiche lettere maiuscole come valori simbolici:
+`B` (balance), `I` (i), `O` (overdrawn), `M` (minimum), `S` (steps), `C` (count), `A` (amount), `IN` (isNegative).
 
 ---
 
-## Lo svelamento del 9/10: L'inganno della riga 6
+## Analisi Profonda delle Domande della Consegna (Q1 & Q3)
 
-Se analizziamo il commento di feedback lasciato dal professore Alind Xhyra nella correzione ufficiale della piattaforma, leggiamo testualmente:
-**"A buffer overflow is possible if the array transaction has only one element."**
+Nelle celle in calce al file Excel hai formalizzato i criteri matematici per l'oracolo di sicurezza. Vediamo come funzionano e come vanno spiegati a parole.
 
-*Perché ti ha tolto un punto?* Nella tua risposta scritta alla domanda Q3 (in cui dovevi dimostrare l'assenza o la presenza del buffer overflow), hai concluso dicendo che l'accesso è matematicamente sicuro ed è protetto dalla Path Condition (`UNSAT`) assumendo implicitamente come precondizione naturale che `count <= transactions.length`[cite: 95, 103]. 
+### Domanda Q1: Definizione dell'Oracolo di Buffer Overflow
+La domanda chiedeva come l'esecuzione simbolica possa dimostrare l'assenza o la presenza di un buffer overflow alla riga 8 (`transactions[i]`).
 
-Tuttavia, l'esecuzione simbolica rigorosa deve operare in modalità **Zero-Inference**, ovvero basandosi *esclusivamente* sulle condizioni scritte nel codice, senza inventarsi precondizioni di buon senso che il programmatore non ha inserito. 
+*Il principio applicato:*
+Per verificare la sicurezza della memoria all'indice `I`, dobbiamo assicurarci che l'indice rispetti sempre i confini dell'array, ovvero che valga l'invariante `0 <= I < transactions.length`. 
+Il motore simbolico crea un'equazione unendo la Path Condition (`PC`) corrente con la **negazione** della condizione di sicurezza:
+`Formula = PC AND NOT(0 <= I < transactions.length)`
 
-Guardiamo con attenzione la riga 6 del codice di questo assignment:
-`while (i < count && !overdrawn)`
-
-Noti qualcosa? **Manca completamente il controllo sui confini dell'array!** Il programmatore si è dimenticato di scrivere `&& i < transactions.length` (controllo che, non a caso, apparirà poi nell'assignment successivo W11). 
-
-Di conseguenza, se l'array fornito in ingresso ha una lunghezza pari a 1 (`transactions.length = 1`) ma il parametro `count` è impostato a 2 (`C = 2`), il motore simbolico traccia questo scenario:
-1. **Iterazione 1 (`I = 0`):** La guardia del ciclo verifica `0 < 2 && !false` $\rightarrow$ Superata[cite: 89]. Alla riga 8 viene eseguito `transactions[0]`. L'indice `0` è minore della lunghezza dell'array (`1`), quindi l'accesso è **sicuro**[cite: 89, 98]. Supponiamo che la transazione sia positiva, quindi `overdrawn` resta falso ed `i` cresce a `1`[cite: 91, 92].
-2. **Iterazione 2 (`I = 1`):** La guardia del ciclo verifica `1 < 2 && !false` $\rightarrow$ **Superata di nuovo!** [cite: 92] Il flusso entra nel ciclo ed esegue la riga 8: `transactions[1]`[cite: 93]. Ma la lunghezza dell'array è `1`. L'indice `1` è fuori dai limiti dell'array (`1 >= 1`). **BUFFER OVERFLOW!**
-
-L'SMT Solver, analizzando la formula di violazione `PC && !(I < transactions.length)`, avrebbe risposto **`SAT`** producendo esattamente il controesempio `transactions.length = 1` e `count = 2`. Concludere dicendo che il buffer overflow era impossibile in modo assoluto ti è costato il punto della lode.
+* **Dimostrazione di Assenza (Sicurezza):** Se l'SMT Solver valuta questa formula come **`UNSAT`** (Insoddisfacibile), significa che i vincoli logici necessari per arrivare a quella riga contraddicono matematicamente la possibilità di andare fuori dai limiti. Nessun input concreto potrà mai scatenare il bug.
+* **Dimostrazione di Presenza (Vulnerabilità):** Se la formula è **`SAT`** (Soddisfacibile), significa che esiste almeno un caso in cui il programma raggiunge la riga 8 con un indice sballato. Il solver genererà un controesempio reale (i valori numerici esatti di input) per far crashare l'applicazione.
 
 ---
 
-## Svisceramento dell'Excel: Analisi riga per riga del cammino (2 Iterazioni)
+### Domanda Q3: La Verifica Matematica delle Due Visite
+La richiesta imponeva di analizzare i due passaggi specifici alla riga 8 sotto l'assunzione della precondizione naturale `count <= transactions.length`.
 
-Vediamo come si popolano matematicamente le colonne del tuo file Excel per dimostrare la perfetta comprensione del tracciamento algebrico delle due iterazioni[cite: 89].
+#### Primo Passaggio (Prima Iterazione: `I = 0`)
+* Per entrare nel ciclo la prima volta, la guardia alla riga 6 richiede che `i < count && !overdrawn` sia vera. Sostituendo i valori iniziali dello stato (`I = 0`, `O = FALSO`), la Path Condition iniziale diventa semplicemente `C > 0`.
+* Applichiamo l'oracolo di overflow: `(C > 0) AND NOT(0 <= 0 < transactions.length)`.
+* Poiché sappiamo per precondizione che `count <= transactions.length` e che `C > 0`, la lunghezza dell'array è almeno 1. Di conseguenza, l'affermazione `0 < transactions.length` è una verità assoluta.
+* La sua negazione è falsa, il che rende l'intero sistema **`UNSAT`**. La prima visita è matematicamente sicura.
 
-### 1. Fase di Inizializzazione (Linee 1 - 5)
-* **Linea 1:** La variabile `balance` riceve il valore `0.0`. Stato: `B = 0.0`. PC = `TRUE`[cite: 89].
-* **Linea 2:** `i` viene inizializzata a `0`. Stato: `I = 0`[cite: 89].
-* **Linea 3:** `overdrawn` viene impostata a `false`. Stato: `O = FALSO`[cite: 89].
-* **Linea 4:** `minimum` copia il valore di `balance`. Stato: `M = 0.0`[cite: 89].
-* **Linea 5:** `steps` viene azzerata. Stato: `S = 0`. Il valore di `count` riflette l'input simbolico: `C`[cite: 89].
-
-### 2. Prima Iterazione del Ciclo
-* **Linea 6 (Valutazione Guardia):** Il motore valuta `i < count && !overdrawn`. Sostituendo i valori correnti dello stato, otteniamo `0 < C && !false`, che si riduce a `C > 0`. Per entrare nel ciclo, questa condizione deve essere vera.
-  * PC Aggiornata: `C > 0`[cite: 89].
-* **Linea 7:** Incremento degli step. Stato: `S = 1`[cite: 89].
-* **Linea 8 (Accesso Array):** Viene campionato l'elemento all'indice `i = 0`. Il valore simbolico assegnato alla variabile `amount` è `A[0]`[cite: 89].
-* **Linea 9:** Il bilancio viene aggiornato: `balance = balance + amount`. Sostituendo i valori dallo stato (`0.0 + A[0]`), lo stato simbolico di `balance` diventa `A[0]`[cite: 90].
-* **Linea 10:** Viene valutata l'espressione booleana `isNegative = (balance < 0)`. Sostituendo il valore corrente di `balance`, lo stato simbolico di `IN` diventa `(A[0] < 0)`[cite: 90].
-* **Linea 11 (`if isNegative`):** Per garantire che il ciclo non si interrompa e possa completare una seconda iterazione, l'esecuzione simbolica deve forzare lo scenario in cui `isNegative` sia **Falso** (ovvero la transazione non deve mandare il conto in rosso)[cite: 103]. La PC accumula questo vincolo tramite l'operatore di negazione[cite: 91]:
-  * PC Aggiornata: `C > 0 && A[0] >= 0`[cite: 91].
-* **Linea 15:** L'indice viene incrementato: `i = i + 1`. Stato: `I = 1`[cite: 92].
-
-### 3. Seconda Iterazione del Ciclo
-* **Linea 6 (Valutazione Guardia):** Il motore valuta nuovamente la condizione con il nuovo stato (`I = 1`). L'equazione è `1 < C && !false`. Affinché il ciclo continui per la seconda volta, `C` deve essere strettamente maggiore di 1[cite: 92].
-  * PC Aggiornata: `C > 1 && A[0] >= 0`[cite: 92].
-* **Linea 7:** Stato degli step aggiornato: `S = 2`[cite: 93].
-* **Linea 8 (Il punto critico):** Viene campionato l'elemento all'índice `i = 1`. Il valore simbolico associato ad `amount` è `A[1]`[cite: 93]. È qui che, se non imponiamo artificialmente il vincolo sulla lunghezza dell'array, rischiamo il buffer overflow intercettato dal professore.
+#### Secondo Passaggio (Seconda Iterazione: `I = 1`)
+* Per poter effettuare un secondo giro completo, il programma deve aver superato la prima iterazione senza mandare il conto in rosso, altrimenti il flag `overdrawn` diventerebbe vero bloccando la guardia. Questo significa che il controllo `if (isNegative)` alla riga 11 è dovuto risultare Falso, imponendo il vincolo `A[0] >= 0`. Inoltre, la guardia richiede che `i < count` sia ancora vera con `I = 1`, configurando il vincolo `1 < C` (ovvero `C > 1`).
+* La Path Condition aggiornata prima di rientrare alla riga 8 è: `C > 1 AND A[0] >= 0`.
+* Applichiamo l'oracolo di overflow per la seconda visita: `(C > 1 AND A[0] >= 0) AND NOT(0 <= 1 < transactions.length)`.
+* Semplificando la negazione dei limiti otteniamo la condizione di errore: `transactions.length <= 1`.
+* Ma uniamo i nostri vincoli: sappiamo dalla precondizione che `C <= transactions.length` e dalla PC che `C > 1` (quindi `C` è almeno 2). Per transitività, `transactions.length` deve essere almeno 2.
+* Dire che `transactions.length >= 2` AND `transactions.length <= 1` è una contraddizione palese. Il sistema è **`UNSAT`**. Anche la seconda visita è sicura.
 
 ---
 
-## Domande di difesa probabili (Roleplay per l'Orale)
+## Analisi del Commento di Percorso (Comments)
 
-1. **Professore:** "Signor Riva, nella sua risposta all'esercizio lei ha concluso che l'accesso alla riga 8 è sicuro, ma io le ho scritto nei commenti che un Buffer Overflow è possibile se l'array ha un solo elemento. Chi ha ragione e perché?"
-   **Risposta:** "Ha perfettamente ragione lei, professore. Nella mia analisi ho commesso l'errore di dare per scontata la precondizione esterna `count <= transactions.length`. Guardando però il puro codice della riga 6, il ciclo controlla unicamente che `i < count`. Se l'array ha un solo elemento e `count = 2`, la Path Condition simbolica accumulata alla seconda iterazione è `C > 1`, la quale permette perfettamente all'indice `i` di assumere il valore `1`. Poiché l'indice `1` viola il limite di un array di dimensione 1, l'analisi formale del codice rivela una vulnerabilità reale di Buffer Overflow, che si corregge inserendo il controllo esplicito sui confini dell'array nella guardia del `while`."
+In fondo all'Excel hai inserito una nota strutturale fondamentale sul cammino scelto (*Path Chosen*):
+> "To successfully traverse the loop a second time, the first iteration must evaluate the if-check (line 11) as False... This is the only way to keep overdrawn False, making it the mandatory prefix for every 2-iteration trace."
 
-2. **Professore:** "Mi spieghi come ha calcolato il valore simbolico di `isNegative` alla riga 10 della prima iterazione. Perché ha scritto `A[0] < 0`?"
-   **Risposta:** "Il calcolo avviene applicando il principio della sostituzione all'indietro dello stato. Alla linea 9, la variabile `balance` ha accumulato il valore del primo elemento dell'array, modificando il suo stato in `A[0]`. Di conseguenza, quando la linea 10 valuta l'espressione condizionale `balance < 0`, il motore simbolico sostituisce la parola `balance` con la sua espressione algebrica corrente, ricavando l'espressione puramente simbolica `A[0] < 0` da inserire nel registro."
+*La spiegazione logica per l'orale:*
+"Professore, per completare esattamente due iterazioni, la prima esecuzione del ciclo deve necessariamente prendere il ramo `False` all'altezza della riga 11. Se la prima transazione fosse negativa (`A[0] < 0`), il programma entrerebbe nell'if, impostando `overdrawn = true`. Al millisecondo successivo, quando il flusso torna alla riga 6 per valutare la guardia del secondo giro, il controllo `!overdrawn` fallirebbe immediatamente, buttando fuori il programma dopo un solo giro. Pertanto, il vincolo `A[0] >= 0` è il prefisso sintattico e logico obbligatorio per qualunque cammino voglia completare due iterazioni. L'analisi si interrompe correttamente alla seconda visita alla riga 8, poiché qualunque cosa accada dopo (il valore di `A[1]` o l'uscita finale) non ha alcun effetto retroattivo sulla sicurezza degli accessi in memoria appena eseguiti."
 
-3. **Professore:** "A cosa serve l'operazione ternaria che ha menzionato nelle risposte del foglio rispetto all'universo degli SMT Solver?"
-   **Risposta:** "La formula di verifica dell'oracolo per il buffer overflow cerca di determinare se esiste un caso in cui la Path Condition è vera ma l'indice è fuori dai confini. Inviamo all'SMT Solver la formula `PC && !(0 <= I < transactions.length)`. Se il solver risponde `UNSAT`, significa che le regole del codice impediscono il bug. Se risponde `SAT`, come nel caso in cui l'array ha lunghezza 1 e non ci sono controlli protettivi, il solver non solo ci dice che il bug esiste, ma ci sputa fuori i valori concreti esatti dei parametri per riprodurre il crash in Java."
-```
+---
+
+## La Strategia d'Esame: Come Difendere il 9/10
+
+Il professore Alind Xhyra ti ha assegnato un ottimo 9/10 lasciando questo commento:
+> "A buffer overflow is possible if the array transaction has only one element."
+
+Questo succede perché l'esecuzione simbolica pura lavora in modo *cieco*, analizzando solo quello che il programmatore ha scritto. Se guardiamo il codice originale, il programmatore si è dimenticato di inserire il controllo dei limiti dell'array nella guardia del `while` alla riga 6 (ha scritto solo `i < count && !overdrawn`). 
+
+Se un utente malevolo passa un array di lunghezza 1 ma imposta il parametro `count = 2`, il programma supera la guardia la seconda volta (perché `1 < 2` è vero) ed esplode in Buffer Overflow alla riga 8 cercando di leggere `transactions[1]`.
+
+*Come trasformare questo dettaglio in un punto di forza all'orale:*
+"Professore, nella mia risposta scritta ho dimostrato che il sistema è sicuro *assumendo la precondizione implicita* che il `count` inserito dall'utente non superi mai la dimensione dell'array. Tuttavia, l'analisi simbolica pura del codice evidenzia una grave pecca difensiva alla riga 6: la mancanza del controllo esplicito `i < transactions.length`. Senza questa clausola di salvaguardia, se l'input reale violasse la precondizione (es. array lungo 1 e count pari a 2), la Path Condition al secondo giro risulterebbe soddisfacibile (`SAT`), esponendo il fianco al Buffer Overflow identificato nella correzione. Questo dimostra come l'esecuzione simbolica sia in grado di far emergere i bug di omissione strutturale del codice."
+
+---
+
+## Analisi Riga per Riga del Tracciamento nell'Excel
+
+Ecco la ricostruzione logica millimetrica di come abbiamo popolato le celle dell'Excel per arrivare alla riga critica:
+
+1. **Riga 1 (`double balance = 0.0;`):**
+   - Valore Concreto: `0` | Valore Simbolico: `0.0`. PC: `TRUE`.
+2. **Riga 2 (`int i = 0;`):**
+   - Valore Concreto: `0` | Valore Simbolico: `0`. 
+3. **Riga 3 (`boolean overdrawn = false;`):**
+   - Concreto: `false` | Simbolico: `FALSO`.
+4. **Riga 4 (`double minimum = balance;`):**
+   - Concreto: `0` | Simbolico: `0.0`.
+5. **Riga 5 (`int steps = 0;`):**
+   - Concreto: `0` | Simbolico: `0`. La variabile `count` assume il simbolo `C`.
+6. **Riga 6 (Primo ingresso nel `while`):**
+   - Viene valutata la guardia. Concretamente `0 < 2` è vero. Simbolicamente si genera il primo vincolo: `0 < C`.
+   - PC aggiornata: `C > 0`.
+7. **Riga 7 (`steps = steps + 1;`):**
+   - Concreto: `1` | Simbolico: `1`.
+8. **Riga 8 (Primo accesso all'array):**
+   - Legge l'indice `i = 0`. Il valore dello stato riceve l'input simbolico della prima cella dell'array: `A[0]`. Concreto = `10.1`.
+9. **Riga 9 (`balance = balance + amount;`):**
+   - Sostituzione: `0.0 + A[0]`. Lo stato di `balance` diventa `A[0]`. Concreto = `10.1`.
+10. **Riga 10 (`isNegative = (balance < 0);`):**
+    - Sostituzione: `A[0] < 0`. Concreto = `false`.
+11. **Riga 11 (`if (isNegative)`):**
+    - Forziamo il ramo Falso per non interrompere il ciclo. La PC incamera la negazione: `NOT(A[0] < 0)`, che significa `A[0] >= 0`.
+    - PC aggiornata: `C > 0 AND A[0] >= 0`.
+12. **Riga 15 (`i = i + 1;`):**
+    - L'indice cresce. Concreto: `1` | Simbolico: `1`.
+13. **Riga 6 (Valutazione guardia per il secondo giro):**
+    - Concretamente `1 < 2` è vero. Simbolicamente richiede `1 < C`.
+    - PC aggiornata: `C > 1 AND A[0] >= 0`.
+14. **Riga 7 (`steps = steps + 1;`):**
+    - Concreto: `2` | Simbolico: `2`.
+15. **Riga 8 (Secondo accesso all'array):**
+    - Viene eseguito l'accesso all'indice `i = 1`. Lo stato riceve il simbolo del secondo elemento: `A[1]`. Concreto = `15.3`. Il target è stato raggiunto e validato come sicuro sotto le precondizioni stabilite.
+
+---
+
+## Domande di difesa probabili (Roleplay)
+
+1. **Professore:** "Cosa si intende per 'Sostituzione all'indietro' (*Back-substitution*) e in quale riga della sua tabella è stata fondamentale per l'accuratezza dell'oracolo?"
+   **Risposta:** "La sostituzione all'indietro è il meccanismo con cui il motore simbolico traduce le variabili locali in espressioni matematiche basate esclusivamente sugli input iniziali. Nella mia tabella è stata fondamentale alla **riga 10**. Quando il codice valuta `balance < 0`, non scrive nella formula la variabile locale `balance`, ma va a leggere il suo stato corrente generato alla riga 9, sostituendola con `A[0] < 0`. Questo permette all'SMT Solver di lavorare su formule pulite e dipendenti solo dai dati di ingresso del programma."
+
+2. **Professore:** "Perché nella riga 11 della prima iterazione ha deciso di aggiungere alla Path Condition il vincolo `A[0] >= 0` anziché sdoppiare l'albero?"
+   **Risposta:** "L'albero si sdoppia teoricamente in tutti i cammini, ma la consegna dell'assignment ci imponeva di analizzare specificamente le esecuzioni che completano il ciclo *esattamente due volte*. Se avessi seguito il ramo True (`A[0] < 0`), la variabile `overdrawn` sarebbe diventata vera, e la guardia del `while` avrebbe interrotto il programma al giro successivo, impedendomi di documentare il comportamento della seconda iterazione richiesta dalla traccia."
