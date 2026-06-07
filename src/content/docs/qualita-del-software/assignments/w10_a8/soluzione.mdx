@@ -44,9 +44,9 @@ export const solutionXlsx = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assi
 
 ## La traccia reale sotto esame
 
-[cite_start]L'obiettivo dell'assignment era applicare l'**Esecuzione Simbolica Pura** al metodo `computeFinalBalance` per studiare formalmente se le esecuzioni che completano il ciclo `while` **esattamente due volte** possano o meno causare una vulnerabilità di **Buffer Overflow alla riga 8**[cite: 89].
+L'obiettivo dell'assignment era applicare l'**Esecuzione Simbolica Pura** al metodo `computeFinalBalance` per studiare formalmente se le esecuzioni che completano il ciclo `while` **esattamente due volte** possano o meno causare una vulnerabilità di **Buffer Overflow alla riga 8**[cite: 89].
 
-[cite_start]Il codice ufficiale della consegna prevede le seguenti istruzioni[cite: 89]:
+Il codice ufficiale della consegna prevede le seguenti istruzioni[cite: 89]:
 
 ```java
 public static double computeFinalBalance(double[] transactions, int count) {
@@ -76,7 +76,7 @@ public static double computeFinalBalance(double[] transactions, int count) {
 }
 ```
 
-[cite_start]La traccia imponeva di mappare le variabili del codice usando le seguenti identità simboliche maiuscole[cite: 89]:
+La traccia imponeva di mappare le variabili del codice usando le seguenti identità simboliche maiuscole[cite: 89]:
 * `balance` = `B`, `i` = `I`, `overdrawn` = `O`, `minimum` = `M`, `steps` = `S`, `count` = `C`, `amount` = `A`, `isNegative` = `IN`.
 
 ---
@@ -86,7 +86,7 @@ public static double computeFinalBalance(double[] transactions, int count) {
 Se analizziamo il commento di feedback lasciato dal professore Alind Xhyra nella correzione ufficiale della piattaforma, leggiamo testualmente:
 **"A buffer overflow is possible if the array transaction has only one element."**
 
-[cite_start]*Perché ti ha tolto un punto?* Nella tua risposta scritta alla domanda Q3 (in cui dovevi dimostrare l'assenza o la presenza del buffer overflow), hai concluso dicendo che l'accesso è matematicamente sicuro ed è protetto dalla Path Condition (`UNSAT`) assumendo implicitamente come precondizione naturale che `count <= transactions.length`[cite: 95, 103]. 
+*Perché ti ha tolto un punto?* Nella tua risposta scritta alla domanda Q3 (in cui dovevi dimostrare l'assenza o la presenza del buffer overflow), hai concluso dicendo che l'accesso è matematicamente sicuro ed è protetto dalla Path Condition (`UNSAT`) assumendo implicitamente come precondizione naturale che `count <= transactions.length`[cite: 95, 103]. 
 
 Tuttavia, l'esecuzione simbolica rigorosa deve operare in modalità **Zero-Inference**, ovvero basandosi *esclusivamente* sulle condizioni scritte nel codice, senza inventarsi precondizioni di buon senso che il programmatore non ha inserito. 
 
@@ -96,8 +96,8 @@ Guardiamo con attenzione la riga 6 del codice di questo assignment:
 Noti qualcosa? **Manca completamente il controllo sui confini dell'array!** Il programmatore si è dimenticato di scrivere `&& i < transactions.length` (controllo che, non a caso, apparirà poi nell'assignment successivo W11). 
 
 Di conseguenza, se l'array fornito in ingresso ha una lunghezza pari a 1 (`transactions.length = 1`) ma il parametro `count` è impostato a 2 (`C = 2`), il motore simbolico traccia questo scenario:
-1. [cite_start]**Iterazione 1 (`I = 0`):** La guardia del ciclo verifica `0 < 2 && !false` $\rightarrow$ Superata[cite: 89]. Alla riga 8 viene eseguito `transactions[0]`. [cite_start]L'indice `0` è minore della lunghezza dell'array (`1`), quindi l'accesso è **sicuro**[cite: 89, 98]. [cite_start]Supponiamo che la transazione sia positiva, quindi `overdrawn` resta falso ed `i` cresce a `1`[cite: 91, 92].
-2. [cite_start]**Iterazione 2 (`I = 1`):** La guardia del ciclo verifica `1 < 2 && !false` $\rightarrow$ **Superata di nuovo!** [cite: 92] [cite_start]Il flusso entra nel ciclo ed esegue la riga 8: `transactions[1]`[cite: 93]. Ma la lunghezza dell'array è `1`. L'indice `1` è fuori dai limiti dell'array (`1 >= 1`). **BUFFER OVERFLOW!**
+1. **Iterazione 1 (`I = 0`):** La guardia del ciclo verifica `0 < 2 && !false` $\rightarrow$ Superata[cite: 89]. Alla riga 8 viene eseguito `transactions[0]`. L'indice `0` è minore della lunghezza dell'array (`1`), quindi l'accesso è **sicuro**[cite: 89, 98]. Supponiamo che la transazione sia positiva, quindi `overdrawn` resta falso ed `i` cresce a `1`[cite: 91, 92].
+2. **Iterazione 2 (`I = 1`):** La guardia del ciclo verifica `1 < 2 && !false` $\rightarrow$ **Superata di nuovo!** [cite: 92] Il flusso entra nel ciclo ed esegue la riga 8: `transactions[1]`[cite: 93]. Ma la lunghezza dell'array è `1`. L'indice `1` è fuori dai limiti dell'array (`1 >= 1`). **BUFFER OVERFLOW!**
 
 L'SMT Solver, analizzando la formula di violazione `PC && !(I < transactions.length)`, avrebbe risposto **`SAT`** producendo esattamente il controesempio `transactions.length = 1` e `count = 2`. Concludere dicendo che il buffer overflow era impossibile in modo assoluto ti è costato il punto della lode.
 
@@ -105,31 +105,31 @@ L'SMT Solver, analizzando la formula di violazione `PC && !(I < transactions.len
 
 ## Svisceramento dell'Excel: Analisi riga per riga del cammino (2 Iterazioni)
 
-[cite_start]Vediamo come si popolano matematicamente le colonne del tuo file Excel per dimostrare la perfetta comprensione del tracciamento algebrico delle due iterazioni[cite: 89].
+Vediamo come si popolano matematicamente le colonne del tuo file Excel per dimostrare la perfetta comprensione del tracciamento algebrico delle due iterazioni[cite: 89].
 
 ### 1. Fase di Inizializzazione (Linee 1 - 5)
-* **Linea 1:** La variabile `balance` riceve il valore `0.0`. Stato: `B = 0.0`. [cite_start]PC = `TRUE`[cite: 89].
-* **Linea 2:** `i` viene inizializzata a `0`. [cite_start]Stato: `I = 0`[cite: 89].
-* **Linea 3:** `overdrawn` viene impostata a `false`. [cite_start]Stato: `O = FALSO`[cite: 89].
-* **Linea 4:** `minimum` copia il valore di `balance`. [cite_start]Stato: `M = 0.0`[cite: 89].
-* **Linea 5:** `steps` viene azzerata. Stato: `S = 0`. [cite_start]Il valore di `count` riflette l'input simbolico: `C`[cite: 89].
+* **Linea 1:** La variabile `balance` riceve il valore `0.0`. Stato: `B = 0.0`. PC = `TRUE`[cite: 89].
+* **Linea 2:** `i` viene inizializzata a `0`. Stato: `I = 0`[cite: 89].
+* **Linea 3:** `overdrawn` viene impostata a `false`. Stato: `O = FALSO`[cite: 89].
+* **Linea 4:** `minimum` copia il valore di `balance`. Stato: `M = 0.0`[cite: 89].
+* **Linea 5:** `steps` viene azzerata. Stato: `S = 0`. Il valore di `count` riflette l'input simbolico: `C`[cite: 89].
 
 ### 2. Prima Iterazione del Ciclo
 * **Linea 6 (Valutazione Guardia):** Il motore valuta `i < count && !overdrawn`. Sostituendo i valori correnti dello stato, otteniamo `0 < C && !false`, che si riduce a `C > 0`. Per entrare nel ciclo, questa condizione deve essere vera.
-  * [cite_start]PC Aggiornata: `C > 0`[cite: 89].
-* **Linea 7:** Incremento degli step. [cite_start]Stato: `S = 1`[cite: 89].
-* **Linea 8 (Accesso Array):** Viene campionato l'elemento all'indice `i = 0`. [cite_start]Il valore simbolico assegnato alla variabile `amount` è `A[0]`[cite: 89].
-* **Linea 9:** Il bilancio viene aggiornato: `balance = balance + amount`. [cite_start]Sostituendo i valori dallo stato (`0.0 + A[0]`), lo stato simbolico di `balance` diventa `A[0]`[cite: 90].
-* **Linea 10:** Viene valutata l'espressione booleana `isNegative = (balance < 0)`. [cite_start]Sostituendo il valore corrente di `balance`, lo stato simbolico di `IN` diventa `(A[0] < 0)`[cite: 90].
-* [cite_start]**Linea 11 (`if isNegative`):** Per garantire che il ciclo non si interrompa e possa completare una seconda iterazione, l'esecuzione simbolica deve forzare lo scenario in cui `isNegative` sia **Falso** (ovvero la transazione non deve mandare il conto in rosso)[cite: 103]. [cite_start]La PC accumula questo vincolo tramite l'operatore di negazione[cite: 91]:
-  * [cite_start]PC Aggiornata: `C > 0 && A[0] >= 0`[cite: 91].
-* **Linea 15:** L'indice viene incrementato: `i = i + 1`. [cite_start]Stato: `I = 1`[cite: 92].
+  * PC Aggiornata: `C > 0`[cite: 89].
+* **Linea 7:** Incremento degli step. Stato: `S = 1`[cite: 89].
+* **Linea 8 (Accesso Array):** Viene campionato l'elemento all'indice `i = 0`. Il valore simbolico assegnato alla variabile `amount` è `A[0]`[cite: 89].
+* **Linea 9:** Il bilancio viene aggiornato: `balance = balance + amount`. Sostituendo i valori dallo stato (`0.0 + A[0]`), lo stato simbolico di `balance` diventa `A[0]`[cite: 90].
+* **Linea 10:** Viene valutata l'espressione booleana `isNegative = (balance < 0)`. Sostituendo il valore corrente di `balance`, lo stato simbolico di `IN` diventa `(A[0] < 0)`[cite: 90].
+* **Linea 11 (`if isNegative`):** Per garantire che il ciclo non si interrompa e possa completare una seconda iterazione, l'esecuzione simbolica deve forzare lo scenario in cui `isNegative` sia **Falso** (ovvero la transazione non deve mandare il conto in rosso)[cite: 103]. La PC accumula questo vincolo tramite l'operatore di negazione[cite: 91]:
+  * PC Aggiornata: `C > 0 && A[0] >= 0`[cite: 91].
+* **Linea 15:** L'indice viene incrementato: `i = i + 1`. Stato: `I = 1`[cite: 92].
 
 ### 3. Seconda Iterazione del Ciclo
-* **Linea 6 (Valutazione Guardia):** Il motore valuta nuovamente la condizione con il nuovo stato (`I = 1`). L'equazione è `1 < C && !false`. [cite_start]Affinché il ciclo continui per la seconda volta, `C` deve essere strettamente maggiore di 1[cite: 92].
-  * [cite_start]PC Aggiornata: `C > 1 && A[0] >= 0`[cite: 92].
-* [cite_start]**Linea 7:** Stato degli step aggiornato: `S = 2`[cite: 93].
-* **Linea 8 (Il punto critico):** Viene campionato l'elemento all'índice `i = 1`. [cite_start]Il valore simbolico associato ad `amount` è `A[1]`[cite: 93]. È qui che, se non imponiamo artificialmente il vincolo sulla lunghezza dell'array, rischiamo il buffer overflow intercettato dal professore.
+* **Linea 6 (Valutazione Guardia):** Il motore valuta nuovamente la condizione con il nuovo stato (`I = 1`). L'equazione è `1 < C && !false`. Affinché il ciclo continui per la seconda volta, `C` deve essere strettamente maggiore di 1[cite: 92].
+  * PC Aggiornata: `C > 1 && A[0] >= 0`[cite: 92].
+* **Linea 7:** Stato degli step aggiornato: `S = 2`[cite: 93].
+* **Linea 8 (Il punto critico):** Viene campionato l'elemento all'índice `i = 1`. Il valore simbolico associato ad `amount` è `A[1]`[cite: 93]. È qui che, se non imponiamo artificialmente il vincolo sulla lunghezza dell'array, rischiamo il buffer overflow intercettato dal professore.
 
 ---
 
