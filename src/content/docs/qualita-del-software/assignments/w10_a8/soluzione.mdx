@@ -1,19 +1,19 @@
 ---
 title: W10.A8 - La mia soluzione (Symbolic)
-description: Derivazione riga per riga dello Stato Simbolico e della Path Condition.
+description: Analisi formale riga per riga tramite Esecuzione Simbolica Pura del metodo computeFinalBalance.
 sidebar:
   order: 15
 ---
 
 import tracciaImg from './traccia.png';
-import tableImg from './soluzione.png';
+import tableImg from './immagine.png';
 
 export const solutionXlsx = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assignments/w10_a8/W10_A8_riva_daniele.xlsx`;
 
 > **Soluzione e difesa - Assignment W10.A8.**
 > Argomento → vedi [Symbolic Execution](/qualita-software/symbolic-execution/).
-> Questa è la guida definitiva per l'orale. Sviscereremo riga per riga la matematica dietro gli aggiornamenti di stato e spiegheremo formalmente il difetto che è costato il 10/10.
-> Stato: **Valutato (9/10)**
+> Questa è la guida strategica definitiva per l'orale. Analizzeremo il reale metodo della consegna e **scoveremo il motivo esatto per cui l'assignment è stato valutato 9/10 anziché 10**.
+> Stato: **Valutato (9/10)** 🏆
 
 <details>
   <summary><strong>Traccia dell'assignment</strong></summary>
@@ -33,7 +33,7 @@ export const solutionXlsx = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assi
   />
   <div style={{ padding: '1rem', borderRadius: '6px', marginTop: '1rem', border: '1px solid var(--sl-color-gray-5)', backgroundColor: 'var(--sl-color-bg-nav)' }}>
     <p style={{ margin: 0 }}>
-      Vuoi analizzare i dati grezzi?
+      Vuoi analizzare i dati logici estratti?
       <br />
       <a href={solutionXlsx} download style={{ fontWeight: 'bold', display: 'inline-block', marginTop: '0.5rem' }}>
         📊 Scarica il file Excel originale (.xlsx)
@@ -42,89 +42,105 @@ export const solutionXlsx = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assi
   </div>
 </details>
 
-## La traccia in breve
+## La traccia reale sotto esame
 
-L'obiettivo dell'assignment era eseguire manualmente il lavoro di un motore di **Symbolic Execution**. 
-Dato il metodo `m(int x, int y)`, dovevamo tracciare tutti i possibili cammini, aggiornando a ogni passo lo **Symbolic State** e calcolando la **Path Condition (PC)** per le biforcazioni degli `if`.
+[cite_start]L'obiettivo dell'assignment era applicare l'**Esecuzione Simbolica Pura** al metodo `computeFinalBalance` per studiare formalmente se le esecuzioni che completano il ciclo `while` **esattamente due volte** possano o meno causare una vulnerabilità di **Buffer Overflow alla riga 8**[cite: 89].
 
-Il codice da analizzare, annotato con i nodi, era:
+[cite_start]Il codice ufficiale della consegna prevede le seguenti istruzioni[cite: 89]:
 
 ```java
-public int m(int x, int y) {
-    if (y > 0) {       // Nodo 1
-        y = y - x;     // Nodo 2
-        if (y < 0) {   // Nodo 3
-            x = x + y; // Nodo 4
+public static double computeFinalBalance(double[] transactions, int count) {
+    double balance = 0.0;          // Line 1
+    int i = 0;                     // Line 2
+    boolean overdrawn = false;     // Line 3
+    double minimum = balance;      // Line 4
+    int steps = 0;                 // Line 5
+
+    while (i < count && !overdrawn) {        // Line 6 - ATTENZIONE QUI!
+        steps = steps + 1;                   // Line 7
+        double amount = transactions[i];     // Line 8 - Riga critica sotto analisi
+        balance = balance + amount;          // Line 9
+        boolean isNegative = (balance < 0);  // Line 10
+        if (isNegative) {                    // Line 11
+            overdrawn = true;                // Line 12
+            minimum = balance;               // Line 13
         }
+        i = i + 1;                           // Line 15
     }
-    if (x > y) {       // Nodo 5
-        x = x - y;     // Nodo 6
+
+    if (overdrawn) {                         // Line 16
+        minimum = 0.0;                       // Line 17
     }
-    return x;          // Nodo 7
+
+    return minimum;                          // Line 18
 }
 ```
 
-## Il "Mistero" del 9/10: Dimostrazione dell'Infeasible Path
+[cite_start]La traccia imponeva di mappare le variabili del codice usando le seguenti identità simboliche maiuscole[cite: 89]:
+* `balance` = `B`, `i` = `I`, `overdrawn` = `O`, `minimum` = `M`, `steps` = `S`, `count` = `C`, `amount` = `A`, `isNegative` = `IN`.
 
-Nella tabella excel, riga 7, ho tracciato il cammino `1T -> 2 -> 3T -> 4 -> 5F -> 7`. Ho scritto la PC finale: `Y > 0 AND Y - X < 0 AND Y <= Y - X`. 
+---
 
-**La domanda fatidica: Perché questo cammino mi è costato 1 punto?**
-Perché l'esecuzione simbolica non fa solo "copia-incolla" di equazioni, ma tramite l'SMT Solver ne valuta la **Soddisfacibilità**. 
+## Lo svelamento del 9/10: L'inganno della riga 6
 
-Se all'orale mi chiedono di dimostrare l'errore alla lavagna, farò questa dimostrazione algebrica partendo dalla PC di quella riga:
-1. Analizzo l'ultima disuguaglianza: `Y <= Y - X`.
-2. Sottraendo `Y` da entrambi i lati ottengo `0 <= -X`, che invertita significa `X <= 0`.
-3. Analizzo la disuguaglianza centrale: `Y - X < 0`. Spostando la X ottengo `Y < X`.
-4. Mettendo a sistema i due risultati: `Y < X` ma `X <= 0`. Proprietà transitiva: `Y` deve essere per forza minore di `0`.
-5. Ora guardo la primissima condizione della PC: `Y > 0`.
+Se analizziamo il commento di feedback lasciato dal professore Alind Xhyra nella correzione ufficiale della piattaforma, leggiamo testualmente:
+**"A buffer overflow is possible if the array transaction has only one element."**
 
-Conclusione: Ho scritto un cammino che richiede `Y > 0 AND Y < 0`. È una contraddizione matematica (`UNSAT`). Questo cammino è un **Infeasible Path**. Non avrei dovuto scriverlo come cammino finale, ma avrei dovuto annotare la riga con "UNSAT" e fermare l'esplorazione, esattamente come fa un motore simbolico reale quando "pota" un albero (Pruning).
+[cite_start]*Perché ti ha tolto un punto?* Nella tua risposta scritta alla domanda Q3 (in cui dovevi dimostrare l'assenza o la presenza del buffer overflow), hai concluso dicendo che l'accesso è matematicamente sicuro ed è protetto dalla Path Condition (`UNSAT`) assumendo implicitamente come precondizione naturale che `count <= transactions.length`[cite: 95, 103]. 
 
-## Analisi riga per riga: Come calcolare lo Stato Simbolico (Cammino T-T-T)
+Tuttavia, l'esecuzione simbolica rigorosa deve operare in modalità **Zero-Inference**, ovvero basandosi *esclusivamente* sulle condizioni scritte nel codice, senza inventarsi precondizioni di buon senso che il programmatore non ha inserito. 
 
-Per dimostrare di saper eseguire la **Sostituzione all'indietro (Back-substitution)**, vediamo esattamente come si compilano le celle dell'Excel per il cammino più complesso: Tutto Vero (`1T -> 2 -> 3T -> 4 -> 5T -> 6 -> 7`).
+Guardiamo con attenzione la riga 6 del codice di questo assignment:
+`while (i < count && !overdrawn)`
 
-1. **Stato iniziale:** - `x = X`, `y = Y`. La PC è `true`.
+Noti qualcosa? **Manca completamente il controllo sui confini dell'array!** Il programmatore si è dimenticato di scrivere `&& i < transactions.length` (controllo che, non a caso, apparirà poi nell'assignment successivo W11). 
 
-2. **Nodo 1 (`if y > 0` - VERO):**
-   - La variabile `y` nello stato simbolico vale `Y`. Sostituisco.
-   - Nuova PC: `Y > 0`.
+Di conseguenza, se l'array fornito in ingresso ha una lunghezza pari a 1 (`transactions.length = 1`) ma il parametro `count` è impostato a 2 (`C = 2`), il motore simbolico traccia questo scenario:
+1. [cite_start]**Iterazione 1 (`I = 0`):** La guardia del ciclo verifica `0 < 2 && !false` $\rightarrow$ Superata[cite: 89]. Alla riga 8 viene eseguito `transactions[0]`. [cite_start]L'indice `0` è minore della lunghezza dell'array (`1`), quindi l'accesso è **sicuro**[cite: 89, 98]. [cite_start]Supponiamo che la transazione sia positiva, quindi `overdrawn` resta falso ed `i` cresce a `1`[cite: 91, 92].
+2. [cite_start]**Iterazione 2 (`I = 1`):** La guardia del ciclo verifica `1 < 2 && !false` $\rightarrow$ **Superata di nuovo!** [cite: 92] [cite_start]Il flusso entra nel ciclo ed esegue la riga 8: `transactions[1]`[cite: 93]. Ma la lunghezza dell'array è `1`. L'indice `1` è fuori dai limiti dell'array (`1 >= 1`). **BUFFER OVERFLOW!**
 
-3. **Nodo 2 (`y = y - x`):**
-   - Valuto l'espressione a destra leggendo lo stato attuale: `y` vale `Y`, `x` vale `X`. 
-   - Il risultato algebrico è `Y - X`.
-   - Aggiorno lo stato simbolico: ora `y = Y - X`. `x` rimane `X`.
+L'SMT Solver, analizzando la formula di violazione `PC && !(I < transactions.length)`, avrebbe risposto **`SAT`** producendo esattamente il controesempio `transactions.length = 1` e `count = 2`. Concludere dicendo che il buffer overflow era impossibile in modo assoluto ti è costato il punto della lode.
 
-4. **Nodo 3 (`if y < 0` - VERO):**
-   - Qual è il valore simbolico di `y` in questo momento? È `Y - X`. Sostituisco.
-   - La condizione valutata diventa `Y - X < 0`.
-   - Aggiorno la PC con un AND: `Y > 0 AND Y - X < 0`.
+---
 
-5. **Nodo 4 (`x = x + y`):**
-   - **Attenzione qui!** Valuto l'espressione a destra leggendo lo stato attuale. `x` vale `X`. Ma `y` ora vale `Y - X`.
-   - L'espressione matematica diventa: `X + (Y - X)`.
-   - Le due `X` si annullano! Il risultato è `Y`.
-   - Aggiorno lo stato simbolico di `x`. Ora `x = Y`.
+## Svisceramento dell'Excel: Analisi riga per riga del cammino (2 Iterazioni)
 
-6. **Nodo 5 (`if x > y` - VERO):**
-   - Sostituisco con i valori attuali. `x` vale `Y`. `y` vale `Y - X`.
-   - La condizione valutata è: `Y > Y - X`.
-   - Semplificando l'espressione, tolgo `Y` e inverto i segni: ottengo `X > 0`.
-   - Aggiorno la PC: `Y > 0 AND Y - X < 0 AND X > 0`.
+[cite_start]Vediamo come si popolano matematicamente le colonne del tuo file Excel per dimostrare la perfetta comprensione del tracciamento algebrico delle due iterazioni[cite: 89].
 
-7. **Nodo 6 (`x = x - y`):**
-   - Valuto l'espressione. `x` vale `Y`. `y` vale `Y - X`.
-   - L'espressione diventa: `Y - (Y - X)`. Risolta, togliendo le parentesi: `Y - Y + X`, che fa `X`.
-   - Aggiorno lo stato simbolico di `x`. Ora `x = X`. Sorprendentemente, dopo tutti questi calcoli, `x` è tornata al suo valore originale.
+### 1. Fase di Inizializzazione (Linee 1 - 5)
+* **Linea 1:** La variabile `balance` riceve il valore `0.0`. Stato: `B = 0.0`. [cite_start]PC = `TRUE`[cite: 89].
+* **Linea 2:** `i` viene inizializzata a `0`. [cite_start]Stato: `I = 0`[cite: 89].
+* **Linea 3:** `overdrawn` viene impostata a `false`. [cite_start]Stato: `O = FALSO`[cite: 89].
+* **Linea 4:** `minimum` copia il valore di `balance`. [cite_start]Stato: `M = 0.0`[cite: 89].
+* **Linea 5:** `steps` viene azzerata. Stato: `S = 0`. [cite_start]Il valore di `count` riflette l'input simbolico: `C`[cite: 89].
 
-8. **Nodo 7 (`return x`):**
-   - Il programma ritorna il valore di `x`. Leggo lo stato simbolico di `x` che attualmente è `X`. 
-   - Output del programma: `X`.
+### 2. Prima Iterazione del Ciclo
+* **Linea 6 (Valutazione Guardia):** Il motore valuta `i < count && !overdrawn`. Sostituendo i valori correnti dello stato, otteniamo `0 < C && !false`, che si riduce a `C > 0`. Per entrare nel ciclo, questa condizione deve essere vera.
+  * [cite_start]PC Aggiornata: `C > 0`[cite: 89].
+* **Linea 7:** Incremento degli step. [cite_start]Stato: `S = 1`[cite: 89].
+* **Linea 8 (Accesso Array):** Viene campionato l'elemento all'indice `i = 0`. [cite_start]Il valore simbolico assegnato alla variabile `amount` è `A[0]`[cite: 89].
+* **Linea 9:** Il bilancio viene aggiornato: `balance = balance + amount`. [cite_start]Sostituendo i valori dallo stato (`0.0 + A[0]`), lo stato simbolico di `balance` diventa `A[0]`[cite: 90].
+* **Linea 10:** Viene valutata l'espressione booleana `isNegative = (balance < 0)`. [cite_start]Sostituendo il valore corrente di `balance`, lo stato simbolico di `IN` diventa `(A[0] < 0)`[cite: 90].
+* [cite_start]**Linea 11 (`if isNegative`):** Per garantire che il ciclo non si interrompa e possa completare una seconda iterazione, l'esecuzione simbolica deve forzare lo scenario in cui `isNegative` sia **Falso** (ovvero la transazione non deve mandare il conto in rosso)[cite: 103]. [cite_start]La PC accumula questo vincolo tramite l'operatore di negazione[cite: 91]:
+  * [cite_start]PC Aggiornata: `C > 0 && A[0] >= 0`[cite: 91].
+* **Linea 15:** L'indice viene incrementato: `i = i + 1`. [cite_start]Stato: `I = 1`[cite: 92].
 
-## Domande di difesa probabili (Roleplay)
+### 3. Seconda Iterazione del Ciclo
+* **Linea 6 (Valutazione Guardia):** Il motore valuta nuovamente la condizione con il nuovo stato (`I = 1`). L'equazione è `1 < C && !false`. [cite_start]Affinché il ciclo continui per la seconda volta, `C` deve essere strettamente maggiore di 1[cite: 92].
+  * [cite_start]PC Aggiornata: `C > 1 && A[0] >= 0`[cite: 92].
+* [cite_start]**Linea 7:** Stato degli step aggiornato: `S = 2`[cite: 93].
+* **Linea 8 (Il punto critico):** Viene campionato l'elemento all'índice `i = 1`. [cite_start]Il valore simbolico associato ad `amount` è `A[1]`[cite: 93]. È qui che, se non imponiamo artificialmente il vincolo sulla lunghezza dell'array, rischiamo il buffer overflow intercettato dal professore.
 
-1. **Professore:** "Al Nodo 4, nel suo stato simbolico per la variabile `x`, lei ha scritto semplicemente `Y`. Come c'è arrivato partendo dall'istruzione `x = x + y`?"
-   **Risposta:** "Tramite la sostituzione all'indietro (*back-substitution*). L'istruzione va valutata leggendo l'istantanea dello stato simbolico in quel preciso momento. Al Nodo 2 la variabile `y` era stata sovrascritta con la formula `Y - X`. Quindi, l'espressione `x + y` matematicamente diventa `X + (Y - X)`. Svolgendo l'equazione algebrica, le due X si eliminano, lasciando la `x` puramente uguale a `Y`."
+---
 
-2. **Professore:** "A cosa serve l'operazione di semplificazione (es. trasformare `Y > Y - X` in `X > 0`) all'interno della Path Condition? Potevamo tenerla non semplificata?"
-   **Risposta:** "In linea teorica sì, per un SMT Solver moderno non fa alcuna differenza ricevere la formula lunga o quella semplificata, la risolverebbe comunque. Tuttavia, per l'analisi umana, semplificare le disequazioni è fondamentale per accorgersi a colpo d'occhio delle contraddizioni matematiche e individuare tempestivamente gli *Infeasible Paths* prima ancora di passarli al Solver."
+## Domande di difesa probabili (Roleplay per l'Orale)
+
+1. **Professore:** "Signor Riva, nella sua risposta all'esercizio lei ha concluso che l'accesso alla riga 8 è sicuro, ma io le ho scritto nei commenti che un Buffer Overflow è possibile se l'array ha un solo elemento. Chi ha ragione e perché?"
+   **Risposta:** "Ha perfettamente ragione lei, professore. Nella mia analisi ho commesso l'errore di dare per scontata la precondizione esterna `count <= transactions.length`. Guardando però il puro codice della riga 6, il ciclo controlla unicamente che `i < count`. Se l'array ha un solo elemento e `count = 2`, la Path Condition simbolica accumulata alla seconda iterazione è `C > 1`, la quale permette perfettamente all'indice `i` di assumere il valore `1`. Poiché l'indice `1` viola il limite di un array di dimensione 1, l'analisi formale del codice rivela una vulnerabilità reale di Buffer Overflow, che si corregge inserendo il controllo esplicito sui confini dell'array nella guardia del `while`."
+
+2. **Professore:** "Mi spieghi come ha calcolato il valore simbolico di `isNegative` alla riga 10 della prima iterazione. Perché ha scritto `A[0] < 0`?"
+   **Risposta:** "Il calcolo avviene applicando il principio della sostituzione all'indietro dello stato. Alla linea 9, la variabile `balance` ha accumulato il valore del primo elemento dell'array, modificando il suo stato in `A[0]`. Di conseguenza, quando la linea 10 valuta l'espressione condizionale `balance < 0`, il motore simbolico sostituisce la parola `balance` con la sua espressione algebrica corrente, ricavando l'espressione puramente simbolica `A[0] < 0` da inserire nel registro."
+
+3. **Professore:** "A cosa serve l'operazione ternaria che ha menzionato nelle risposte del foglio rispetto all'universo degli SMT Solver?"
+   **Risposta:** "La formula di verifica dell'oracolo per il buffer overflow cerca di determinare se esiste un caso in cui la Path Condition è vera ma l'indice è fuori dai confini. Inviamo all'SMT Solver la formula `PC && !(0 <= I < transactions.length)`. Se il solver risponde `UNSAT`, significa che le regole del codice impediscono il bug. Se risponde `SAT`, come nel caso in cui l'array ha lunghezza 1 e non ci sono controlli protettivi, il solver non solo ci dice che il bug esiste, ma ci sputa fuori i valori concreti esatti dei parametri per riprodurre il crash in Java."
+```
