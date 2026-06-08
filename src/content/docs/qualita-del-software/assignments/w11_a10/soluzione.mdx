@@ -1,5 +1,5 @@
 ---
-title: W11.A10 - La mia soluzione
+title: W11.A10 - La mia soluzione (DSE)
 description: Analisi del Concolic Testing, svisceramento dell'albero di esecuzione e verifica dell'oracolo di sicurezza.
 sidebar:
   order: 17
@@ -56,8 +56,7 @@ public static double computeFinalBalance(double[] transactions, int count) {
     double minimum = balance;      // Line 4
     int steps = 0;                 // Line 5
 
-    // Line 6 - ATTENZIONE: Qui c'è il controllo sui limiti dell'array!
-    while (i < count && !overdrawn && i < transactions.length) { 
+    while (i < count && !overdrawn && i < transactions.length) { // Line 6
         steps = steps + 1;                   // Line 7
         double amount = transactions[i];     // Line 8 (Punto critico)
         balance = balance + amount;          // Line 9
@@ -77,65 +76,176 @@ public static double computeFinalBalance(double[] transactions, int count) {
 }
 ```
 
----
-
-## Svisceramento dell'Excel: I due cammini tracciati
-
-Il Concolic Testing ci permette di scoprire nuovi cammini partendo dai dati reali. La traccia chiedeva di esplorare 2 dei 4 cammini possibili che effettuano due iterazioni.
-
-### Cammino 1 (Il Seme Concreto Iniziale)
-Guidato dai valori concreti dell'array, il programma esegue tutto il ciclo senza mai andare in negativo.
-1. **Iterazione 1 (`I = 0`):** La guardia alla riga 6 è VERA. La Path Condition (PC) incamera i vincoli: `C > 0 AND 0 < length`.
-   Il bilancio concreto diventa `10.1`. Alla riga 11, la variabile booleana è FALSA. La PC viene aggiornata per forzare questo ramo: `A1 >= 0`.
-2. **Iterazione 2 (`I = 1`):** L'indice cresce. La guardia è VERA. 
-   Il bilancio sale a `25.4`. Alla riga 11, la condizione è di nuovo FALSA. La PC si aggiorna ulteriormente: `A1 + A2 >= 0`.
-3. **Uscita:** Alla terza iterazione, `i` vale `2`. La guardia `i < count` fallisce. Il ciclo si interrompe e il programma restituisce `0.0`.
-
-### Cammino 3 (Scoperto tramite Negazione)
-L'engine prende l'ultima Path Condition del Cammino 1 e ne inverte il finale per scoprire nuovo codice. Invece di volere il secondo bilancio positivo, nega l'ultima espressione chiedendo: `A1 + A2 < 0`. L'SMT Solver genera un nuovo array concreto (il secondo valore è fortemente negativo).
-
-1. **Iterazione 1 (`I = 0`):** Identica al cammino precedente. Ramo Falso alla riga 11.
-2. **Iterazione 2 (`I = 1`):** Qui cambia tutto. Il nuovo valore estratto manda il bilancio in rosso. 
-   Alla riga 11, il controllo risulta VERO. Il programma entra nel blocco condizionale finora inesplorato.
-   Vengono eseguite le righe 12 e 13: il conto viene segnato come scoperto (`TRUE` simbolico), e il minimo acquisisce il valore simbolico `A1 + A2`.
-3. **Uscita:** Alla terza valutazione della guardia, avviene un *corto-circuito*. L'espressione incontra il check sul conto scoperto. Essendo vero che il conto è scoperto, l'operazione AND fallisce bloccando il ciclo in anticipo.
+La traccia imponeva l'uso delle seguenti lettere maiuscole come valori simbolici:
+`B` (balance), `I` (i), `O` (overdrawn), `M` (minimum), `S` (steps), `C` (count), `A` (amount), `IN` (isNegative).
 
 ---
 
-## Analisi Profonda delle Domande della Consegna (Q1 & Q3)
+## Svisceramento Riga per Riga del Tracciamento nell'Excel
 
-Nel file Excel hai formalizzato i criteri matematici per rispondere alle due domande teoriche sulla sicurezza della riga 8.
+Ecco la ricostruzione analitica millimetrica di come abbiamo popolato le celle dell'Excel per entrambi i cammini esplorati dal motore di calcolo.
 
-### Q1: Il Principio dell'Oracolo di Sicurezza
-Come possiamo dimostrare matematicamente l'assenza di buffer overflow?
-Il ragionamento che hai scritto nell'Excel si basa sull'**Invariante di Accesso Sicuro**: affinché la lettura dall'array sia sicura, deve sempre valere l'equazione `0 <= I < lunghezza_array`.
-L'Oracolo lavora per "Dimostrazione per Assurdo". Invia all'SMT Solver la formula che rappresenta la violazione:
-`Formula = PathCondition AND NOT(0 <= I < lunghezza_array)`
+### Cammino 1 (Seme Concreto Iniziale)
+Questo percorso traccia il comportamento con gli input: `count = 2`, `transactions = [10.1, 15.3, 0.50, 1.27, 18.0, 3.14, 42.0]` (lunghezza pari a 7).
 
-* **Se il solver risponde `UNSAT` (Insoddisfacibile):** La Path Condition accumulata dal programma contraddice matematicamente l'errore. Il crash è impossibile.
-* **Se il solver risponde `SAT`:** I vincoli del programma permettono la violazione. Il solver genera un controesempio numerico.
+* **Riga 1 (`double balance = 0.0;`):**
+  - Stato Simbolico: `balance = 0`. Valore Concreto: `0`. Commento: `balance = 0.0`.
+* **Riga 2 (`int i = 0;`):**
+  - Stato Simbolico: `i = 0`. Valore Concreto: `0`. Commento: `i = 0`.
+* **Riga 3 (`boolean overdrawn = false;`):**
+  - Stato Simbolico: `overdrawn = -`. Valore Concreto: `false`. Commento: `overdrawn = false`.
+* **Riga 4 (`double minimum = balance;`):**
+  - Stato Simbolico: `minimum = 0`. Valore Concreto: `0`. Commento: `minimum = balance = 0.0`.
+* **Riga 5 (`int steps = 0;`):**
+  - Stato Simbolico: `steps = 0`. Valore Concreto: `0`. Commento: `steps = 0`. La variabile `count` nello stato vale `C` (concreto 2).
+* **Riga 6 (Controllo Guardia - Iterazione 1):**
+  - Espressione: `i < count && !overdrawn && i < transactions.length`. Concretamente: `0 < 2 && !false && 0 < 7`, che si riduce a `TRUE`.
+  - Path Condition (`PC`): Si inizializza incorporando lo sdoppiamento simbolico della guardia: `0 < C AND 0 < 7`.
+  - Commento originale: `loop guard i<count AND !overdrawn AND i<transactions.length (conc 0<2 AND !FALSE AND 0<7) TRUE -> enter iteration 1; add 0<C and the index bound 0<7`.
+* **Riga 7 (`steps = steps + 1;`):**
+  - Stato Simbolico: `steps = 1`. Concreto: `1`. Commento: `steps = steps + 1 = 1`.
+* **Riga 8 (Lettura Array):**
+  - Stato Simbolico: `amount = A1` (che rappresenta il primo elemento simbolico dell'array). Concreto: `10,1`.
+  - Commento originale: `amount = transactions[0]; the guard appended 0<transactions.length (0<7) at line 6, so index 0 is in bounds -> no buffer overflow`.
+* **Riga 9 (`balance = balance + amount;`):**
+  - Sostituzione: `0 + A1`. Stato Simbolico: `balance = A1`. Concreto: `10,1`. Commento: `balance = balance + amount = 0 + A1`.
+* **Riga 10 (`boolean isNegative = (balance < 0);`):**
+  - Stato Simbolico: `isNegative = A1 < 0`. Concreto: `false`. Commento: `isNegative = (balance < 0); conc 10.1 < 0 = false`.
+* **Riga 11 (`if (isNegative)`):**
+  - Poiché il valore concreto è `false`, il blocco viene saltato. Il motore aggiunge la clausola di negazione alla Path Condition per validare questo specifico ramo.
+  - `PC` aggiornata: `0 < C AND 0 < 7 AND A1 >= 0`.
+  - Commento originale: `isNegative is false -> skip if-body; PC adds the negation A1 >= 0`.
+* **Riga 15 (`i = i + 1;`):**
+  - Stato Simbolico: `i = 1`. Concreto: `1`. Commento: `i = i + 1 -> i becomes 1`.
+* **Riga 6 (Controllo Guardia - Iterazione 2):**
+  - Concretamente: `1 < 2 && !false && 1 < 7`, ovvero `TRUE`. Simbolicamente richiede che `1 < C` e l'indice sia nei limiti (`1 < 7`).
+  - `PC` aggiornata: Incorpora i nuovi vincoli: `1 < C AND 1 < 7`.
+  - Commento originale: `loop guard (conc 1<2 AND !FALSE AND 1<7) TRUE -> enter iteration 2; add 1<C and the index bound 1<7`.
+* **Riga 7 (`steps = steps + 1;`):**
+  - Stato Simbolico: `steps = 2`. Concreto: `2`. Commento: `steps = steps + 1 = 2`.
+* **Riga 8 (Lettura Array - Iterazione 2):**
+  - Stato Simbolico: `amount = A2`. Concreto: `15,3`.
+  - Commento originale: `amount = transactions[1]; the guard appended 1<transactions.length (1<7) at line 6, so index 1 is in bounds -> no buffer overflow`.
+* **Riga 9 (`balance = balance + amount;`):**
+  - Sostituzione: `A1 + A2`. Stato Simbolico: `balance = A1 + A2`. Concreto: `25,4`. Commento: `balance = balance + amount = A1 + A2`.
+* **Riga 10 (`boolean isNegative = (balance < 0);`):**
+  - Stato Simbolico: `isNegative = A1 + A2 < 0`. Concreto: `false`. Commento: `isNegative = (balance < 0); conc 25.4 < 0 = false`.
+* **Riga 11 (`if (isNegative)`):**
+  - Salta il corpo dell'if. La PC acquisisce la negazione del controllo.
+  - `PC` aggiornata: Aggiunge la clausola `A1 + A2 >= 0`.
+  - Commento originale: `isNegative is false -> skip if-body; PC adds the negation A1 + A2 >= 0`.
+* **Riga 15 (`i = i + 1;`):**
+  - Stato Simbolico: `i = 2`. Concreto: `2`. Commento: `i = i + 1 -> i becomes 2`.
+* **Riga 6 (Controllo Guardia - Iterazione 3):**
+  - Concretamente: `2 < 2` è falso, provocando il fallimento immediato per corto-circuito.
+  - `PC` aggiornata: Registra l'uscita aggiungendo il vincolo `C <= 2`.
+  - Commento originale: `loop guard: first conjunct i<count is 2<2 = false (short-circuit) -> exit loop; PC adds the negation C <= 2`.
+* **Riga 16 (`if (!overdrawn)`):**
+  - Concretamente: `!false` è vero. Commento originale: `!overdrawn (conc !false = true) -> enter if-body`.
+* **Riga 17 (`minimum = 0.0;`):**
+  - Stato Simbolico: `minimum = 0`. Concreto: `0`. Commento: `minimum = 0.0`.
+* **Riga 18 (`return minimum;`):**
+  - Il metodo termina. Concreto: `0`. Commento: `return minimum = 0.0`.
 
-### Q3 e i Comments: La Dimostrazione Pratica
-Come hai spiegato in modo eccellente nei *Comments* della tua tabella, la sicurezza è garantita a monte.
+---
 
-Qualunque esecuzione che raggiunga l'istruzione di lettura all'interno del ciclo deve necessariamente aver superato la valutazione della guardia un istante prima. Superandola, la Path Condition simbolica incamera automaticamente il vincolo vitale `I < lunghezza_array`.
+### Cammino 3 (Scoperto tramite Negazione della Condizione al secondo giro)
+Questo cammino viene generato prendendo la `PC` precedente e **negando l'ultima decisione interessante** (ovvero imponendo che al secondo giro il conto vada in rosso per scoprire il ramo `isNegative = true`). L'SMT Solver calcola un nuovo input valido: `transactions[1] = -20.0`.
 
-Quando applichiamo l'Oracolo di Sicurezza visto in Q1:
-`PC_con_vincolo AND NOT(0 <= I < lunghezza_array)`
-stiamo letteralmente chiedendo al risolutore matematico di far sì che l'indice `I` sia *contemporaneamente* minore della lunghezza (nella PC) e maggiore o uguale alla lunghezza (nella negazione). 
-Questa è una **contraddizione matematica ineludibile**. Il sistema restituisce **`UNSAT`** su tutta la linea, certificando formalmente l'assoluta assenza di vulnerabilità.
+* **Righe 1 - 5 (Inizializzazione):** Identiche al Cammino 1.
+* **Iterazione 1 (Righe 6 - 15):** Identiche al Cammino 1. Il bilancio sale a 10.1, il controllo fallisce e l'indice si sposta a 1.
+* **Riga 6 (Controllo Guardia - Iterazione 2):**
+  - Concretamente: `1 < 2 && !false && 1 < 7` $\rightarrow$ `TRUE`. La `PC` accumula i medesimi vincoli geometrici di re-ingresso.
+  - Commento originale: `loop guard (conc 1<2 AND !FALSE AND 1<7) TRUE -> enter iteration 2; add 1<C and the index bound 1<7`.
+* **Riga 7 (`steps = steps + 1;`):**
+  - Stato Simbolico: `steps = 2`. Concreto: `2`. Commento: `steps = steps + 1 = 2`.
+* **Riga 8 (Lettura Array - Iterazione 2):**
+  - Lo stato associa ad `amount` la lettera `A2`. Il valore concreto fornito dal solver è `-20,0`.
+  - Commento originale: `amount = transactions[1]; the guard appended 1<transactions.length (1<7) at line 6, so index 1 is in bounds -> no buffer overflow`.
+* **Riga 9 (`balance = balance + amount;`):**
+  - Sostituzione algebrica: `A1 + A2`. Concretamente: `10.1 + (-20.0) = -9.9`. Stato Simbolico: `balance = A1 + A2`.
+  - Commento originale: `balance = balance + amount = A1 + A2`.
+* **Riga 10 (`boolean isNegative = (balance < 0);`):**
+  - Sostituzione: `A1 + A2 < 0`. Il valore numerico è `-9.9 < 0`, che è `true`. Stato Simbolico: `isNegative = A1 + A2 < 0`. Concreto: `true`.
+  - Commento originale: `isNegative = (balance < 0); conc -9.9 < 0 = true`.
+* **Riga 11 (`if (isNegative)`):**
+  - Essendo concreto `true`, il motore entra nel blocco condizionale. La `PC` memorizza l'affermazione del ramo: `A1 + A2 < 0`.
+  - Commento originale: `isNegative is true -> enter if-body [DART negated branch]; PC adds A1 + A2 < 0`.
+* **Riga 12 (`overdrawn = true;`):**
+  - Lo scoperto si attiva. Stato Simbolico: `overdrawn = true`. Concreto: `true`. Commento: `overdrawn = true`.
+* **Riga 13 (`minimum = balance;`):**
+  - La variabile `minimum` cattura lo stato del bilancio. Sostituzione: `A1 + A2`. Concreto: `-9,9`. Commento: `minimum = balance = A1 + A2`.
+* **Riga 15 (`i = i + 1;`):**
+  - Incremento dell'indice. Stato Simbolico: `i = 2`. Concreto: `2`. Commento: `i = i + 1 = 2`.
+* **Riga 6 (Controllo Guardia - Iterazione 3):**
+  - Concretamente: `2 < 2` valuta a `false`. Il ciclo si interrompe immediatamente per corto-circuito.
+  - `PC` aggiornata: Registra il vincolo di uscita `C <= 2`.
+  - Commento originale: `loop guard: first conjunct i<count is 2<2 = false (short-circuit, exits before testing overdrawn) -> exit loop; PC adds the negation C <= 2`.
+* **Riga 16 (`if (!overdrawn)`):**
+  - Concretamente: `!true` valuta a `false`. Il blocco viene saltato. Commento originale: `!overdrawn (conc !true = false) -> skip if-body`.
+* **Riga 18 (`return minimum;`):**
+  - Il metodo termina restituendo l'importo salvato in `minimum`. Stato Simbolico: `A1 + A2`. Concreto: `-9,9`. Commento: `return minimum = -9.9`.
 
-Nel commento hai inoltre specificato un dettaglio strutturale: per fare due iterazioni esatte, la prima transazione non deve mai mandare il conto in rosso. Se lo facesse, il ciclo si interromperebbe subito a causa del flag booleano. Questo rende il bilancio positivo al primo giro un prefisso obbligatorio per tutti i cammini lunghi.
+---
+
+## Le celle Q1, Q3 e Comments (fedeli al file consegnato)
+
+In fondo all'Excel ci sono tre celle di testo. Qui sotto trovi cosa contengono davvero e cosa significano.
+
+### Q1 - Documentazione del Cammino 1 (seme concreto)
+
+La DSE parte dagli input concreti dati dalla traccia, `transactions = [10.1, 15.3, 0.50, 1.27, 18.0, 3.14, 42.0]` e `count = 2`. L'`if` alla riga 11 prende il ramo **false in entrambe le iterazioni**, quindi `overdrawn` resta false e il corpo gira **esattamente due volte**; il loop esce alla terza valutazione della guardia perché il primo congiunto `i < count` (`2<2`) è falso. La funzione ritorna `minimum = 0.0`.
+
+**Final PC:** `TRUE AND 0<C AND 0<7 AND A1>=0 AND 1<C AND 1<7 AND A1+A2>=0 AND C<=2`
+**Semplificata:** `C=2 AND A1>=0 AND A1+A2>=0`
+
+*Perché si semplifica così (da saper spiegare a voce):*
+- `0<C`, `1<C` (cioè C>1) e `C<=2`: su un intero, `C>1` e `C<=2` danno **`C=2`** (e `0<C` è già implicato).
+- `0<7` e `1<7` sono **sempre veri** (lunghezza dell'array di test = 7) → si eliminano.
+- Restano i due vincoli del branch della riga 11: `A1>=0` e `A1+A2>=0`.
+
+Infine la cella indica come si genera il cammino successivo: si **nega la condizione del branch della riga 11 della seconda iterazione** (`A1+A2>=0` → `A1+A2<0`), ottenendo il Cammino 3.
+
+### Q3 - Documentazione del Cammino 3 (ottenuto via DART)
+
+Il Cammino 3 ha `isNegative` false in iterazione 1 e **true in iterazione 2**, ed è ottenuto dal Cammino 1 negando il vincolo della riga 11 della seconda iterazione. Risolvendo `C=2 AND A1>=0 AND A1+A2<0`, l'SMT solver produce i nuovi input concreti `transactions = [10.1, -20.0, 0.50, 1.27, 18.0, 3.14, 42.0]` e `count = 2`. Il corpo gira **comunque due volte**; nella seconda iterazione ora si entra nell'if-body alla riga 11, settando `overdrawn = true` e `minimum = A1 + A2 = -9.9`. Il loop esce alla terza valutazione della guardia perché `i < count` (`2<2`) è falso (corto-circuito: esce prima ancora di testare `!overdrawn`). La funzione ritorna `minimum = -9.9`.
+
+**Final PC:** `TRUE AND 0<C AND 0<7 AND A1>=0 AND 1<C AND 1<7 AND A1+A2<0 AND C<=2`
+**Semplificata:** `C=2 AND A1>=0 AND A1+A2<0`
+
+Nota la differenza con Q1: l'unico vincolo che cambia è l'ultimo, `A1+A2<0` al posto di `A1+A2>=0`. È esattamente la condizione negata che ha generato questo cammino.
+
+### Comments - Perché nessun cammino a due iterazioni causa buffer overflow
+
+Questa è la risposta vera sulla sicurezza della riga 8, ed è un argomento **per invariante**. Nessuna esecuzione che attraversa il loop esattamente due volte produce un buffer overflow. La riga 8 (`amount = transactions[i]`) è raggiunta **solo dopo** che la guardia della riga 6 è stata valutata vera nella stessa iterazione, e quella guardia **aggiunge alla path condition il bound dell'indice** `i < transactions.length` (`0<7` per i=0, `1<7` per i=1). Insieme al fatto che `i=0` alla riga 2 e che `i` viene incrementato di 1 solo alla riga 15 dopo ogni esecuzione del corpo, questo garantisce l'invariante `0 <= i < transactions.length` a ogni ingresso alla riga 8. Quindi `transactions[i]` è sempre nel range. I cammini 1 e 3 lo mostrano per i due esiti del branch della riga 11 in iterazione 2 (isNegative false e true).
+
+:::tip[Il punto di forza: l'invariante viene dalla guardia, non da una precondizione]
+La forza di questo argomento sta nel fatto che il bound `i < transactions.length` è **dentro la guardia del while** (riga 6). Quindi finisce automaticamente nella PC ogni volta che si entra nel corpo: non serve assumere alcuna precondizione tipo `count <= transactions.length`. Il codice si auto-protegge. Volendo formalizzarlo: l'oracolo di overflow `PC AND NOT(0 <= i < transactions.length)` risulta **UNSAT**, perché la PC contiene già `i < transactions.length`. Ma l'argomento per invariante che hai scritto è più diretto e sufficiente.
+:::
+
+:::caution[Piccola imprecisione da correggere a voce]
+Nei Comments scrivi "the remaining two of the four paths that traverse the loop exactly two times". In realtà i cammini che eseguono il corpo **esattamente due volte sono due, non quattro**: l'iterazione 1 deve **per forza** prendere il ramo `isNegative = false` (se andasse in rosso, `overdrawn = true` farebbe fallire la guardia e l'esecuzione si fermerebbe a una sola iterazione). Resta quindi libero solo il branch della seconda iterazione → 2 cammini (il tuo Cammino 1 e Cammino 3). All'orale, se ti citano quella frase, correggi tu stesso: "esatto, sono due, perché il primo giro è obbligatoriamente non-negativo". Mostrare di vederlo è un punto a favore.
+:::
+
+---
+
+## La Spiegazione Logica per l'Orale: Perché qui il Buffer Overflow è impossibile?
+
+All'esame ti verrà chiesto di fare un confronto con il vecchio esercizio di esecuzione simbolica pura. Questa è la tua linea di difesa impeccabile:
+
+"Professore, nell'assignment precedente (W10), il codice presentava una falla di sicurezza strutturale: la guardia del ciclo controllava unicamente che l'indice fosse minore di `count`, omettendo la verifica sulla dimensione reale dell'array. Di conseguenza, impostando un valore di `count` superiore alla capienza del vettore, l'oracolo di overflow risultava soddisfatto (`SAT`), evidenziando il bug.
+
+In questo esercizio (W11), il codice è stato corretto inserendo una clausola di salvaguardia robusta direttamente all'interno della riga 6: `&& i < transactions.length`. Grazie a questo controllo preventivo, l'invariante di sicurezza viene iniettato automaticamente nella Path Condition come vincolo obbligatorio per poter varcare la soglia del loop. Quando interroghiamo l'SMT Solver per cercare un caso di overflow, la formula genera una contraddizione geometrica insanabile che si risolve in un `UNSAT` assoluto, certificando la totale sicurezza della memoria."
 
 ---
 
 ## Domande di difesa probabili (Roleplay)
 
 1. **Professore:** "Nel suo commento lei scrive che affinché il ciclo compia esattamente due iterazioni, la condizione alla riga 11 deve necessariamente essere falsa al primo giro. Perché?"
-   **Risposta:** "Se al primo giro il conto andasse in rosso, verrebbe eseguita la riga 12 che imposta la variabile di blocco a `true`. Alla successiva valutazione della guardia del `while`, il costrutto negato risulterebbe falso e interromperebbe immediatamente l'esecuzione. Il ramo falso al primo giro è quindi il prefisso obbligatorio e necessario per abilitare qualunque cammino a due o più iterazioni."
+   **Risposta:** "Se al primo giro il conto andasse in rosso, verrebbe eseguita la riga 12 che imposta la variabile di blocco a `true`. Alla successiva valutazione della guardia del `while`, il costrutto edulcorato risulterebbe falso e interromperebbe immediatamente l'esecuzione. Il ramo falso al primo giro è quindi il prefisso obbligatorio e necessario per abilitare qualunque cammino a due o più iterazioni."
 
 2. **Professore:** "Come ha fatto l'algoritmo a calcolare i nuovi input concreti per generare il Cammino 3 partendo dal Cammino 1?"
    **Risposta:** "Ha usato il principio della negazione dinamica della Path Condition. Terminata l'esecuzione del Cammino 1, l'engine aveva accumulato la condizione per superare indenne la riga 11 alla seconda iterazione. L'algoritmo ha prelevato quest'ultima clausola, l'ha invertita matematicamente e l'ha data in pasto all'SMT Solver. Il solver ha così prodotto i nuovi input concreti, costringendo il programma a esplorare il blocco `if` che nel giro precedente era stato saltato."
 
 3. **Professore:** "Rispetto all'assignment sull'esecuzione simbolica pura, in cui l'array out of bounds era possibile, cosa è cambiato qui a livello sintattico che le ha permesso di affermare l'opposto in Q3?"
-   **Risposta:** "È cambiato il codice stesso. Nel precedente homework la guardia del `while` era vulnerabile poiché testava unicamente il contatore. Se l'utente forniva un input maggiore della reale dimensione dell'array, l'esecuzione simbolica pura produceva un `SAT` per l'errore. In questo assignment, il codice della riga 6 include il conjungo difensivo sulla lunghezza dell'array. L'inserimento di questa clausola inietta l'invariante di sicurezza direttamente nella Path Condition a ogni iterazione, rendendo l'overflow matematicamente impossibile."
+   **Risposta:** "È cambiato il codice stesso. Nel precedente homework la guardia del `while` era vulnerabile poiché testava unicamente il contatore. Se l'utente forniva un input maggiore della reale dimensione dell'array, l'esecuzione simbolica pura produceva un `SAT` per l'errore. In questo assignment, il codice della riga 6 include il conjungo difensivo sulla lunghezza dell'array. L'inserimento di questa clausola inietta l'invariante di sicurezza direttamente nella Path Condition a ogni iterazione, rendendo l'overflow matematicamente impossibile."  

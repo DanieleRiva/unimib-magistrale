@@ -66,6 +66,10 @@ const sidebarCorsi = [
                         link: '/qualita-del-software/assignments/w10_a8/soluzione'
                     },
                     {
+                        label: '[W10_A9] AI Ethics & Legal QA',
+                        link: '/qualita-del-software/assignments/w10_a9/soluzione'
+                    },
+                    {
                         label: '[W11_A10] Dynamic Symbolic Execution',
                         link: '/qualita-del-software/assignments/w11_a10/soluzione'
                     },

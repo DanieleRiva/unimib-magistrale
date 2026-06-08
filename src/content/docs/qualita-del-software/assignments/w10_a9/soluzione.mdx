@@ -1,0 +1,87 @@
+---
+title: W10.A9 - La mia soluzione (AI QA)
+description: Analisi dei problemi Etici e Legali dell'IA e il loro impatto diretto sulla Quality Assurance.
+sidebar:
+  order: 13
+---
+
+export const solutionPdf = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assignments/w10_a9/soluzione.pdf`;
+
+> **Soluzione e difesa - Assignment W10.A9.**
+> Argomento → vedi [AI Ethics & Legal QA](/qualita-software/ai-ethics-legal-qa/).
+> Questa è la guida alla difesa orale dell'ultimo assignment. Il punto di forza assoluto di questo elaborato è il cambio di prospettiva: non analizza i problemi etici in modo filosofico, ma li inquadra rigorosamente come difetti nella costruzione dell'Oracolo di Test e nella progettazione dei Casi di Test.
+> Stato: **Non ancora valutato** ⏳
+
+<details>
+  <summary><strong>La mia soluzione consegnata (PDF)</strong></summary>
+  <iframe
+    src={solutionPdf}
+    title="Soluzione W10.A9"
+    style={{ width: '100%', height: '80vh', border: '1px solid var(--sl-color-gray-5)', borderRadius: '6px', marginTop: '1rem' }}
+  />
+  <p style={{ marginTop: '0.5rem', fontSize: '0.9em' }}>
+    <a href={solutionPdf} target="_blank" rel="noopener">Apri il PDF in una nuova scheda</a>
+  </p>
+</details>
+
+## La traccia in breve
+
+L'assignment richiedeva di individuare e riassumere i **3 principali problemi etici e legali** legati all'Intelligenza Artificiale che hanno il maggiore impatto pratico sulla **Quality Assurance (QA)**.
+Per ogni problema, la traccia imponeva una struttura ferrea:
+1. Un nome di una riga che catturasse l'essenza del problema.
+2. Una descrizione dell'impatto sul QA (max 7 righe).
+3. Un caso di studio/esempio reale documentato e citato (max 10 righe).
+4. Dichiarazione e valutazione dell'uso di assistenti basati su IA Generativa per la stesura.
+
+---
+
+## Difesa dell'Issue 1: Fairness e l'assenza di un Oracolo Singolo
+
+**Titolo assegnato:** *Algorithmic discrimination without a single fairness oracle.*
+
+Il primo problema affrontato è il bias algoritmico. La genialità della tua risposta sta nel modo in cui l'hai inquadrata per un esame di Ingegneria: la discriminazione è un problema perché **distrugge il concetto stesso di Oracolo di Test univoco**.
+
+*Cosa rispondere all'orale:*
+"Professore, il problema dell'equità (Fairness) in ambito QA non è solo che l'algoritmo discrimina, ma che matematicamente è impossibile definire un'unica regola d'oro per capire cosa significhi 'non discriminare'. Come dimostrato dal Teorema dell'Impossibilità di Chouldechova (2017), se i tassi storici di criminalità (base rates) di due popolazioni sono diversi, le metriche di equità collidono. Non posso scrivere uno script di test che verifichi contemporaneamente l'uguale calibrazione e l'uguaglianza dei falsi positivi. Il team QA è costretto a fare una scelta architetturale: deve selezionare un solo oracolo a discapito degli altri, documentare il trade-off e giustificarlo legalmente."
+
+**Caso di studio usato:** L'algoritmo COMPAS (ProPublica, 2016). L'azienda creatrice usava un oracolo (l'uguale calibrazione predittiva), ma ProPublica ha dimostrato che usando un altro oracolo (il tasso di Falsi Positivi), l'algoritmo penalizzava aspramente gli imputati neri. Il caso dimostra come il superamento di un oracolo di test non garantisca il superamento degli altri.
+
+---
+
+## Difesa dell'Issue 2: Opaque Decisions (La scatola nera)
+
+**Titolo assegnato:** *Opaque decisions with no explanation oracle.*
+
+I modelli Black-Box come le Deep Neural Networks violano il principio normativo della spiegabilità, scontrandosi con il GDPR (Art. 22).
+
+*Cosa rispondere all'orale:*
+"Anche qui, l'impatto critico sul QA è la perdita dell'Oracolo. Se l'algoritmo rifiuta un prestito, io non posso scrivere un test automatico per valutare se la spiegazione matematica generata a posteriori sia 'corretta', perché il ragionamento interno originale non è accessibile. 
+Di conseguenza, ho spiegato che il QA deve ripiegare su *oracoli surrogati*: devo limitare il budget di spiegabilità (massimo le top-3 feature), testare la consistenza (stesso input deve generare deterministicamente la stessa spiegazione), e validare il tutto empiricamente tramite user study per misurare la comprensione umana."
+
+**Caso di studio usato:** Lo scandalo della Apple Card (Goldman Sachs, 2019/2021). Le donne ricevevano limiti di credito inferiori rispetto ai mariti pur avendo profili finanziari migliori o condivisi. L'azienda affermava di non usare il genere come input, ma essendo il modello una black-box opaca, non riusciva a dimostrare tecnicamente e legalmente il perché di quelle singole decisioni sfavorevoli, perdendo totalmente la fiducia pubblica e dei regolatori.
+
+---
+
+## Difesa dell'Issue 3: Safety e il Gap di Accountability
+
+**Titolo assegnato:** *Catastrophic failure modes and the accountability gap.*
+
+Mentre il software tradizionale viene testato sui casi nominali ("Funziona quasi sempre?"), l'IA può funzionare perfettamente in media ma fallire in modo catastrofico di fronte a un singolo "edge case" (un input mai visto o anomalo).
+
+*Cosa rispondere all'orale:*
+"Questo problema ribalta le priorità della Quality Assurance. Come imposto dall'AI Act (Art. 15), il test design deve focalizzarsi ossessivamente sui *failure modes* e sui dati fuori distribuzione. Ma l'impatto più grande è sull'Accountability: se il sistema fallisce sul campo, il QA deve poter eseguire una Root Cause Analysis. Per farlo, non basta loggare l'errore; è obbligatorio loggare l'input esatto, l'output, la versione specifica del modello e i livelli di confidenza, altrimenti il fallimento non sarà mai riproducibile per l'indagine."
+
+**Caso di studio usato:** L'incidente mortale del veicolo autonomo Uber in Arizona (2018). È il perfetto esempio di fallimento sistemico: l'IA ha rilevato la vittima ma non l'ha saputa classificare correttamente perché era un pedone fuori dalle strisce (edge case non adeguatamente testato). A questo si è aggiunto un trade-off ingegneristico insicuro (la frenata di emergenza originale Volvo era stata disabilitata per evitare frenate brusche immotivate) e una supervisione umana inadeguata, culminando nel disastro.
+
+---
+
+## Domande di difesa probabili (Roleplay)
+
+1. **Professore:** "Nel suo primo punto, lei parla di impossibilità di avere un singolo 'fairness oracle' citando il teorema di Chouldechova. Può spiegarmi concretamente perché due metriche di fairness possono entrare in conflitto matematico?"
+   **Risposta:** "Il conflitto esplode inevitabilmente quando i due gruppi analizzati presentano 'base rates' (tassi base storici reali) differenti. Se cerchiamo di applicare contemporaneamente la 'Demographic Parity' (che esige la stessa identica percentuale di approvazione per tutti) e la 'Equalized Odds' (che esige la stessa percentuale di falsi positivi/negativi), il sistema va in stallo. Per garantire gli stessi tassi di errore su un gruppo che storicamente ha un tasso base sfavorevole, la matematica ci obbliga a concedere meno approvazioni, violando la prima metrica. Il QA deve per forza sceglierne una e abbandonare l'altra."
+
+2. **Professore:** "Sul problema della trasparenza e dell'opacità dei modelli, lei cita nel PDF strumenti come LIME o SHAP affermando che non provano la correttezza. Cosa intende esattamente nel contesto del testing?"
+   **Risposta:** "Strumenti come LIME o SHAP sono eccellenti per creare un'approssimazione statistica locale di come il modello ha ragionato, perturbando gli input. Tuttavia, non ci mostrano il vero albero decisionale del modello, che rimane una black-box. Nel testing del software rigoroso, un oracolo deve fornirmi una certezza formale, non un'indovinata statistica. Per questo ho sostenuto che il QA, non avendo oracoli assoluti, deve compensare testando la coerenza delle risposte e affidandosi alla validazione umana esterna."
+
+3. **Professore:** "Guardando il caso Uber che ha citato nel terzo punto, in che modo le pratiche di QA richieste dall'AI Act europeo avrebbero potuto o dovuto intercettare questa tragedia prima del rilascio?"
+   **Risposta:** "L'Articolo 15 dell'AI Act impone la valutazione formale della Robustezza contro gli errori, non solo in condizioni ottimali. Una suite di QA conforme avrebbe dovuto includere pesanti sessioni di 'Out-of-Distribution testing', simulando proprio oggetti non classificabili o pedoni in scenari anomali. Inoltre, la scelta di Uber di disabilitare la frenata di emergenza di fabbrica è un chiaro fallimento dei requisiti di Safety: in ottica QA, si devono implementare vincoli strutturali di sicurezza che impediscano al sistema di procurare danni fisici anche quando la classificazione primaria fallisce o va in loop."
