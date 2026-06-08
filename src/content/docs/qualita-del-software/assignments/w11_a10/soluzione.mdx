@@ -1,0 +1,141 @@
+---
+title: W11.A10 - La mia soluzione
+description: Analisi del Concolic Testing, svisceramento dell'albero di esecuzione e verifica dell'oracolo di sicurezza.
+sidebar:
+  order: 17
+---
+
+import tracciaImg from './traccia.png';
+import tableImg from './soluzione.png';
+
+export const solutionXlsx = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/assignments/w11_a10/W11_A10_riva_daniele.xlsx`;
+
+> **Soluzione e difesa - Assignment W11.A10.**
+> Argomento → vedi [Dynamic Symbolic Execution](/qualita-software/dynamic-symbolic-execution/).
+> Questa è la guida definitiva per l'orale. Contiene la radiografia riga per riga della tabella DSE e la prova matematica dell'assenza di buffer overflow tramite l'Oracolo di Sicurezza.
+> Stato: **Non ancora valutato** ⏳
+
+<details>
+  <summary><strong>Traccia dell'assignment</strong></summary>
+  <img
+    src={tracciaImg.src}
+    alt="Traccia W11.A10"
+    style={{ maxWidth: '100%', height: 'auto', marginTop: '1rem', borderRadius: '6px' }}
+  />
+</details>
+
+<details>
+  <summary><strong>La mia soluzione consegnata (Tabella Excel)</strong></summary>
+  <img
+    src={tableImg.src}
+    alt="Tabella soluzione"
+    style={{ maxWidth: '100%', height: 'auto', marginTop: '1rem', borderRadius: '6px', border: '1px solid var(--sl-color-gray-5)' }}
+  />
+  <div style={{ padding: '1rem', borderRadius: '6px', marginTop: '1rem', border: '1px solid var(--sl-color-gray-5)', backgroundColor: 'var(--sl-color-bg-nav)' }}>
+    <p style={{ margin: 0 }}>
+      Vuoi analizzare i dati logici estratti?
+      <br />
+      <a href={solutionXlsx} download style={{ fontWeight: 'bold', display: 'inline-block', marginTop: '0.5rem' }}>
+        📊 Scarica il file Excel originale (.xlsx)
+      </a>
+    </p>
+  </div>
+</details>
+
+## Il codice reale sotto esame
+
+L'obiettivo dell'assignment era applicare la **Dynamic Symbolic Execution (Concolic Testing)** al metodo `computeFinalBalance` partendo da un Seme Concreto. Lo scopo era esplorare due percorsi che eseguono il ciclo *esattamente due volte* e dimostrare l'assenza di Buffer Overflow alla riga 8.
+
+Il codice analizzato è il seguente:
+
+```java
+public static double computeFinalBalance(double[] transactions, int count) {
+    double balance = 0.0;          // Line 1
+    int i = 0;                     // Line 2
+    boolean overdrawn = false;     // Line 3
+    double minimum = balance;      // Line 4
+    int steps = 0;                 // Line 5
+
+    // Line 6 - ATTENZIONE: Qui c'è il controllo sui limiti dell'array!
+    while (i < count && !overdrawn && i < transactions.length) { 
+        steps = steps + 1;                   // Line 7
+        double amount = transactions[i];     // Line 8 (Punto critico)
+        balance = balance + amount;          // Line 9
+        boolean isNegative = (balance < 0);  // Line 10
+        if (isNegative) {                    // Line 11
+            overdrawn = true;                // Line 12
+            minimum = balance;               // Line 13
+        }
+        i = i + 1;                           // Line 15
+    }
+
+    if (!overdrawn) {                        // Line 16
+        minimum = 0.0;                       // Line 17
+    }
+
+    return minimum;                          // Line 18
+}
+```
+
+---
+
+## Svisceramento dell'Excel: I due cammini tracciati
+
+Il Concolic Testing ci permette di scoprire nuovi cammini partendo dai dati reali. La traccia chiedeva di esplorare 2 dei 4 cammini possibili che effettuano due iterazioni.
+
+### Cammino 1 (Il Seme Concreto Iniziale)
+Guidato dai valori concreti dell'array, il programma esegue tutto il ciclo senza mai andare in negativo.
+1. **Iterazione 1 (`I = 0`):** La guardia alla riga 6 è VERA. La Path Condition (PC) incamera i vincoli: `C > 0 AND 0 < length`.
+   Il bilancio concreto diventa `10.1`. Alla riga 11, la variabile booleana è FALSA. La PC viene aggiornata per forzare questo ramo: `A1 >= 0`.
+2. **Iterazione 2 (`I = 1`):** L'indice cresce. La guardia è VERA. 
+   Il bilancio sale a `25.4`. Alla riga 11, la condizione è di nuovo FALSA. La PC si aggiorna ulteriormente: `A1 + A2 >= 0`.
+3. **Uscita:** Alla terza iterazione, `i` vale `2`. La guardia `i < count` fallisce. Il ciclo si interrompe e il programma restituisce `0.0`.
+
+### Cammino 3 (Scoperto tramite Negazione)
+L'engine prende l'ultima Path Condition del Cammino 1 e ne inverte il finale per scoprire nuovo codice. Invece di volere il secondo bilancio positivo, nega l'ultima espressione chiedendo: `A1 + A2 < 0`. L'SMT Solver genera un nuovo array concreto (il secondo valore è fortemente negativo).
+
+1. **Iterazione 1 (`I = 0`):** Identica al cammino precedente. Ramo Falso alla riga 11.
+2. **Iterazione 2 (`I = 1`):** Qui cambia tutto. Il nuovo valore estratto manda il bilancio in rosso. 
+   Alla riga 11, il controllo risulta VERO. Il programma entra nel blocco condizionale finora inesplorato.
+   Vengono eseguite le righe 12 e 13: il conto viene segnato come scoperto (`TRUE` simbolico), e il minimo acquisisce il valore simbolico `A1 + A2`.
+3. **Uscita:** Alla terza valutazione della guardia, avviene un *corto-circuito*. L'espressione incontra il check sul conto scoperto. Essendo vero che il conto è scoperto, l'operazione AND fallisce bloccando il ciclo in anticipo.
+
+---
+
+## Analisi Profonda delle Domande della Consegna (Q1 & Q3)
+
+Nel file Excel hai formalizzato i criteri matematici per rispondere alle due domande teoriche sulla sicurezza della riga 8.
+
+### Q1: Il Principio dell'Oracolo di Sicurezza
+Come possiamo dimostrare matematicamente l'assenza di buffer overflow?
+Il ragionamento che hai scritto nell'Excel si basa sull'**Invariante di Accesso Sicuro**: affinché la lettura dall'array sia sicura, deve sempre valere l'equazione `0 <= I < lunghezza_array`.
+L'Oracolo lavora per "Dimostrazione per Assurdo". Invia all'SMT Solver la formula che rappresenta la violazione:
+`Formula = PathCondition AND NOT(0 <= I < lunghezza_array)`
+
+* **Se il solver risponde `UNSAT` (Insoddisfacibile):** La Path Condition accumulata dal programma contraddice matematicamente l'errore. Il crash è impossibile.
+* **Se il solver risponde `SAT`:** I vincoli del programma permettono la violazione. Il solver genera un controesempio numerico.
+
+### Q3 e i Comments: La Dimostrazione Pratica
+Come hai spiegato in modo eccellente nei *Comments* della tua tabella, la sicurezza è garantita a monte.
+
+Qualunque esecuzione che raggiunga l'istruzione di lettura all'interno del ciclo deve necessariamente aver superato la valutazione della guardia un istante prima. Superandola, la Path Condition simbolica incamera automaticamente il vincolo vitale `I < lunghezza_array`.
+
+Quando applichiamo l'Oracolo di Sicurezza visto in Q1:
+`PC_con_vincolo AND NOT(0 <= I < lunghezza_array)`
+stiamo letteralmente chiedendo al risolutore matematico di far sì che l'indice `I` sia *contemporaneamente* minore della lunghezza (nella PC) e maggiore o uguale alla lunghezza (nella negazione). 
+Questa è una **contraddizione matematica ineludibile**. Il sistema restituisce **`UNSAT`** su tutta la linea, certificando formalmente l'assoluta assenza di vulnerabilità.
+
+Nel commento hai inoltre specificato un dettaglio strutturale: per fare due iterazioni esatte, la prima transazione non deve mai mandare il conto in rosso. Se lo facesse, il ciclo si interromperebbe subito a causa del flag booleano. Questo rende il bilancio positivo al primo giro un prefisso obbligatorio per tutti i cammini lunghi.
+
+---
+
+## Domande di difesa probabili (Roleplay)
+
+1. **Professore:** "Nel suo commento lei scrive che affinché il ciclo compia esattamente due iterazioni, la condizione alla riga 11 deve necessariamente essere falsa al primo giro. Perché?"
+   **Risposta:** "Se al primo giro il conto andasse in rosso, verrebbe eseguita la riga 12 che imposta la variabile di blocco a `true`. Alla successiva valutazione della guardia del `while`, il costrutto negato risulterebbe falso e interromperebbe immediatamente l'esecuzione. Il ramo falso al primo giro è quindi il prefisso obbligatorio e necessario per abilitare qualunque cammino a due o più iterazioni."
+
+2. **Professore:** "Come ha fatto l'algoritmo a calcolare i nuovi input concreti per generare il Cammino 3 partendo dal Cammino 1?"
+   **Risposta:** "Ha usato il principio della negazione dinamica della Path Condition. Terminata l'esecuzione del Cammino 1, l'engine aveva accumulato la condizione per superare indenne la riga 11 alla seconda iterazione. L'algoritmo ha prelevato quest'ultima clausola, l'ha invertita matematicamente e l'ha data in pasto all'SMT Solver. Il solver ha così prodotto i nuovi input concreti, costringendo il programma a esplorare il blocco `if` che nel giro precedente era stato saltato."
+
+3. **Professore:** "Rispetto all'assignment sull'esecuzione simbolica pura, in cui l'array out of bounds era possibile, cosa è cambiato qui a livello sintattico che le ha permesso di affermare l'opposto in Q3?"
+   **Risposta:** "È cambiato il codice stesso. Nel precedente homework la guardia del `while` era vulnerabile poiché testava unicamente il contatore. Se l'utente forniva un input maggiore della reale dimensione dell'array, l'esecuzione simbolica pura produceva un `SAT` per l'errore. In questo assignment, il codice della riga 6 include il conjungo difensivo sulla lunghezza dell'array. L'inserimento di questa clausola inietta l'invariante di sicurezza direttamente nella Path Condition a ogni iterazione, rendendo l'overflow matematicamente impossibile."

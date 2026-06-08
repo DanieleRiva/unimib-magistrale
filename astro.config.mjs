@@ -66,8 +66,8 @@ const sidebarCorsi = [
                         link: '/qualita-del-software/assignments/w10_a8/soluzione'
                     },
                     {
-                        label: '[W11_A9] Dynamic Symbolic Execution',
-                        link: '/qualita-del-software/assignments/w11_a9/soluzione'
+                        label: '[W11_A10] Dynamic Symbolic Execution',
+                        link: '/qualita-del-software/assignments/w11_a10/soluzione'
                     },
                 ]
             },
