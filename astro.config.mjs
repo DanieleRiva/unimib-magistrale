@@ -76,6 +76,26 @@ const sidebarCorsi = [
                 ]
             },
         ]
+    },
+    {
+        label: 'Sistemi e Servizi di Telecomunicazione',
+        collapsed: true,
+        items: [
+            { label: 'Introduzione al corso', link: '/sistemi-e-servizi-di-telecomunicazione/' },
+
+            {
+                label: '📖 Teoria',
+                collapsed: true,
+                autogenerate: { directory: 'sistemi-e-servizi-di-telecomunicazione/teoria' }
+            },
+
+            {
+                label: '📝 Esercitazioni',
+                collapsed: true,
+                items: [
+                ]
+            },
+        ]
     }
 ];
 
