@@ -6,18 +6,34 @@ sidebar:
 ---
 
 ## Corrispondenza tra indirizzi IP e indirizzi fisici
-Vogliamo comunicare con un host nella stessa rete locale. Solitamente ne conosco l'indirizzo IP, ma non l'indirizzo MAC, ovvero l'indirizzo fisico.
 
-Dato l'IP di un host, serve un protocollo che è in grado di reperire il suo MAC, dato che vengono usati per la comunicazione nel livello 2.
+Vogliamo comunicare con un host nella **stessa rete locale**. Solitamente ne conosco l'**indirizzo IP**, ma non l'**indirizzo MAC**, ovvero l'indirizzo fisico.
 
-**ARP Table** o **ARP Cache**: tabella che salva le corrispondenze tra indirizzi IP e MAC.
+:::note[Il problema]
+Dato l'**IP** di un host, serve un protocollo in grado di reperire il suo **MAC**, dato che è quest'ultimo a essere usato per la comunicazione a **livello 2**.
+:::
 
-### Funzionamento
+Questo protocollo è l'**ARP** (*Address Resolution Protocol*). Le corrispondenze tra indirizzi IP e MAC vengono salvate in una tabella:
+
+- **ARP Table** (o **ARP Cache**): tabella che salva le corrispondenze tra **indirizzi IP** e **indirizzi MAC**.
+
+## Funzionamento
+
 ![](../../../../assets/arp-funzionamento.png)
 
-Il nodo B invia una ARP request in cui specifica come indirizzo MAC di destinazione un indirizzo MAC di broadcast, mentre come MAC di sorgente il proprio indirizzo MAC (che può dunque comunicarlo all'altro nodo).
-Nell'ARP request viene inoltre specificato l'indirizzo IP del destinatario.
+1. **ARP Request** - Il nodo B invia una richiesta in cui specifica:
+   - come **MAC di destinazione** un indirizzo MAC di **broadcast**;
+   - come **MAC di sorgente** il proprio indirizzo MAC (così può comunicarlo all'altro nodo);
+   - l'**indirizzo IP del destinatario** che sta cercando.
 
-Mi può rispondere chi ha questo indirizzo IP e mi dica quale sia il suo indirizzo MAC?
+   In sostanza chiede: *"Chi ha questo indirizzo IP? Può dirmi quale sia il suo indirizzo MAC?"*
 
-A questo punto, tutti gli host sulla rete locale ricevono il messaggio, ma solo uno vede un match con il proprio indirizzo IP. Questo host invia una risposta comunicando il proprio indirizzo MAC. Ricevuta questa informazione, il primo host salva questa associazione nella propria ARP table, in modo da non dover rieseguire ARP la prossima volta che si contatta l'host A.
+2. **Ricezione** - Tutti gli host sulla rete locale ricevono il messaggio, ma **solo uno** trova un match con il proprio indirizzo IP.
+
+3. **ARP Reply** - Questo host invia una risposta comunicando il proprio **indirizzo MAC**.
+
+4. **Caching** - Ricevuta l'informazione, il primo host **salva l'associazione** nella propria ARP Table.
+
+:::tip
+Grazie al caching, non è necessario rieseguire ARP la **prossima volta** che si contatta lo stesso host.
+:::
