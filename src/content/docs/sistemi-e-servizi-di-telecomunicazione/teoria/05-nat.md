@@ -30,7 +30,7 @@ Chiaramente, se faccio una cosa del genere, ho necessità di un meccanismo che *
 
 ## Funzionamento del NAT
 
-![](../../../../assets/nat-esempio.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/nat-esempio.png)
 
 Se ad esempio sono nella mia rete privata e voglio andare verso la rete pubblica, ho un indirizzo IP sorgente e uno di destinazione. Arrivo al **router**, dove solitamente viene eseguito il NAT: questo prende un indirizzo IP dal pool e va a **sostituire l'indirizzo IP di sorgente**.
 
@@ -61,4 +61,4 @@ La soluzione è il **NAPT** (*Network Address Port Translator*): invece di tradu
 È possibile **condividere uno stesso IP pubblico** tra più host che hanno differenti IP privati.
 :::
 
-![](../../../../assets/napt.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/napt.png)

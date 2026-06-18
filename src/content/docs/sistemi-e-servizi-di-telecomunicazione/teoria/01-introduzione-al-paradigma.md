@@ -20,7 +20,7 @@ Dal punto di vista dei **servizi**, Internet è:
 
 ## Stack Internet e il modello OSI
 
-![](../../../../assets/stack-internet-and-osi.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/stack-internet-and-osi.png)
 
 In un'**architettura a strati** vengono implementati dei servizi in ogni strato che si basano sui servizi messi a disposizione negli strati sottostanti. Questo permette di suddividere i compiti in modo intelligente.
 
@@ -46,7 +46,7 @@ Innanzitutto, il protocollo IP è il protocollo fondamentale; la versione di IP 
 
 Il protocollo IP è un protocollo di **livello 3 (Network)**, che risiede sopra il **livello 2 (Data Link)**.
 
-![](../../../../assets/ip-sopra-data-link.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/ip-sopra-data-link.png)
 
 Come è possibile vedere dall'immagine, che rappresenta un esempio di interconnessione di una Local Area Network, il protocollo IP è **condiviso** tra le reti LAN, mentre a livello 2 posso avere protocolli differenti.
 
@@ -74,7 +74,7 @@ Tutti gli host nella **stessa rete** condividono lo stesso **NetID**.
 
 #### Classful Addressing
 
-![](../../../../assets/classful-addressing.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/classful-addressing.png)
 
 Originariamente, come venivano definiti gli indirizzi di rete e gli indirizzi di host in un indirizzamento **Classful**? Andando a guardare i **primi bit** del NetID:
 
@@ -98,7 +98,7 @@ Gli indirizzi di tipo Classful sono estremamente **rigidi** e non permettono di 
 
 Posso così assegnare indirizzi IP con una **granularità più fine**, ma per farlo ho bisogno di un nuovo elemento: la **Subnet Mask**. La Subnet Mask definisce effettivamente quanti bit sono relativi alla parte di **sottorete** e quanti alla parte di **host**.
 
-![](../../../../assets/esempio-subnet.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/esempio-subnet.png)
 
 :::danger[Attenzione]
 Un router **NON HA** un singolo indirizzo IP! Un router ha **un indirizzo IP per interfaccia**, non uno solo. Gli indirizzi IP sono assegnati alle **interfacce**, non ai nodi.
@@ -106,7 +106,7 @@ Un router **NON HA** un singolo indirizzo IP! Un router ha **un indirizzo IP per
 
 ## Pacchetto IP
 
-![](../../../../assets/pacchetto-ip.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/pacchetto-ip.png)
 
 Innanzitutto, l'header del pacchetto IP è grande **almeno 20 byte**. Potrebbe essere più grande perché ci sono delle **opzioni** che possono aumentarne la dimensione. Siccome devo raggiungere dimensioni multiple di 32 bit, potrei aver bisogno di aggiungere del **padding**, ovvero bit senza significato, appunto per raggiungere valori multipli di 32.
 

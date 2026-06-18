@@ -17,7 +17,7 @@ Il punto è che ho necessità di avere un **segnale analogico** che possa essere
 Voglio trasmettere la sequenza `1101001`: posso dire che, se devo trasmettere il bit con valore **1**, allora avrò un'onda di ampiezza $A$, mentre se il bit è **0**, l'onda sarà di ampiezza $-A$.
 :::
 
-![](../../../../assets/s(t).png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/s(t).png)
 
 In questo esempio, questo è il nostro segnale $s(t)$ al variare del tempo. Possiamo vederlo come un segnale analogico che posso trasmettere sul canale di comunicazione.
 
@@ -33,7 +33,7 @@ Posso modellarlo per mezzo di una funzione nel tempo $h_c(t)$ che prende il nome
 
 Questa Funzione di Trasferimento va a modificare il mio segnale $s(t)$, avendo anche una sorgente di rumore $n(t)$, in un nuovo segnale $\hat{s}(t)$.
 
-![](../../../../assets/hc(t).png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/hc(t).png)
 
 | Impairment | Modellato da | Descrizione |
 | --- | --- | --- |
@@ -41,7 +41,7 @@ Questa Funzione di Trasferimento va a modificare il mio segnale $s(t)$, avendo a
 | **Distorsione** | $h_c(t)$ | Il segnale che trasmetto potrebbe espandersi e invadere periodi di tempo che sono in realtà utilizzati per trasmettere altri bit. |
 | **Rumore** | $n(t)$ | Ha una natura **additiva**, quindi si somma al segnale. |
 
-![](../../../../assets/amplitude-distortion.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/amplitude-distortion.png)
 
 In questa immagine si vede come l'attenuazione attenua appunto il segnale col passare del tempo, ma è possibile inoltre notare come la distorsione sta dilatando il segnale oltre la soglia del primo bit trasmesso.
 
@@ -61,13 +61,13 @@ Per ogni possibile frequenza, vado a indicare qual è l'**ampiezza** e qual è l
 Abbiamo un segnale sinusoidale qualsiasi che può essere scomposto in una serie infinita di sinusoidi. La Fourier Transform, per ognuna di queste sinusoidi, per ogni valore $f$ mi dice qual è l'**ampiezza** e la **fase** di quello specifico segnale.
 :::
 
-![](../../../../assets/fourier-transform.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/fourier-transform.png)
 
 Abbiamo un segnale nel tempo, rappresentato in figura come il segnale **rosso**, che può essere visto come la scomposizione delle altre 3 sinusoidi **blu**, **verde** e **viola**. Ortogonalmente, avremmo anche l'asse della frequenza: guardando l'immagine, per ciascuna delle sinusoidi è rappresentato l'**impulso**, ovvero la loro altezza. In questo caso specifico hanno sfasamento nullo rispetto all'origine, ma potrei anche avere questo sfasamento. Quindi la Fourier Transform indica qual è il valore di questo sfasamento, con simbolo **Ø**.
 
 ## Banda
 
-![](../../../../assets/banda.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/banda.png)
 
 Per questo esempio, la trasformazione viene visualizzata in questo modo, ma non ci interessa sapere nel dettaglio il motivo. Ci interessa solamente sapere che è risultata così.
 
@@ -114,7 +114,7 @@ Il compito della modulazione analogica è **convertire in alta frequenza** il se
 
 L'idea è prendere il mio segnale originale e **spostarlo lungo l'asse delle frequenze**.
 
-![](../../../../assets/analog-modulation.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/analog-modulation.png)
 
 L'immagine a destra è l'effetto che ottengo se faccio la modulazione di sinistra.
 
@@ -124,7 +124,7 @@ Il segnale di **Carrier** viene scelto in modo opportuno, con l'obiettivo di ave
 Mi sintonizzo su una specifica frequenza, che corrisponde al **Carrier**. Uso un **band-pass filter** per isolare la frequenza che voglio ascoltare. Quindi, l'obiettivo è incasellare più segnali a livello del mio canale di comunicazione, cercando di **non sovrapporli**.
 :::
 
-![](../../../../assets/analog-modulation-esempio.gif)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/analog-modulation-esempio.gif)
 
 ## Modulazione Digitale
 
@@ -137,6 +137,14 @@ Il compito della Modulazione Digitale è assegnare **forme d'onda** (*waveforms*
 Se ho per esempio **2 bit** su ogni simbolo, il **bitrate** sarà il **doppio** rispetto al baud rate, siccome il bitrate è il numero di bit al secondo e il baud rate il numero di simboli al secondo.
 :::
 
-![](../../../../assets/modulazione-4-livelli.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/modulazione-4-livelli.png)
 
-Una modulazione a 4 livelli rende possibile la trasmissione di un numero maggiore di bit per secondo. Tuttavia, richiede un $\frac{S}{N}$ più alto per assicurare piccoli tasso di errore di bit. 
+Una modulazione a 4 livelli rende possibile la trasmissione di un numero maggiore di bit per secondo. Tuttavia, richiede un $\frac{S}{N}$ più alto per assicurare piccoli tasso di errore di bit.
+
+## Codifica
+Consiste nel mappare un gruppo di bit a un altro gruppo di bit.
+
+- **Codifica di Sorgente**: <br>
+compressione delle informazioni per ridurre la ridondanza del segnale originale. Può essere lossless o lossy.
+- **Codifica di Canale**: <br>
+protegge informazione rispetto errori di bit introdotti dal canale di trasmissione, di solito richiede l'utilizzo di **error detection** e **correction codes**.

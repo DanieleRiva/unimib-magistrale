@@ -19,7 +19,7 @@ Questo protocollo è l'**ARP** (*Address Resolution Protocol*). Le corrispondenz
 
 ## Funzionamento
 
-![](../../../../assets/arp-funzionamento.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/arp-funzionamento.png)
 
 1. **ARP Request** - Il nodo B invia una richiesta in cui specifica:
    - come **MAC di destinazione** un indirizzo MAC di **broadcast**;
