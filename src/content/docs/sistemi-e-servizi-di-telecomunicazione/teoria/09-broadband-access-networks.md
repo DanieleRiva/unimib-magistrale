@@ -301,8 +301,5 @@ La connettività è garantita da un insieme di satelliti, che prende il nome di 
 
 https://satellitemap.space
 
-
-
-
-
-
+Quali sono i principi di funzionamento?
+Ho la mia antenna che identifica e si collega a un satellite nel cielo. Fin tanto che questo satellite è visibile, io resto collegato; quando esce dalla mia visibilità, cerco un altro satellite e faccio una procedura chiamata Handover, che consiste nel collegamento a un altro satellite senza che l'utente percepisca questo cambiamento.
