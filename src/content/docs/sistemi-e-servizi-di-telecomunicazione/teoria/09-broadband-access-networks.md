@@ -232,74 +232,83 @@ Su queste architetture ad albero, la tecnologia utilizzata è chiamata **GPON**:
 
 
 ## Fixed Wireless Access Networks - FWA
-![](image.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/fwa.png)
 
-Questo genere di infrastruttura prende anche il nome di Fiber to the Tower (FTTT).
+Questo genere di infrastruttura prende anche il nome di **Fiber to the Tower (FTTT)**.
 
-Abbiamo una Base Station, alla quale arriva un collegamento che prende il nome di Backhaul. La Base Station è equipaggata con antenne usate per comunicare via radio con le Subscriber Stations, ovvero le stazioni poste a casa degli utenti iscritti. Bypassiamo la necessità di avere un cablaggio costoso ed è quindi un'alternativa più economica, solitamente adottata in aree rurali dove è difficile cablare. Buone quindi per il Digital Divide.
+Abbiamo una **Base Station**, alla quale arriva un collegamento che prende il nome di **Backhaul**. La Base Station è equipaggata con antenne usate per comunicare via radio con le **Subscriber Stations**, ovvero le stazioni poste a casa degli utenti iscritti. Bypassiamo la necessità di un cablaggio costoso: è quindi un'alternativa più economica, solitamente adottata in **aree rurali** dove è difficile cablare. Buona quindi per ridurre il Digital Divide.
 
 :::tip[Digital Divide]
-disuguaglianza nell'accesso alle tecnologie dell'informazione e della comunicazione. Esso separa chi può beneficiare delle opportunità del digitale da chi ne rimane escluso, con gravi conseguenze sull'inclusione sociale, economica e culturale
+Disuguaglianza nell'accesso alle tecnologie dell'informazione e della comunicazione. Separa chi può beneficiare delle opportunità del digitale da chi ne rimane escluso, con gravi conseguenze sull'inclusione sociale, economica e culturale.
 :::
 
-Si verificano 3 possibili tipi di propagazione del segnale:
-1. LOS (Line of Sight) -> percorso diretto senza ostacoli tra il trasmettitore della Base Station e il ricevitore a casa degli utenti e viceversa. Letteralmente, casa dell'utente è visibile dall'antenna senza ostacoli.
-Posso avere la SS anche molto lontana dalla BS. 
+Si verificano **3 possibili tipi di propagazione** del segnale:
 
-2. NLOS (Near Line of Sight): esistenza di ostacoli tra trasmettitore e ricevitore che però non inficiano totalmente sulla trasmissione.
-
-3. Indoor: si può adottare solo se la BS (Base Station) e la SS (Subscriber Station) sono vicine.
-
-Se siamo nel caso 1 o 2, vengono utilizzate antenne forti direzionalmente, mentre nel caso 3 antenne omnidirezionali.
+| Tipo | Descrizione | Antenne |
+| --- | --- | --- |
+| **LOS** (Line of Sight) | Percorso diretto senza ostacoli tra il trasmettitore della Base Station e il ricevitore a casa dell'utente (e viceversa): casa dell'utente è visibile dall'antenna senza ostacoli. La SS può essere anche molto lontana dalla BS. | direzionali |
+| **NLOS** (Near Line of Sight) | Esistenza di ostacoli tra trasmettitore e ricevitore che però non inficiano totalmente la trasmissione. | direzionali |
+| **Indoor** | Adottabile solo se la BS (Base Station) e la SS (Subscriber Station) sono vicine. | omnidirezionali |
 
 ## Satellite Networks
 
-![](image-1.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/satellite-vsat-ground-station.png)
 
-È potenzialmente garantire copertura globale, ottime per ridurre il Digital Divide.
+Possono potenzialmente garantire **copertura globale**, ottime per ridurre il Digital Divide.
 
-In una rete satellitare ci sono fondamentalmente 3 elementi:
-1. Satellite -> si trova in orbita e funge da relay per quello che vediamo nella comunicazione
-2. VSAT (Very Small Aperture Terminal) -> terminale posizionato a casa dell'utente. Si chiama così perché adotta un'antenna parabolica.
-3. Ground Station -> paraboloidi con ampia apertura posizionati in certi punti.
+In una rete satellitare ci sono fondamentalmente **3 elementi**:
 
-Sia il VSAT che il Ground Station puntano verso il Satellite.
+| Elemento | Descrizione |
+| --- | --- |
+| **Satellite** | Si trova in orbita e funge da **relay** per la comunicazione. |
+| **VSAT** (Very Small Aperture Terminal) | Terminale posizionato a casa dell'utente. Si chiama così perché adotta un'antenna parabolica. |
+| **Ground Station** | Paraboloidi con ampia apertura posizionati in certi punti. |
+
+Sia il VSAT che il Ground Station puntano verso il **Satellite**.
 
 ### Problemi
-Aggiungono una latenza non trascurabile; il dato deve essere inviato al satellite e/o ricevuto a terra alla Ground Station. Il problema principale è la distanza tra Satelline e Ground Station, quindi non posso garantire la possibilità di fornire servizi realtime, a causa proprio delle latenze troppo elevate.
+
+:::caution[Latenza]
+Le reti satellitari aggiungono una **latenza non trascurabile**: il dato deve essere inviato al satellite e/o ricevuto a terra alla Ground Station. Il problema principale è la **distanza** tra Satellite e Ground Station, quindi non posso garantire servizi **realtime** a causa delle latenze troppo elevate.
+:::
 
 ### Tipi di Satelliti
-![](image-3.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/tipi-satelliti.png)
 
 ## Satellite Networks with GEO Satellites
-![](image-2.png)
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/satellite-geo-beam.png)
 
-Con un satellite posso coprire un'area della Terra molto ampia, anche fino a 1/3 dell'area totale terrestre. Questa cosa può essere un vantaggio, ma anche uno svantaggio, proprio perché la banda deve essere condivisa tra un numero di utenti potenzialmente estremamente elevato.
+Con un satellite posso coprire un'area della Terra molto ampia, anche fino a **1/3** dell'area totale terrestre. Può essere un vantaggio, ma anche uno svantaggio: la banda deve essere condivisa tra un numero di utenti potenzialmente elevatissimo.
 
-A questo propostio, esistono 2 tipologie di copertura che si possono servire per mezzo di Satellite Geostazionario:
-1. Single Beam: un'area è servita con un singolo segnale con la stessa frequenza per tutti gli utenti. Quindi canale piuttosto larga condivisa tra tutti gli utenti. Il problema è sempre appunto la condivisione della banda.
+A questo proposito, esistono **2 tipologie di copertura** servibili tramite Satellite Geostazionario:
 
-2. Multibeam: successore della Single Beam. Si hanno più antenne direzionali verso determinate aree, coperte da un segnale differente. Ogni area prende il nome di Spot Beam; ogni Spot Beam deve usare bande di frequenza diverse, altrimenti avrei interferenze. Posso però riutilizzare le frequenze su Spot Beam distanti tra di loro.
+1. **Single Beam**: un'area è servita con un singolo segnale alla stessa frequenza per tutti gli utenti. Quindi un canale piuttosto largo condiviso tra tutti gli utenti. Il problema è sempre la condivisione della banda.
+2. **Multibeam**: successore della Single Beam. Si hanno più antenne direzionali verso determinate aree, ognuna coperta da un segnale differente. Ogni area prende il nome di **Spot Beam**; ogni Spot Beam deve usare bande di frequenza diverse, altrimenti avrei interferenze. Posso però **riutilizzare** le frequenze su Spot Beam distanti tra loro.
 
-Multiplexing/Multiple Access nelle reti con GEO Satellites:
-- Downstream -> TDM multiplexing
-- Upstream -> TDMA o CDMA multiple access
+**Multiplexing / Multiple Access** nelle reti con GEO Satellites:
+
+| Direzione | Tecnica |
+| --- | --- |
+| **Downstream** | TDM multiplexing |
+| **Upstream** | TDMA o CDMA multiple access |
 
 ## Satellite Networks with LEO Satellites
 
-LEO: Low Earth Orbit.
+**LEO**: Low Earth Orbit.
 
-Tecnologia molto recente in ambito civile, a partire dal 2019. I più popolari fornitori di questo tipo sono Starlink e Eutelsat/OneWeb.
+Tecnologia molto recente in ambito civile, a partire dal **2019**. I fornitori più popolari sono **Starlink** e **Eutelsat/OneWeb**.
 
-Richiedono l'esistenza di Ground Stations in giro per il Mondo, per garantire connettività.
+Richiedono l'esistenza di **Ground Stations** in giro per il mondo per garantire connettività.
 
-La connettività è garantita da un insieme di satelliti, che prende il nome di Costellazione, mandati in orbita da provider diversi. L'obiettivo è avere copertura globale attorno alla Terra.
-- Starlink ha pianificato 42000 satelliti complessivi, ma al momento solo ~10000 sono attualmente attivi.
-- Oneweb: 654 satelliti
+La connettività è garantita da un insieme di satelliti, che prende il nome di **Costellazione**, mandati in orbita da provider diversi. L'obiettivo è avere **copertura globale** attorno alla Terra:
 
-![](image-4.png)
+- **Starlink**: ha pianificato 42.000 satelliti complessivi, ma al momento solo ~10.000 sono attivi.
+- **OneWeb**: 654 satelliti.
 
-https://satellitemap.space
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/satellite-leo-costellazioni.png)
 
-Quali sono i principi di funzionamento?
-Ho la mia antenna che identifica e si collega a un satellite nel cielo. Fin tanto che questo satellite è visibile, io resto collegato; quando esce dalla mia visibilità, cerco un altro satellite e faccio una procedura chiamata Handover, che consiste nel collegamento a un altro satellite senza che l'utente percepisca questo cambiamento.
+:::note[Mappa interattiva]
+[satellitemap.space](https://satellitemap.space)
+:::
+
+**Principi di funzionamento:** la mia antenna identifica e si collega a un satellite nel cielo. Finché questo satellite è visibile, resto collegato; quando esce dalla mia visibilità, cerco un altro satellite e faccio una procedura chiamata **Handover**, che consiste nel collegamento a un altro satellite senza che l'utente percepisca il cambiamento.
