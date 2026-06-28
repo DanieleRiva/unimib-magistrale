@@ -421,31 +421,226 @@ Di gran lunga, la situazione più tipica è che SIP viene utilizzato su UDP.
 75 possibili codici raggruppati in 6 categorie. Nulla di più da dire rispetto a HTTP.
 
 
+#### SIP Transactions
+Possiamo quindi dire di avere un protocollo client-server in cui vengono inviate delle richieste e restituite delle risposte. Richieste e risposte vengono raggruppate in quelle che vengono chiamate SIP Transactions, il cui obiettivo è stabilire quella che prende il nome di **sessione**.
 
+:::note[Sessione]
+Scambio di media (dati generati di tipo call, video call, video conference, ...)
+:::
 
+Una transaction consiste in:
+- richiesta
+- una qualsiasi numero di risposta informativa (1xx)
+- risposta finale
 
+Ogni votla che si invia un messaggio INVITE è necessario inviare un ulteriore messaggio di ACK, che in SIP consituisce una transazione indipendente, per confermare che la sessione è stata stabilita.
 
+![](image-25.png)
 
+#### Formato delle Richieste del SIP Message
+![](image-27.png)
 
+#### Formato delle Risposte del SIP Message
+![](image-28.png)
 
+#### Network Elements
+ATTENZIONE: questo argomento è spesso richiesto in esame!
 
+Vediamo qual è l'architettura per la segnalazione di SIP e quali sono gli elementi che fanno parte di SIP.
 
+![](image-29.png)
 
+La rete nel caso di SIP è divisa in diversi domini. Questo termine "dominio" non ha niente a che vedere con i sistemi autonomi visti in triennali. Ogni dominio include questi elementi:
+- un certo numero di User Agents
+- Proxy Server
+- Registrar
+- un certo numero di Redirect Servers
 
+I nodi fondamentali per garantire la comunicazione tra domini di tipo differenti sono i Proxy Servers. Qui siamo in un contesto applicativo, dove il Proxy Server è un vero e proprio server che ricevere le richieste e le invia a un altro Proxy Server che le elabora.
 
+Vediamo meglio ciascun componente.
 
+##### User Agent (UA)
+Ha una parte Client e una parte Server, UA-client e UA-Server; vogliamo stabilire una sessione tra UAs.
 
+![](image-30.png)
 
+##### Registrar
+È coinvolto nell'operazione di registrazione precedentemente introdotta. Quello che fa un registrar è andare ad associare un URI SIP (quindi di un utente) con l'indirizzo IP dello User Agent su cui l'utente può essere rintracciato.
 
+Quindi, se io voglio essere reso raggiungibile su uno specifico terminale, è necessario registrare l'associazione sul Registrar. Per fare questo viene inviata una richiesta di REGISTER periodicamente, dato che queste associazioni sono temporanee e vengono eliminate dal database contenuto nel Registrar ogni tot. 
 
+![](image-31.png)
 
+###### Registrar Localization
+Come posso conoscere l'indirizzo del Registrar per poterlo contattare? Ci sono 3 possibilità:
+1. configurazione statica
+2. utilizzo del DNS
+3. inviare la REGISTER request a un indirizzo di multicast
 
+##### Proxy Server
+Sono degli instradatori ma di livello applicativo. Fanno appunto instradamento di richieste e risposte tra i diversi domini. Come funziona nel momento in cui voglio fare una chiamata verso un utente che si trova su un altro dominio?
 
+![](image-32.png)
 
+In questo esempio, la richiesta INVITE raggiunge il Proxy Server che interroga un Database dal quale reperisce l'indirizzo IP del Proxy Server di destinazione, sulla base ad esempio del dominio specificato (henning@columbia.edu). Negla migliore delle ipotesi ho già il dominio all'interno del Database, nella peggiore invece si può scatenare la gerarchia del DNS per prendere il relativo indirizzo IP associato al dominio.
 
+Ottenuto l'IP del proxy di destinazione, è possibile inoltrare questa richiesta INVITE verso il Proxy di Destinazione. Questo Proxy di Destinazione riceve l'INVITE rivolto a un utente con un determinato SIP URI che si trova nel suo dominio. Ma a questo punto, deve localizzarlo perché, come abbiamo già detto, c'è un disaccoppiamento tra utente e terminale. Il proxy, allora, interroga il Registrar e l'INVITE viene inviato a quello specifico User Agent.
 
+Praticamente questa slide mostra il funzionamento di SIP.
 
+##### Redirect Server
+Il Redirect Server ricevere le richieste e risponde specificando una differente localizzazione per l'utente; fornisce un'indicazione su qual è l'effettivo User Agent su cui posso temporaneamente trovare l'utente, perché l'utente si è temporaneamente spostato.
 
+![](image-33.png)
 
+#### SIP Forking
+È un altro meccanismo fondamentale che si può effettuare con SIP. Abbiamo detto che per via del disaccoppiamento tra indirizzi dei terminali e degli utenti possiamo avere che un utente è registrato a più terminali, posso inoltrare una richiesta verso più terminali. Questa operazione prende il nome di **Automatic Call Distribution**.
 
+Questa operazione può essere effettuata in 2 modi:
+1. in sequenza
+2. in parallelo: invio più richieste e una volta che l'utente risponde da uno dei vari terminali, si invia un'ulteriore CANCEL agli altri terminali dove non si trova l'utente.
 
+#### Session Description Protocol
+Ha appunto il compito di descrivere le sessioni. Ma cosa significa?
+
+Come detto prima, con SIP vogliamo instaurare una sessione, e chiaramente i parametri di una sessione vanno stabiliti e accordati dagli utenti. Quello che Session Description Protocol (SDP) fa, è fare in modo che gli utenti possano raggiungere un consenso su **come** una sessione deve essere fatta; su quali sono i parametri identificativi di una sessione.
+
+Cosa importante è che il messaggio del procotollo di SDP viene trasportato come corpo dalle richieste e risposte SIP:
+
+![](image-34.png)
+
+Il corpo SDP è solitamente presente all'interno di un messaggio di richiesta di tipo INVITE. Il server include questo corpo di messaggio SDP include nella risposta finale 200 OK.
+Se per qualche ragione non includo il corpo SDP nell'INVITE, posso includerlo anche nel corpo del messaggio ACK finale.
+
+##### SDP - Message Body
+Il corpo del messaggio SDP include un numero di campi:
+- nome e purpose della sessione
+- session duration
+- **used media**; quello su cui ci focalizziamo
+- information to correctly receive such media (ports, addresses)
+- contact information
+
+Used Media: un certo numero di campi che mi permette di negoziare le caratteristiche del flusso audio, video, dati che voglio avere tra sorgente e destinazione.
+
+Come è fatto il corpo del messaggio SDP? Innanzitutto siamo di fronte a un protocollo di tipo **Character Oriented** e abbiamo un formato del tipo <Parameter> = <Value>, analogo a quello di SIP.
+
+![](image-35.png)
+
+Tutti questi campi non vanno imparati a memoria, ma ce n'è uno particolare su cui ci focalizziamo maggiormente: il campo ```m = <media> <port> <transport> <format list>```. Vediamo un esempio:
+
+![](image-36.png)
+
+stiamo dicendo con questo messaggio SDP che vogliamo instaurare una sessione che abbia due media: un flusso audio e un flusso video. I dati relativi al flusso audio me li aspetto di ricevere sulla porta 49170, mentre video sulla 51372. Subito dopo, è specificato RSTP/AVP e un numero per il Transport. RTP è un ulteriore protocollo che non vediamo (Realtime Transport Protocol), utilizzato per il trasporto della voce, dell'audio, dei video, o dati. A noi non ci interessa. Quello che possiamo specificare con RTP sono vari audio/video profiles: i numeri subito sopo, sono associati a una diversa codifica sia per audio che per video. Nel caso di audio, il valore 0 è associato a PCM, mentre 31 per il video è associato a H.261.
+
+Insomma, la cosa importante da capire è che in questo modo posso avere uno scambio di messaggi tra mittente e destinatario per negoziare la codifica da utilizzare sia per audio che per video.
+
+#### Call Setup: Example
+Come ripetuto più volte, non interessa imparare a memoria i campi del messaggio, ma vogliamo vedere quali sono i campi inclusi e come vengono usati. 
+
+![](image-37.png)
+
+Immaginiamo di trovarci in questo caso.
+
+##### Messaggio di INVITE
+
+![](image-38.png)
+
+Il campo **Via** lo vediamo più avanti.
+
+Abbiamo:
+- mittente
+- destinatario
+- Call-ID
+- CSeq: è un numero di sequenza che identifica la transazione
+- Content-Type: Stiamo dicendo che il corpo trasporta messaggio SDP
+- l'ultima riga dice che vogliamo fare una chiamata audio, pronto a ricevere messaggi sulla porta 3456 e posso supportare le codifiche audio 0, 3 e 4. che corrispondono a PCM, GSM e ADPCM. Ho quindi a disposizione uno qualsiasi di questi codificatori.
+
+##### Messaggio di TRYING & RINGING
+![](image-39.png)
+
+Importante notare come dentro il campo CSeq è salvato il valore 1 INVITE: questo perché i messaggi TRYING e RINGING sono associati al precedente messaggio di INVITE con ID 1.
+
+Inoltre, nel campo TO posso specificare un TAG: stringa numerica casuale che aggiungo, fondamentale per esempio col forking quando invio INVITE a terminale differente. Quando poi ho risposte, posso discriminare tra i vari terminali.
+
+##### Messaggio di OK
+![](image-40.png)
+
+Anche in questo caso il campo **m** dice di stabilire un campo di tipo audio in ascolto sulla porta 5004, RTP come protocollo e codifiche supportate 0 e 3. Siccome non è presente il 4 come succede nell'INVITE del mittente, questa codifica non potrà essere utilizzata. 
+
+##### Messaggio di ACK & BYE
+![](image-41.png)
+
+#### Respones Routing
+Alcuni campi molto importanti che possiamo avere nelle richieste e risposte SIP per fare sì che si ottenga un determinato comportamento specifico. 
+
+Per varie ragioni quasi sempre vogliamo che le richieste e le risposte associate seguano lo stesso percorso in rete, ovvero che attraversino gli stessi Proxy. Questo può essere fatto tramite il campo **Via**, introdotto precedentemente.
+
+Questo può essere utile soprattutto per la tariffazione: se assicuriamo che i messaggi seguano lo stesso percorso in entrambe le direzioni e abbiamo piena visibilità su quanto sta succedendo quando si instaura la chiamata.
+
+Per quanto riguarda le richieste, tramite **Via** vado a inserire campi nell'header relativi ai Proxy Server attraversati. Riguardo le risposte, si segue l'approccio di tipo Source-Based Routing, per fare in modo che le risposte seguano lo stesso percorso delle richieste.
+
+Esempio:
+
+![](image-42.png)
+
+Quando l'INVITE raggiunge il primo Proxy, questo inserisce il campo Via che ne specifica l'attraversamento. La richiesta INVITE è inoltrata al secondo Proxy, che a sua volta aggiunge un nuovo campo Via per dire che è passato da questo secondo Proxy.
+
+A questo punto, con la risposta posso fare Source-Based Routing per seguire lo stesso percorso ma in direzione opposta.
+
+Non introduce una latenza importante.
+
+##### Routing of Subsequent Requests
+Ma se volessi fare in modo che anche richieste successive seguano lo stesso percorso in rete, oltre che alla risposta di una richiesta?
+
+Posso adottare due campi che prendono il nome di **Record Route** e **Route**. Col primo, registro l'informazione relativa alla rotta con la stessa filosofia di Via, mentre il campo **Route** permette di fare Source-Based Routing a partire dal mittente.
+
+Esempio:
+
+![](image-43.png)
+
+La prima parte è uguale a Via, ma salviamo sotto il nome di Record-Route. Una volta raggiunta la destinazione, questa raggiunge 
+i due campi di Record-Route nella risposta, senza alterarli. I due campi raggiungono la sorgente, che può invertirli di ordine, per poi fare Source-Based Routing dove ogni Proxy sul percorso rimuove il campo relativo a se stesso. In questo modo mi assicuro che ognuno segua lo stesso percorso.
+
+#### Metodi Aggiuntivi
+- **PRACK**, Provisional Acknowledgement
+- **UPDATE***, Information update during setup
+- **REFER**, indica che il chiamante deve contattare un third party. Può essere usato per fare Call Forwarding
+- **NOTIFY**, usato per implementare notifiche per eventi.
+
+Con questi due campi è possibile sospendere o modificare (effettuare cambiamenti) in fase di Call Setup quando è necessario performare azioni aggiuntive prima del completamento.
+
+##### PRACK
+
+![](image-44.png)
+
+Funziona che se invio un messaggio di 1 byte, a un certo punto dall'altro capo arriverò al punto in cui invia un 200 OK: pronti per concludere il SETUP. Però, perché sia concluso realmente, è necessario che il mittente invii un ACK finale. Se l'ACK finale non arriva, il destinatario inizia a bombardare di ACK il mittente (200 OK).
+
+Potrebbe succedere che il mittente non sta inviando l'ACK non perché ci sono stati problemi nella comunicazione, ma perché deve effettuare delle operazioni aggiuntive, come ad esempio fare in modo che il codificatore sia pronto nel momento in cui si stabilisce la chiamata. Allora il Client invia un PRACK al Server che dice: "Zio pera aspetta, so che ti devo rispondere con un ACK, ma non sono ancora pronto. Te lo invio appena posso. Non cacare la minkia."
+
+##### UPDATE
+
+![](image-45.png)
+
+Può essere usato per rinegoziare in tempo reale i media che coinvolgono la comunicazione. Se voglio modificare i parametri in senso lato della sessione e anche i media, posso fare una nuova richiesta di tipo INVITE. Invece, se voglio modificare solo i media, ad esempio cambiando la codifica, si può utilizzare un messaggio di UPDATE.
+
+UPDATE può essere inviato anche durante il setup della chiamata, magari se non si è trovata una codifica da usare durante il setup, come succede nell'esempio in foto; nel primo scambio di messaggi non si è trovato un accordo sulla codifica da utilizzare, allora si usa l'UPDATE per cercare di trovarne un'altra.
+
+##### REFER
+Esempio di Call Forwarding tramite REFER:
+
+![](image-46.png)
+
+Il nuovo campo **Refer-To** contiene un SIP URI per puntare all'altra entità Carol.
+
+##### NOTIFY
+Quando un REFER è accettato, si potrebbe, non obbligatoriamente, impostare un sistema di notifica tramite il metodo NOTIFY. Qualsiasi evento accade nella nuova sessione viene notificato al vecchio chiamato, che nel caso dell'esempio di prima è Alice:
+
+![](image-47.png)
+
+#### Adozione di SIP
+SIP è molto utilizzato in reti mobili radio di generazione recente, ovvero 4G e 5G, dove VoIP è adottato nativamente.
+
+Viene adottata uno standard di comunicazione VoIP: VoLTE (Voice-over-LTE):
+- i pacchetti header sono ottimizzati per consumare meno bandwith rispetto alla tecnologia VoIP standard
+- il signalling è basato su SIP

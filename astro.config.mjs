@@ -165,6 +165,10 @@ export default defineConfig({
                 }
             ],
 
+            // Mostra nella "On this page" (ToC di destra) i titoli da ## (h2)
+            // fino a ##### (h5), così anche i sottotitoli profondi (es. SIP) sono navigabili.
+            tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 6 },
+
             // sidebar: corsi.map(({ label, dir }) => ({
             // 	label,
             // 	collapsed: true,
