@@ -1,6 +1,6 @@
 ---
-title: Mobile Radio Networks
-description: Mobile Radio Networks
+title: Mobile Radio Networks - Concetti Generali
+description: Mobile Radio Networks - Concetti Generali
 sidebar:
   order: 15
 ---
@@ -125,41 +125,122 @@ Questo approccio segue la logica **make-before-break**: alloca le risorse in ret
 
 Quando si fa handover? Vediamo l'esempio nel grafico a destra, che mostra la potenza dei segnali delle due BS e il momento perfetto per effettuare l'handover. Il problema è che nella realtà dei fatti la potenza del segnale è frastagliato; quindi, l'handover viene effettuate quando lo UE sperimenta per un determinato periodo di tempo che la qualità della BS B è migliore della qualità della BS A.
 
+## Radio Planning
 
+Con il termine Radio Planning si intende quel processo che ha il compito di andare a decidere DOVE posizionare le BS e come configurarle quando si vuole mettere in piedi una rete radiomobile.
 
+È un'operazione piuttosto complessa che si divide in 2 fasi:
+1. **Coverage Planning**:
 
+    Riguarda il posizionamento e la scelta della loro configurazione. Questa fase è ovviamente fondamentale.
+2. **Frequency Planning** (o capacity planning):
 
+    Ha il compito di assegnare le risorse alle varie reti radiomobili, una volta dispiegate. Quando si parla di risorse, in questo caso, si parla di frequenza. Questa fase era fondamentale per la generazione GSM (2G), ma con le generazioni seguenti non è più risultata necessaria.
 
+    ![](image-19.png)
 
+### Coverage Planning
+ci sono 4 aspetti principali da tenere in considerazione mentre si fa Coverage Planning:
+1. Signal Propagation Prediction
+2. Traffic Estimation
+3. Base Station Positioning
+4. Antenna Configuration
 
+#### Signal Propagation Prediction
+Quello da fare, nel momento di Coverage Planning, è utilizzare dei software specifici che permettono di predirre quale sarà la copertura della area.
 
+Questo aiuta a stimare l'area coperta dalla Base Station.
 
+![](image-20.png)
 
+#### Traffic Estimation & Base Station Positioning
 
+Stimare il traffico che ci sarà è abbastanza complicato perché dipende da tanti fattori, come la popolazione nell'area, livello urbano nell'area, l'adozione effettiva della tecnologia da parte delle persone (market penetration).
 
+Bisogna tenere in considerazione anche dove le BS possono effettivamente essere posizionate; si definiscono un insieme di punti candati dove si possono posizionare le antenne. La posizione delle antenne sono definite in base a vari aspetti:
+- Tecnici: stima del traffico, morfologia del terreno, ecc...
+- non-tecnici: inquinamento elettromagnetico, concordi con i proprietari dell'edificio, autorità locali, ecc...
 
+#### Antenna Configuration
+Dopo il posizionamento, vanno configurate per il funzionamento:
+- Radiation diagram
+- Tilt
+- Maximum Emission Power
+- Height
+- Base Station Capacity
+- eccetera...
 
+Ovviamente, diverse configurazioni possono portare a diverse coperture.
 
+### Coverage Planning - Operativamente
+Tutti i punti visti primi aiutano a prendere decisioni sul dove installare le BS e come configurare le antenne.
 
+Operativamente, si definisce un insieme di punti di test, che prendono il nome di Test Points (TP), utilizzati per valutare quanto è buona la strategia di copertura scelta.
 
+Solitamente si va a formulare un modello di ottimizzazione matematica, che tiene conto dei vincoli specificati prima e lo si cerca di risolvere con una determinata funzione obiettivo, che solitamente è minimizzare il costo di deployment.
 
+![](image-21.png)
 
+Bene quello che abbiamo detto, ma non abbiamo considerato che dopo aver posizionato l'antenna può esserci interferenza. Si sta assumendo che ogni cella ha tutte le risorse radio dedicate; assunzione ok per le generazioni di reti radiomobili recenti, ma non va bene per il 2G perché si verificano interferenze nel momento in cui si assegnano le stesse risorse radio ad antenne vicine. Ciò significa che, nel caso di vecchie tecnologie 2G, è necessario attuare anche la fare del **Frequency Planning**.
 
+#### Frequency Planning
+Non è possibile allocare tutte le risorse radio (carrier nell'immagine di prima) a tutte le antenne, perché causerebbe delle interferenze molto forti e la qualità delle comunicazioni verrebbe degradata moltissimo.
 
+Nella pratica, si assegnano frequenze in maniera intelligente cercando di minimizzare interferenze tra celle vicine, ma andando a garantire un determinato grado di Frequency Reuso: posso assegnare le frequenze a diverse BS, che devono essere diverse tra BS in celle vicine, ma posso riutilizzare per BS lontane.
 
+Ovviamente, e purtroppo, a causa di propagazione del segnale radio non uniforme, la realtà dei fatti è che la forma di una cella è solitamente molto diversa da un esagono:
+ 
+![](image-22.png)
 
+Celle di forma esagonale sono considerate come approccio approssimato per assegnazione di frequenza alle diverse BS, per semplificare la vita.
 
+##### Frequency Reuse
+Due scenari diversi:
 
+![](image-23.png)
 
+:::tip[Cluster]
+Insieme di celle adiacenti che usano ognuna un gruppo di frequenza (carrier) differenti.
 
+Si ha un assegnamento delle risorse disgiunto tra le celle che appartengono allo stesso Cluster.
+:::
 
+Guardando il Cluster a sinistra che ha dimensione $K = 3$, è possibile leggere i numeri 1, 2 e 3. Questi numeri indicano che a ognuna di queste celle è stato assegnato un gruppo di frequenze differenti, dove il numero corrisponde al nome del gruppo di frequenze.
 
+Lo stesso vale per il Cluster con dimensione $K = 7$ rappresentato a destra.
 
+C'è però un tradeoff importante: definendo una dimensione dei Cluster ridotta, quindi un numero di celle per Cluster basso, si ha il vantaggio di avere più capacità assegnata alla mia cella, ma lo svantaggio è che due cella a cui è stata assegnata lo stesso gruppo di frequenza sono abbastanza vicine tra loro; guardando l'immagine a sinistra, la cella 1 gialla è vicina alla cella 1 blu, stessa cosa per le altre. Nel caso del cluster più grande, invece, si ha capacità minore per cella perché i 125 carrier vanno divisi per 7 e non per 3, ma si ha minore interferenza in quanto le celle con stessa frequenza sono più lontane. 
 
+$K$ non ha valore libero, ma esistono solo alcuni valori ammissibili, come 1, 3, 4, 7, 9, ...
 
+Inoltre, $ReuseEfficiency = \frac{1}{K}$.
+Quindi la ReuseEfficiency è tanto più bassa quanto più è grande il Cluster.
 
+##### Antenne Settoriali
+L'utilizzo di Antenne Settoriali rende possibile cambiare il layout delle celle, riducendo interferenze e aumentando il Reuse.
 
+![](image-24.png)
 
+##### Frequency Assignment Constraints
+Utilizzando Antenne Settoriali, è possibile riutilizzare le frequenze anche tra antenne continuge. Purtroppo non è così: la necessità di assegnare frequenze diverse a celle adiacenti permane. Quando abbiamo trattato le Antenne Settoriali, abbiamo detto che uno degli effetti collaterali ottenuto quando si concentra l'energia verso una direzione, si generano dei lobi laterali che causano interferenze con le antenne adiacenti.
 
+![](image-25.png)
 
+Oltrettutto, c'è un altro problema: quando si ha dei carrier, questi sono leggermente sovrapposti tra loro, cosa che causa interferenza.
 
+![](image-26.png)
+
+Si cerca quindi di non assegnare Carrier adiacenti a BS che sono adiacenti.
+
+#### Layout di Cellule Diversi nell'Area
+Le celle devono avere sempre quella specifica dimensione? No. Il layout cellulare può essere adattato sulla base della densità di traffico stimata.
+
+Logicamente, dove c'è un traffico generato più elevato, ci sono celle di dimensione più piccola che permettono di aumentare la quantità di utenti che possono essere serviti per unità di area. 
+
+![](image-28.png)
+
+L'immagine sulla destra rapresenta l'operazione di Cell Splitting: se le celle sono già state deployate, si possono dividere in celle più piccole per aumentare la capacità del traffico, questo nella fase di Coverage Planning
+
+In un contesto urbano, dove ci sono quindi tantissime celle piccoline, si crea un problema: se gli utenti sono spesso in mobilità, la quantità di Handover che deve essere effettuata aumenta notevolmente, cosa che non ci piace. Per cercare di mitigare il problema, si adotta una Umbrella Cell che è una cella di dimensione più grande che comprende il territorio. Ovviamente, nel caso di 2G, gli viene assegnata una frequenza che non va contro le cella più piccole. Nel momento in cui un utente inizia a sperimentare tanti handover, viene fatto l'handover verso la cella ombrello, in modo che mentre si muove viene servito da quella ombrello. Gli utenti che non si muovono continuano a essere serviti dalle celle più piccole.
+
+![](image-29.png)
