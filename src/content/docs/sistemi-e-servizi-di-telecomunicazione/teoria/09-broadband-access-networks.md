@@ -199,7 +199,7 @@ Sono quelle architetture di rete che portano la fibra fino a casa dell'utente. E
 1. fibre **point-to-point (P2P)**, architettura chiamata anche **Active Optical Network (AON)**: tipicamente più utilizzata per gli utenti business;
 2. **Passive Optical Network (PON)**: tipicamente più utilizzata per gli utenti residenziali.
 
-#### FTTH P2P
+##### FTTH P2P
 
 In questo caso abbiamo una fibra ottica per utente, dalla Centrale a casa dell'utente.
 
@@ -209,7 +209,7 @@ Il problema è che ho la necessità di dispiegare un grande numero di fibre, **1
 
 Offre bande molto elevate in **entrambe le direzioni**.
 
-#### FTTH PON
+##### FTTH PON
 
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/ftth-pon.png)
 
