@@ -69,7 +69,7 @@ Ovviamente anche la qualità dei Ripartitori influisce sulla qualità della rete
 
 Questa infrastruttura è utilizzata per le soluzioni tecnologiche **xDSL** (Digital Subscriber Line).
 
-## Tecnologia xDSL
+### Tecnologia xDSL
 
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/xdsl.png)
 
@@ -87,7 +87,7 @@ La colonna degli standard non è da sapere.
 
 In che modo, guardando le righe di VDSL2, riesco ad aumentare la capacità semplicemente cambiando standard ma mantenendo una distanza più o meno sempre uguale? La tecnologia utilizzata è chiamata **Vectoring**.
 
-### Vectoring
+#### Vectoring
 
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/vectoring.png)
 
@@ -112,7 +112,7 @@ $$
 T = \begin{bmatrix} 1 & k_2 \\ k_1 & 1 \end{bmatrix}
 $$
 
-### Vectoring in Downstream
+#### Vectoring in Downstream
 
 Guardando alla direzione **downstream**, dove il DSLAM deve mandare i segnali agli utenti, il Vectoring effettua una **precodifica** con l'obiettivo di cancellare totalmente le componenti di interferenza.
 
@@ -124,7 +124,7 @@ $$
 
 Come si fa è un altro discorso nel quale non entriamo, ma posso fare questa operazione che mi cancella completamente l'interferenza. È importante perché questa operazione di **inversione della matrice** deve essere effettivamente svolta.
 
-### Vectoring in Upstream
+#### Vectoring in Upstream
 
 Nella direzione di **upstream**, il Vectoring viene comunque fatto dal DSLAM, ma **a posteriori**: l'utente trasmette il segnale e il DSLAM, a posteriori, cancella l'interferenza.
 
@@ -132,7 +132,7 @@ $$
 \overrightarrow{r} = T^{-1}(T \overrightarrow{s}) = \overrightarrow{s}
 $$
 
-## Limiti del Vectoring
+#### Limiti del Vectoring
 
 - La matrice $T$ deve essere **invertita** per un grandissimo numero di doppini. Inoltre, una volta calcolata, devo continuare a **ricalcolarla e reinvertirla**: serve una grossa capacità computazionale.
 - Se nei vari fasci i doppini sono gestiti da **Internet Service Provider differenti**, è necessario conoscere l'interferenza di tutti i doppini, anche di quelli gestiti dagli altri operatori, per poter cancellare completamente la diafonia. Spesso questa è un'informazione che agli operatori non piace condividere; se non la si condivide, ogni operatore può cancellare la diafonia solo per i propri doppini.
@@ -141,7 +141,7 @@ $$
 Non è un grosso problema, perché l'ultimo miglio nella rete di accesso in rame è solitamente gestito sempre e solo da TIM.
 :::
 
-## Hybrid fiber-copper Access Networks
+### Hybrid fiber-copper Access Networks
 
 Come già discusso, c'è un tradeoff tra la banda disponibile e la lunghezza dei doppini in rame. I cavi in fibra ottica offrono una bandwidth molto maggiore rispetto ai doppini. Quindi, come facciamo a ridurre la lunghezza dei doppini?
 
@@ -149,13 +149,13 @@ Come già discusso, c'è un tradeoff tra la banda disponibile e la lunghezza dei
 
 Nascono quindi diverse architetture **ibride** tra fibra e rame, che si distinguono l'una dall'altra sulla base di dove avviene lo "swap" tra rame e fibra. Vengono chiamate **"Fiber-to-the-X"**.
 
-### Fiber To The Exchange (FTTE)
+#### Fiber To The Exchange (FTTE)
 
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/ftte.png)
 
 La fibra raggiunge il Central Office. Il resto è tutto rame, esattamente come visto precedentemente. Cambia solo che la parte di fibra è posta tra il **DSLAM** e l'**IP Router** del Central Office.
 
-### Fiber To The Cabinet (FTTC)
+#### Fiber To The Cabinet (FTTC)
 
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/fttc.png)
 
@@ -171,7 +171,7 @@ Il nodo funzionale all'interno del Cabinet prende il nome di **MSAN** (Multi-Ser
 
 Da qui ho sempre il cablaggio in rame fino al Punto di Distribuzione e poi il Cablaggio Verticale.
 
-### Fiber To The Building (FTTB)
+#### Fiber To The Building (FTTB)
 
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/fttb.png)
 
@@ -188,9 +188,9 @@ La particolarità di questa infrastruttura è che agli operatori non piace opera
 
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/reverse-power-feeding.png)
 
-## Fiber Access Networks
+### Fiber Access Networks
 
-### Fiber To The Home (FTTH)
+#### Fiber To The Home (FTTH)
 
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/ftth.png)
 
@@ -199,7 +199,7 @@ Sono quelle architetture di rete che portano la fibra fino a casa dell'utente. E
 1. fibre **point-to-point (P2P)**, architettura chiamata anche **Active Optical Network (AON)**: tipicamente più utilizzata per gli utenti business;
 2. **Passive Optical Network (PON)**: tipicamente più utilizzata per gli utenti residenziali.
 
-### FTTH P2P
+#### FTTH P2P
 
 In questo caso abbiamo una fibra ottica per utente, dalla Centrale a casa dell'utente.
 
@@ -209,7 +209,7 @@ Il problema è che ho la necessità di dispiegare un grande numero di fibre, **1
 
 Offre bande molto elevate in **entrambe le direzioni**.
 
-### FTTH PON
+#### FTTH PON
 
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/ftth-pon.png)
 
@@ -275,7 +275,7 @@ Le reti satellitari aggiungono una **latenza non trascurabile**: il dato deve es
 ### Tipi di Satelliti
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/tipi-satelliti.png)
 
-## Satellite Networks with GEO Satellites
+### Satellite Networks with GEO Satellites
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/satellite-geo-beam.png)
 
 Con un satellite posso coprire un'area della Terra molto ampia, anche fino a **1/3** dell'area totale terrestre. Può essere un vantaggio, ma anche uno svantaggio: la banda deve essere condivisa tra un numero di utenti potenzialmente elevatissimo.
@@ -292,7 +292,7 @@ A questo proposito, esistono **2 tipologie di copertura** servibili tramite Sate
 | **Downstream** | TDM multiplexing |
 | **Upstream** | TDMA o CDMA multiple access |
 
-## Satellite Networks with LEO Satellites
+### Satellite Networks with LEO Satellites
 
 **LEO**: Low Earth Orbit.
 
