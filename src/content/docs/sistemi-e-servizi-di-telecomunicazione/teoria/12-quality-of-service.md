@@ -563,7 +563,7 @@ L'approccio Soft State è stato creato per cercare di "salvare" IntServ, ma non 
 
 Abbiamo una concatenazione di vari oggetti; ogni oggetto ha lunghezza multipla di 32 bit.
 
-### RSVP Message Header
+#### RSVP Message Header
 
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/rsvp-message-header.png)
 
@@ -572,7 +572,7 @@ Abbiamo una concatenazione di vari oggetti; ogni oggetto ha lunghezza multipla d
 - **Send_TTL**: stessa valenza del TTL in IP; importante perché, confrontando questo valore con quello dell'header IP, posso capire se ci sono router RSVP non-compliant nel percorso (se il TTL dell'header IP è più basso, alcuni router non sono in grado di parlare RSVP);
 - **RSVP Length**: fondamentale perché posso avere oggetti di dimensioni differenti.
 
-### RSVP Objects
+#### RSVP Objects
 
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/rsvp-objects.png)
 
@@ -583,7 +583,7 @@ Abbiamo una concatenazione di vari oggetti; ogni oggetto ha lunghezza multipla d
 
 Vediamo come funziona l'allocazione delle risorse quando dobbiamo allocare un flusso di tipo **Guaranteed Service (GS)** o **Controlled Load Service (CLS)**.
 
-### Guaranteed Service (GS)
+#### Guaranteed Service (GS)
 
 Nel caso GS voglio emulare una rete a commutazione di circuito, ovvero garantire che non ci siano perdite e che il ritardo end-to-end non superi un valore stabilito.
 
@@ -614,7 +614,7 @@ Tutto funziona considerando che tanta più banda riservo sul percorso, tanto pi�
 Questo meccanismo assicura che una porzione di banda $B_j$ venga riservata sul percorso e che il delay end-to-end non superi un valore massimo di tolleranza.
 :::
 
-### Controlled Load Service (CLS)
+#### Controlled Load Service (CLS)
 
 Offre un servizio che emula best-effort in una rete non congestionata. Risulta più semplice rispetto a Guaranteed Service.
 
@@ -678,13 +678,13 @@ I PHB più importanti sono:
 
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/phb.png)
 
-### Expedited Forwarding
+#### Expedited Forwarding
 
 L'obiettivo è emulare una **linea dedicata** (servizio a commutazione di circuito), mantenendo ritardi e perdite molto bassi. Il traffico deve essere condizionato e controllato, e il traffico in eccesso rispetto al TCA **non** è ammesso nella rete.
 
 È il PHB con **priorità più alta**.
 
-### Assured Forwarding
+#### Assured Forwarding
 
 Con AF abbiamo **4 livelli di priorità**. Si usa il termine **classe** per associare i livelli di priorità, portando ad avere 4 code con priorità differenti.
 
@@ -709,6 +709,6 @@ Possiamo definire delle porzioni di coda tali per cui:
 
 Queste due soglie devono essere specificate per ogni livello in ogni classe.
 
-### Random Early Discarding (RED)
+##### Random Early Discarding (RED)
 
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/red-grafico.png)
