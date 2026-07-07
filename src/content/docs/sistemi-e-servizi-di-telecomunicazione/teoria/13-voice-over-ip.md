@@ -32,13 +32,14 @@ Esistono diversi tipi di chiamate:
 
 Comunicazione tra terminali VoIP, di tipo **VoIP puro**. Mette in comunicazione terminali che supportano nativamente VoIP, come telefoni o computer con client VoIP.
 
+![](image.png)
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/voip-voip-pure.png)
 
 La cosa importante è che in questo caso i terminali VoIP prendono la voce e la **pacchettizzano**, ovvero la trasformano in pacchetti IP che contengono la voce codificata, **bypassando** completamente la rete telefonica standard.
 
 ### VoIP-VoIP - Adapted Terminals
 
-Si ha un nodo funzionale di nome **VoIP box** che prende la voce, la digitalizza e la pacchettizza, per poi inviarla in Internet. Solitamente si trova all'interno del router.
+Comunicazione tra terminali usati nella PSTN, adattati per supportare VoIP. Si ha un nodo funzionale di nome **VoIP box** che prende la voce, la digitalizza e la pacchettizza, per poi inviarla in Internet. Solitamente si trova all'interno del router.
 
 Nelle tratte tra Standard Phone e VoIP box si ha una comunicazione **analogica**, il resto è tutto digitale.
 
