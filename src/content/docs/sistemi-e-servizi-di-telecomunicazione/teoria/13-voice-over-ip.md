@@ -32,7 +32,6 @@ Esistono diversi tipi di chiamate:
 
 Comunicazione tra terminali VoIP, di tipo **VoIP puro**. Mette in comunicazione terminali che supportano nativamente VoIP, come telefoni o computer con client VoIP.
 
-![](image.png)
 ![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/voip-voip-pure.png)
 
 La cosa importante è che in questo caso i terminali VoIP prendono la voce e la **pacchettizzano**, ovvero la trasformano in pacchetti IP che contengono la voce codificata, **bypassando** completamente la rete telefonica standard.
