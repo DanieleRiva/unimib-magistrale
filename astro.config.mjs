@@ -90,9 +90,13 @@ const sidebarCorsi = [
             },
 
             {
-                label: '📝 Esercitazioni',
+                label: '📝 Esami',
                 collapsed: true,
                 items: [
+                    {
+                        label: 'Domande di Esami',
+                        link: '/sistemi-e-servizi-di-telecomunicazione/esami/'
+                    },
                 ]
             },
         ]
