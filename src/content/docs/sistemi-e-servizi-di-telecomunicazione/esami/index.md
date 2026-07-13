@@ -256,7 +256,7 @@ La Radio Access Network è formata da un diverso numero di antenne che prendono 
 
 In una Mobile Radio Network, l'area di superficie è suddivisa in Celle; motivo per cui si chiama rete cellulare. Ogni cella ha la forma logica di un esagono, ottimo perché è la forma geometrica più simile al cerchio che permette di tassellare l'intera superficie e facilita anche i calcoli. Nella realtà, però, le aree non sono realmente a forma esagonale a causa della propagazione del segnale. Comunque, ad ogni area è assegnata una Base Station e il meccanismo fondamentale da garantire agli utenti della rete mobile è la User Mobility. Questa è garantita grazie a diverse procedure:
 
-- Cell Selection: un utente deve capire a quale BS connettersi. Si fa in mobility IDLE, ovvero quanto un utente non è coinvolto in una comunicazione. Invia un segnale a ciascuna antenna nella sua Location Area, ovvero un determinato insieme di Celle che definiscono la posizione dell'utente, e, in base alla potenza del segnale che ritorna all'utente inviato dalle BS, decide a quale connettersi. È presente un database per salvare la posizione degli utenti, utile per gestire le comunicazioni.
+- Cell Selection: un utente deve capire a quale BS connettersi. Si fa in mobility IDLE, ovvero quanto un utente non è coinvolto in una comunicazione. Ciascuna antenna nella Location Area, ovvero un determinato insieme di Celle che definiscono la posizione dell'utente, invia un segnale Beacon e, in base alla potenza del segnale ricevuto dall'utente, questo decide a quale connettersi. È presente un database per salvare la posizione degli utenti, utile per gestire le comunicazioni.
 
 - Paging: siccome la posizione dell'utente è conosciuta a livello di granularità di Location Area, è necessario conoscerne la posizione relativamente alle celle. La procedura di Paging prevede che ogni BS di ciascuna cella invii un messaggio indirizzato all'utente. Se questo risponde, si sa in quale cella si trova. Si fa quando l'utente passa da IDLE ad ACTIVE, ovvero quando è coinvolto in una comunicazione.
 
@@ -325,7 +325,31 @@ Con 5G, SBA Service Based Architecture, non si cerca solo di aumentare la veloci
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+Con la rete radiomobile 5G, per la prima volta a differenza delle precedenti generazioni, si hanno obiettivi diversi dal solo aumento della velocità. Si cerca infatti di aumentare quanto più possibile l'affidabilità, nonché di diminuire i ritardi e il consumo energetico. 5G fa uso della virtualizzazione, che permette di definire delle vere e proprie reti virtuali isolate diverse tra loro. Queste reti virtuali prendono il nome di Network Slices e possono presentare diverse architetture, assegnate a diversi Tenant. Il vantaggio di questo approccio è che se dovessere esserci un problema in una delle reti virtuali, questo problema non ha ripercussioni sulle altre e rimane isolato.
+
+Un'ulteriore novità del 5G è l'Edge Computing, ovvero la possibilità di effettuare computazione tramite degli Edge Nodes situati vicino agli utenti, con l'obiettivo di effettuare computazioni quanto più vicino possibile agli utenti della rete.
+
+Viene introdotto anche l'uso delle Onde Millimetriche, che sono molto appetibili agli operatori perché, oltre ad essere nuove e quindi poco utilizzate, essendo millimetriche conferiscono banda molto elevata. Inoltre, le dimensioni delle antenne sono direttamente proporzionali alle dimensioni delle onde trasmesse, quindi le antenne per la trasmissione di queste One Millimetriche risultano piccolissime. Il problema di questa tecnologia è che sono molto soggette al Path Loss e alle condizioni atmosferiche, ovvero ai principali Impairments della trasmissione via radio. La soluzione sarebbe adottare delle Small Cells, ovvero suddividere la superficie in celle molto piccole in cui si fa uso di queste antenne. Sarebbe molto utile utilizzare questo approccio in piccole aree, come per esempio qui negli edifici universitari.
+
+Anche il Massive MIMO è una novità portata con il 5G; permette di effettuare MIMO ma a un livello superiore, tramite diversi array di antenne, con un certo numero di queste che trasmettono verso l'utente. MIMO, Multiple Input Multiple Output, è una tecnica utilizzata per rendere la trasmissione più robusta al rumore. Il funzionamento è che ci sono più antenne che inviano allo stesso tempo il medesimo segnale e più antenne che lo ricevono, situate a distanza tali per cui si va a generare Interferenza Distruttiva. Similmente a come succede nei doppini in rame attorcigliando i cavi in rame.
+
+Architetturalmente, in 4G separava la logica di Control Plane e Data Plane, ma nel 5G è presente CUPS totale, ovvero Control User Plane Separation; tutte le funzionalità del piano di controllo sono disaggregate in funzionalità il più possibile atomiche. A differenza del 4G, la eNodeB prende il nome di gNB (next-generation eNodeB) e a sua volta si può suddividere in 2: gNB-CU (gNB Centralized Unit) e gNB-DU (Unified Unit). La gNB-DU è responsabile per le operazioni di livello 1 e 2, mentre la gNB-CU è responsabile per le operazioni di livello 2 zona alta e livello 3.
+
+La RAN in 4G prende il nome di Next Generation RAN in 5G.
+
+Il Core Network, che in 5G prende il nome di 5G CORE, è molto diverso da quello di 4G, in quanto le interfacce a livello di controllo possono comunicare tramite un message bus e scambiarsi quindi messaggi tramite interfacce di tipo REST.
+I componenti della 5G CORE che hanno controparti in 4G sono:
+- AMF (Acess & Mobility Management Function): la sua controparte in 4G è MME, si occupa delle funzionalità di mobility.
+- SMF (Session Management Function): la sua controparte in 4G è MME e PGW, si occupa della gestione delle informazioni di sessione degli utenti e alloca gli IP. Come succede in 4G con MME, SMG gestisce e stabilisce i Bearer.
+- AUSF (Authentication Server Function): la sua controparte in 4G è HSS, si occupa dell'autenticazione.
+- UDM (Unified Data Management): la sua controparte in 4G è HSS, si occupa di salvare informazioni riguardo gli utenti.
+
+I componenti nuovi senza controparti in 4G sono:
+- NRF (Network Repository Function): mantiene in un repository tutte le funzioni per cui si può fare deployment.
+- NEF (Network Exposure Function): permette agli utenti esterni alla rete di accedere alle informazioni della rete 5G tramite API.
+- NSSF (Network Slice Selection Function): quando un terminale entra in stato IDLE mobility, la NSSF decide a quale Network Slice collegarlo.
+
+Inoltre, lo User Plane Function in 5G permette di mettere in comunicazione un utente con la rete esterna. La controparte in 4G è PGW e SGW.
 
 </details>
 
@@ -336,7 +360,13 @@ Con 5G, SBA Service Based Architecture, non si cerca solo di aumentare la veloci
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+DiffServ è un importante modello progettato per garantire QoS nelle reti IP, nato nel 1998 come successore di IntServ. Il principale problema di IntServ riguarda la scalabilità; IntServ aveva come obiettivo garantire QoS nelle reti IP basandosi su ciascun flusso di dati, sfruttando il meccanismo di Call Admission Control su, appunto, ciascun flusso.
+
+CAC è una tecnica per garantire QoS che consiste in un insieme di azioni per negoziare una connessione: verifica se si hanno sufficienti risorse per accettare la nuova richiesta e, se così fosse, allora la si accetta. Esistono 3 tipi di CAC: Centralized, Distributed e Hybrid. Nel primo caso, esiste un server centrale che comunica con gli altri nodi della rete per capire come è il traffico e, sulla base di questi dati, decide se ammettere o meno nuove richieste. Il secondo caso di Distributed invece prevede che ciascun nodo in rete comunichi con gli altri quale è la propria situazione di gestione delle risorse, per poi prendere decisioni, ma il problema è che è complesso da scalare e serve un sistema di segnalazione tra i vari nodi. Infine, la modalità ibrida è appunto ibrida tra le due precedenti, dove la CAC è effettuata solo ai nodi edge, ma è comunque necessario che gli altri nodi comunichino il loro stato di occupazione delle risorse.
+
+A causa di questo approccio basato sui singoli flussi, IntServ risulta inutilizzabile dopo l'esplosione del traffico web proprio a causa di problemi di scalabilità e anche considerando il fatto che sono necessari router che supportano RSVP, ovvero il protocollo di signalling utilizzato da CAC e quindi IntServ, utilizzato per riservare risorse sui percosi.
+
+DiffServ, invece, non si basa più su garantire QoS a livello di singoli flussi tramite CAC, ma definisce delle classi di servizio tali per cui si garantisce QoS. La peculiarità di DiffServ è che la regolazione del traffico viene effettuata solo ai router di bordo, dove viene immesso il traffico e si specifica a quale classe di servizio questo appartiene. Arrivati a questo punto, i router interni devono solo fare Differentiated Routing, ovvero instradare differenziando il traffico sulla base delle varie classi di servizio a cui appartiene. La cosa utile di DiffServ per la scalabilità è che non necessita di dispositivi prioritari, ma viene utilizzato il capo Type of Service all'interno dell'header IPv4 per discriminare i vari tipi di traffico.
 
 </details>
 
@@ -347,7 +377,13 @@ Con 5G, SBA Service Based Architecture, non si cerca solo di aumentare la veloci
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+L'architettura delle Reti di Accesso Satellitari prevede una Ground Station collagata tramite collegamento di backhaul all'IP Router. Per permettere la comunicazione con gli utenti, è installata un'antenna che prende il nome di VSAT a casa dell'utente stesso. La Ground Station e VSAT sono in grado di comunicare tra di loro grazie ai satelliti, che fungono fondamentalmente da ponte tra i due. Questa architettura e questo tipo di rete di accesso aiuta contro il Digital Divide, ovvero la separazione tra persone che hanno accesso a internet e chi no, ma presentano problemi di delay, ritardi, non indifferenti, proprio perché le comunicazioni devono passare dal VSAT, fino al satellite e poi fino alla Ground Station. Oppure viceversa.
+
+Esistono due tipi di satelliti: i satellit GEO e i satelliti LEO.
+
+I GEO Satellites si suddividono a loro volta in due tipi: single-beam, ovvero satelliti che fanno uso di un singolo raggio per ottenere copertura. Questi raggi possono essere molto estesi e coprire fino a un terzo della superficie terrestre, ma ovviamente il problema è che la banda andrebbe suddivisa per tutta l'area ricoperta. I multi-beam, invece, utilizzano diversi raggi di copertura, ma è importante usare frequenze diverse su beam vicini tra loro per evitare interferenze.
+
+I satelliti LEO sono invece più recenti e permettono connessione, ovviamente se si ha una Ground Station, andando a formare una "costellazione" di satelliti.
 
 </details>
 
@@ -358,7 +394,15 @@ Con 5G, SBA Service Based Architecture, non si cerca solo di aumentare la veloci
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+Connettività WAN generalizzata e dedicata sono due tipologie differenti di connettività WAN che permettono agli utenti di accedere alla rete IP pubblica. Il primo caso la connettività è fornita dagli ISP principalmente agli utenti residenziali. L'architettura di una WAN generalizzata prevede un diverso numero di LAN, interconnesse alla rete ISP. Questa rete ISP è formata da un numero di Autonomous Systems interconnessi tra loro, dove è presente un edge router che a sua volta collega ogni AS con le diverse reti LAN.
+
+Nel secondo caso, invece, ovvero nel caso delle WAN dedicate, la situazione è diversa perché questa struttura è rivolta principalmente ad aziende e, quindi, utenti business. L'architettura cerca di interconnettere tutte le varie reti LAN di un'azienda, ovvero i suoi diversi branch, per poi fornire accesso alla rete IP pubblica. Esistono tre diverse soluzioni per il caso dedicato:
+
+1. Dedicated Physical WAN: questa prima soluzione prevede che sia l'azienda a dispiegare l'intera infrastruttura di rete WAN per interconnettere tutti i branch della propria azienda. Questa soluione è molto utile perché si ha controllo totale sull'intera infrastruttura e si ha elevata disponibilità di bansa, ma allo stesso tempo questa soluzione è estremamente costosa, a tal punto che solamente poche aziende davvero grosse possono permettersela.
+
+2. Leased Lines: la seconda soluzione prevede che un operatore, su richiesta dell'azienda, vada a definire all'interno della sua infrastruttura, dei circuiti privati da assegnare all'azienda. Risulta comodo, ma anche questo approccio è costoso e comunque l'azienda deve sapere bene tutti i dettagli di quello che bisogna richiedere all'operatore.
+
+3. MPLS WAN: MultiProtocol Label Switching WAN. Questa soluzione prevede l'utilizzo del protocollo MPLS e di una MPLS Network gestita dall'operatore. Nel momento in cui l'azienda vuole stabilire una WAN per connettere i suoi vari diversi Branch LAN, l'operatore fornisce all'azienda dei Customer Edge Router da posizionare in ciascuna LAN come nodo EDGE. In questo modo, i CE comunicheranno con i Provider Edge Router all'interno della MPLS Network, dove è presente una Mesh Connectivity che interconnette tutte le diverse LAN tra di loro e ne permette l'interconnettività mesh.
 
 </details>
 
@@ -369,7 +413,15 @@ Con 5G, SBA Service Based Architecture, non si cerca solo di aumentare la veloci
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+MPLS, ovvero Multi Protocol Label Switching, è un procollo che può essere utilizzato nelle WAN Dedicate. Infatti, quando si parla di WAN dedicate, le tre possibili soluzioni sono Dedicated Physical WAN, Leased Lines e MPLS WAN.
+
+MPLS WAN è un modo per interconnettere i vari branch LAN di un'azienda dispiegati in posti diversi. Questo tipo di WAN prevede un MPLS Network gestito da un Operatore di Rete, che, quando stipula un accordo con un'azienda, fornisce dei nodi di edge di nome Customer Edge Router, da posizionare in ciascuna rete LAN dell'azienda. All'interno della MPLS Network sono presenti dei nodi edge che prendono il nome di Provider Edge Rotuer, il cui compito è connettersi da una parte con il Customer Edge Router di una LAN, mentra dall'altra parte con la Mesh Network della MPLS Network, per garantire ai branch dell'azienda una Mesh Connectivity.
+
+All'interno di questa Mesh Network sono presenti dei Provider Router e risulta quindi necessario stabilire un percorso tra Provider Edge Router di Ingress e Provider Edge Router di Egress; questo percorso prende il nome di Virtual Circuit, o, per il procollo MPLS, Switched Path. Sempre per MPLS, il Provider Router è chiamato Label Switched Router, mentre il Provider Edge Router è chiamato Label Edge Router.
+
+MPLS funziona, a differenza di IP che adotta il destination-based forwarding, tramite Label Switched Forwarding: invece di guardare l'indirizzo di destinazione e instradare il pacchetto, si utilizza una MPLS Forwarding Table che associa "In Interface" con "In Label" e "Out Label" con "Out Interface". Quando un pacchetto arriva al router, questo legge il label in ingresso, lo sostituisce con quello in uscita e lo inoltra sulla relativa interfaccia di uscita. Inoltre, questo modo di forwarding, risulta più ingegnerizzabile del Destination Based forwarding, in quanto permette Traffic Engineering: si può scegliere il percorso che il traffico deve seguire in rete.
+
+Il Path Binding è un'operazione molto importante legata proprio a MPLS: immaginando di essere in una situazione con un Label Switched Edge Ingress, un Label Edge Router Egress e un Label Switched Router, se il traffico deve raggiungere l'Egress, significa che il router in mezzo al percorso deve avere una MPLS Forwarding Table di enorme dimensioni, in cui salva le associazioni di ciascuna etichetta di traffico che può passare. Quindi, per evitare questo problema, l'Ingress vede che diversi pacchetti sono indirizzati verso la stessa destinazione di Egress e inserisce nei pacchetti un ulteriore etichetta, uguale per tutti. Quando questi pacchetti arrivano al Label Switched Router, questo legge la nuova etichetta e, risultando uguale per tutti, invia tutti i pacchetti sulla stessa interfaccia di uscita. Una volta arrivati all'Egress, questo fa una Pop del nuovo label, per poi andare a leggere le etichette originali di caiscun pacchetto e inoltrare appropriatamente.
 
 </details>
 
@@ -380,7 +432,23 @@ Con 5G, SBA Service Based Architecture, non si cerca solo di aumentare la veloci
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+La multiplazione è quell'operazione che consiste nel condividere la capacità di un canale di trasmissione tra segnali diversi, combinati in un unico segnale. Con risorse si intende, frequenza, tempo o codice.
+
+Esistono diversi tipi di Multiplazione:
+- (FDM) Frequency Division Multiplexing 
+- (OFDM) Orthogonal Frequency Division Multiplexing
+- (TDM) Time Division Multiplexing, che si divide in Synchronous e Asynchronous e a sua volta quest ultimo in slotted e unslotted
+- (CDM) Code Division Multiplexing
+
+Il Frequency Division Multiplexing prevede la divisione della banda in diversi range di frequenza, ognuno assegnato al segnale in ingresso che deve essere multiplato. Questa suddivisione tra frequenze viene effettuata tramite la Modulazione Analogica e Band-Pass Filters, proprio come avviene con le radio: vengono isolati determinati range di frequenze, in modo da ottenere quella desiderata.
+
+Con la Orthogonal Frequency Division Multiplexing si va a dividere il canale in tante piccole sottoportanti con banda piccola, ortogonali l'una con l'altra; questo permette la trasmissione in parallelo su ogni sottoportante senza creare interferenze.
+
+Il Time Dividion Multiplexing, invece, divide il tempo come risorsa. Questo significa che le sorgenti possono trasmettere a turni regolari detti time slot, una dopo l'altra nel caso di Synchronous Time Division Multiplexing. In questo caso è necessario avere informazioni aggiuntive per la sincronizzazione, in modo da sapere quando un determinato time-slot di una sorgente termina: il primo time slot, rinominato time slot 0, trasporta proprio queste informazioni di sincronizzazione.
+
+Il Time Division Multiplexing Asincrono gode del medesimo funzionamento del TDM Sincrono, ma i time slots dei segnali sono, appunto, asincroni e non per forza uno dopo l'altro. Inoltre, nel caso dello Slotted ATDM, i segnali hanno lunghezza fissa, mentre per gli Unslotted ATDM i segnali hanno lunghezza variabile.
+
+Infine, il Code Division Multiplexing funziona in modo che ciascuna terminale ha associata una Chip Sequence; al momento della trasmissione, questa viene moltiplicata con la Chip Sequence opportuna. Per esempio, se un trasmettitore vuole inviare 3 segnali diversi a 3 destinatari diversi A, B e C, ciascuno di questi segnali verrà moltiplicato per la rispettiva Chip Sequence, per poi sommare i 3 risultati ottenuti. Questo è il segnale che verrà ricevuto da tutti e tre i destinatari A, B e C. A questo punto, ciascun destinatario moltiplica questo segnale per la propria Chip Sequence per fare demultiplazione e si sommano i singoli valori ottenuti per capire cosa è stato trasmesso in origine.
 
 </details>
 
@@ -391,7 +459,17 @@ Con 5G, SBA Service Based Architecture, non si cerca solo di aumentare la veloci
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+Con Radio Planning si intende il processo che decide dove posizionare le Base Stations in una rete Radiomobile e come configurarle. L'operazione si divide in due fasi: Coverage Planning, in cui si decide cove posizionare le Base Stations e come si configurano e il Frequency Planning, con cui si assegnano risorse, in termini di frequenze, alle reti dispiegate. Questa seconda fase era fondamentale per 2G GSM ma adesso non è più necessaria.
+
+Durante il Coverage Planning, ci sono diversi aspetti da dover prendere in considerazione. Primo tra questi è dover effettuare una Predizione della Propagazione del Segnale: si utilizzano dei software appositi per predirre quale sarà la copertura dell'area di una determinata Base Station. La rete mobile è definita cellulare perché la superficie viene divisa in Celle a forma esagonale; forma conveniente per fare i calcoli e perché tassella perfettamente la superficie. Tuttavia, nella realtà, proprio a causa di della propagazione del segnale, l'area di copertura non è realmente a forma esagonale ma risulta deformata.
+
+Altro aspetto importante del Coverage Planning è effettuare una stima del traffico che la Base Station dovrà servire, sulla base della sua posizione.
+
+Il Frequency Planning invece consiste nell'assegnare delle frequenze a diverse base station in ciascuna Cell in maniera intelligente, per evitare di creare interferenze. Nasce il concetto di Frequency Reuse e Cluster. Un Cluster è un insieme di Celle che quali usano frequenze diverse. In questo modo, se si hanno celle adiacenti che usano frequenze diverse, si diminuisce interferenza. Risulta quindi ovvio come Cluster di dimensioni $K$ ridotte risultano migliori per la suddivisione delle risorse, ma le celle con frequenza uguale sono più vicine tra loro rispetto a quanto succede con Cluster di dimensioni maggiore, che però a sua volta comporta una maggiore divisione della capacità per ciascuna cella.
+
+Il concetto di Cell Splitting prevede che delle celle di determinate dimensioni possono essere suddivise in ulteriori celle di dimensioni più ridotte per garantire una migliore separazione delle risorse e maggiore capacità di traffico.
+
+Umbrella Cell viene invece utilizzato quando un utente verifica molti handover, ovvero quando un terminale che si trova in una cella inizia a spostarsi in più celle diverse. In questo caso, l'utente viene servito dalla Umbrella Cell anziché dalla singola cella piccola. Utile soprattuto in contesti urbani dove sono presenti molte celle di dimensioni ridotte che garantiscono maggiore capacità di traffico.
 
 </details>
 
@@ -402,7 +480,24 @@ Con 5G, SBA Service Based Architecture, non si cerca solo di aumentare la veloci
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+Un Canale di Trasmissione è un'astrazione che mette insieme il mezzo di trasmissione e segnale di rumore, distorsione e attenuazione. L'obiettivo della trasmissione è, a partire da una sequenza di bit 0 e 1, riuscire a inviare lungo il canale di trasmissione un segnale analogico. Questo può essere fatto mediante metodi di codifica; è possibile convertire la sequenza di bit in un segnale analogico a forma d'onda che, quando il bit da trasmettere è per esempio 1, questa avrà ampiezza A, mentre quando il bit da trasmettere è 0, la Waveform avrà ampiezza -A.
+
+Un canale di trasmissione viene modellato dunque da una funzione di trasferimento $h_c(t)$, che prende in ingresso il segnale s(t), un segnale di rumore n(t) e restituisce in uscita un nuovo segnale s^(t). Oltre al segnale di rumore, ci sono due ulteriori impairments generati dalla Funzione di Trasferimento, ovvero la Distorsione e l'Attenuazione. La Distorsione si verifica quando la Waveform che corrisponde uno dei bit del segnale da trasmettere invade il bit seguente, mentre l'Attenuazione corrisponde all'Ampiezza della waveform che diminuisce naturalmente col passare del tempo.
+
+Shannon dimostra che la capacità di un canale è pari a:
+$$
+C = B * log_2(1 + \frac{S}{N})
+$$
+
+Dove B è la banda, S è la potenza del segnale originale e N è la potenza del rumore. Quindi, osservando la formula, più la potenza è elevata, più la capacità aumenta. Purtroppo, però, non è possibile sparare al massimo i segnali perché causerebbero interferenze e diventerebbero fonte di rumore per gli altri segnali. Il Signal-to-noise-Ratio $\frac{S}{N}$ rappresenta quanto rumore c'è per una determinata di potenza di segnale, e grazie al processo di modulazione è possibile cercare di avvicinarsi al limite teorico rappresentato da questa formula.
+
+Esistono dunque due tipi di modulazione: modulazione analogica e digitale. La modulazione analogica ha il compito di prendere segnale e convertirlo in alta frequenza, di fatto traslandolo lungo l'asse delle frequenze. Viene fatto tramite un segnale di Carrier e l'uso di band-pass filter.
+
+Invece, la modulazione digitale prevede l'assegnazione di waveforms a gruppi di bit che vanno tramessi; ogni waveform prende il nome di symbol, mentre il numero massimo di symbols che possono essere trasmessi in 1 secondo si chiama Baudrate. Risulta quindi che il bitrate è il doppio del Baudrate, proprio perché il bitrate è il numero di bit trasmissibili al secondo. Come nell'esempio fatto all'inizio, è possibile fare modulazione digitale su due livelli in modo che bit 0 -> -A / 1 -> A, con A che corrisponde all'ampiezza della Waveform, ma anche a quattro livelli: 
+- 00 -> -A
+- 01 -> $-A/2$
+- 10 -> $A/2$
+- 11 -> A
 
 </details>
 
@@ -413,7 +508,25 @@ Con 5G, SBA Service Based Architecture, non si cerca solo di aumentare la veloci
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+![](../../../../assets/sistemi-e-servizi-di-telecomunicazione/gsm-architettura.png)
+
+La seguente immagine rappresenta l'architettura della Radio Access Network 2G, ovvero seconda generazione, chiamata GSM.
+
+Il dettaglio fondamentale è che l'architettura è divisa in due zone, la RAN (Radio Access Network) e la CN (Core Network). La RAN ha il compito di interconnettere gli utenti (MS Mobile Station) con la Core Network, mentre quest ultima connette la RAN con la rete esterna.
+
+La peculiarità della rete GSM è che è fondamentalmente strutturata ad albero, con i seguenti componenti che si interconnettono e ripetono di continuo: BTS, BSC e MSC.
+
+Nel dettaglio, La RAN è composta da diverse Base Station, che vengono dispiegate nelle varie Celle, una per Cella. Ogni BTS (Base Transceiver Station) serve una Mobile Station MS ed è collegata a una BSC, ovvero Base Station Controller che, di fatto, controlla la BTS e invia le azioni che deve eseguire. Una BSC può controllare più BTS. Successivamente, le BSC sono collegate a un MSC (Mobile Switching Center), collegamento che porta poi nella Core Network.
+
+La Core Network è composta da diverse entità, ognuna che svolge delle azioni fondamentali: la MSC ha il compito di connettere e gestire più BSC, instrada le chiamate e gestisce le operazioni di Mobility degli utenti. Ogni MSC ha un proprio VLR (Visitor Location Register), ovvero un database in cui vengono salvate informazioni relative a quale BTS un determinato utente è collegato; quindi in quale cella si trova un utente.
+
+Il GMSC, ovvero il Gateway Mobile Switching Center, interconnette la Core Network con la rete esterna.
+
+HLR, Home Location Register, è un database centrale che contiene informazioni sugli utenti, fondamentale per instradare le chiamate.
+
+Infine, AUC, Authentication Center, è un'entità coinvolta nell'autenticazione dell'utente nei confronti della rete.
+
+GPRS, ovvero General Packet Radio Service, è un servizio di commutazione di pacchetto costruito sopra la rete GMS ed è la prima tecnologia che permette la comunicazione a commutazione di paccchetto sulla Rete Radiomobile. Raddoppia la velocità di GMS, anche passando a circa 270Kbps, anche se ovviamente al giorno d'oggi risulta estremamente lenta. GPRS introduce due nuovi instradatori, ovvero due router, che prendono il nome di SGSN e GGSN e il concetto di Tunnel, molto importante per l'instradamento dei pacchetti. Sostanzialmente, in GPRS, un tunnel è come un bitpipe nel quale transitano i dati e ne vengono stabiliti due: uno tra la MS e il SGSN, di livello 2 e un altro tra SGSN e GGSN di livello 4. Nonostante il concetto di tunnel, quello di livello due consiste semplicemente nell'incapsulare un pacchetto di livello 2, in cui si ha che la sorgente è la MS e la destinazione il server. Il tunnel di livello 4, invece, incapsula in pacchetto di livello 4 in cui la sorgente è SGSN e la destinazione GGSN. 
 
 </details>
 
@@ -424,7 +537,20 @@ Con 5G, SBA Service Based Architecture, non si cerca solo di aumentare la veloci
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+I codificatori vocali sono utilizzati in VoIP per trasformare il segnale vocale originale, generato e prodotto dal corpo umano, in segnale digitale che può essere trasmesso e dunque riprodotto dal destinatario. Esistono due tipi di codificatori vocali: il primo tipo si chiama Waveform Codec, mentre il secondo Speech Codec (o Source Codec, oppure ancora Vocoder).
+
+I Waveform Codec si basano sulla logica che è possibile codificare direttamente il segnale waveform della voce. Per fare questo, è necessario seguire due fasi:
+1. Sampling: in questa prima fase, si prende la waveform del segnale vocale originale e si prende un campione ogni determinato periodo di tempo. In questo modo si trasforma un segnale time-continuous in un segnale time-discrete.
+
+2. Quantization: dopo aver fatto il sampling, c'è un problema; lungo l'asse delle Y, i valori di ampiezza della waveform sono appartengono all'insieme dei numeri reali $\mathbb{R}$, che devono quindi essere trasformati in bit 0 e 1. Per fare questo, la Quantization "appiattisce" i valori di ampiezza della waveform: se, per esempio, in un punto campionato durante la fase di sampling l'ampiezza è pari a 5.7, questa viene quantizzata a 6. Successivamente, ogni valore di ampiezza quantizzata ottenuta viene associata a una determinata sequenza di bit. Tuttavia, questa procedura introduce un errore di Quantizzazione.
+
+Gli Speech Codec, invece, analizzato le proprietà intrinseche del segnale vocale originale e cercano di replicarlo. Il segnale vocale viene prodotto, fisiologicamente, in tre principali fasi: generazione del fiato, vibrazione delle corde vocali e modulazione tramite naso e bocca. Gli Speech Codecs cercano di replicare queste fasi per generare un segnale simile a quello originale.
+
+In particolare, esistono due tipo di waveform generate dal segnale vocale: segnale Voiced, generato dalle vocali e caratterizzato da Waveform, che si ripetono e segnale Unvoiced, tipico delle consonanti.
+
+Gli Speech Codec funzionano si basano sul Phoneme model, che comprende due fasi: fase di eccitazione e fase di modulazione del suono. Nella prima fase, se il suono vocale è di tipo Voiced, si genera un segnale di eccitazione a una determinata frequenza di pitch, mentre si genera white noise se il segnale è unvoiced. Questo segnale di eccitazione viene mandato alla seconda fase di modulazione, che contiene un filtro riverberante che modella il suono. Quindi, le due fasi degli Speech Codecs sono analoghe: fase di Analysis e fase di Synthesis. La prima analizza il suono vocale originale e, se è voiced genera un segnale di eccitazione a una determinata frequency pitch, se è unvoiced si genera white noise. Fornisce poi questo segnale di eccitazione alla fase di Synthesis, che prende in ingresso questi parametri $a_i$ e, con il Gain G, un flag voiced/unvoiced e varianza del rumore oppure pitch frequency in base al tipo di segnale, riproduce la voce.
+
+Quindi, di fatto, i Vocoder analizzano la voce e generano dei determinati parametri $a_i$ utilizzati per la ricostruzione al mittente.
 
 </details>
 
