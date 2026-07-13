@@ -143,7 +143,7 @@ Per quanto riguarda l'architettura FTTC, invece, si ha un collegamento diretto i
 
 In FTTB, invece, si ha un collegamento diretto in fibra ottica dal Central Office all'edificio dell'utente, dove, invece del punto di distribuzione, viene situato un mini-DSLAM alimentato tramite tecnica di Reverse Feeding. Si ha comunque un collegamento in rame tra Punto di Distribuzione e Borchia di Utente.
 
-Passando alla categoria di Fiber Access Network, dove sono presenti solamente collegamenti in fibra ottica, le tipologie sono due: Point to Point e Passive Optical Network. Nel caso di P2P, si ha un collegamento in fibra ottica che parte dal central office e che arriva fino all'utente. Questa soluzione è molto costosa in quanto si deve dispiegare un collegamento in fibra ottica per ciascun utente. Nel caso di PON, invece, si utilizza una struttura ad albero. A tra il central office e edificio dell'utente è situato uno splitter che, di fatto, divide il cavo in fibra ottica in ingresso in più collegamenti, solitamente con un ratio 1:32. Poi, dove è situato il punto di distribuzione, è presente un ulteriore splitter 1:32. Il risultato è che con 1 cavo uscente dal Central Office è possibile avere un totale di 64 collegamenti. Lo svantaggio è che la banda va condivisia tra tutti i collegamenti presenti.
+Passando alla categoria di Fiber Access Network, dove sono presenti solamente collegamenti in fibra ottica, le tipologie sono due: Point to Point e Passive Optical Network. Nel caso di P2P, si ha un collegamento in fibra ottica che parte dal central office e che arriva fino all'utente. Questa soluzione è molto costosa in quanto si deve dispiegare un collegamento in fibra ottica per ciascun utente. Nel caso di PON, invece, si utilizza una struttura ad albero. A tra il central office e edificio dell'utente è situato uno splitter che, di fatto, divide il cavo in fibra ottica in ingresso in più collegamenti, solitamente con un ratio 1:32. Poi, dove è situato il punto di distribuzione, è presente un ulteriore splitter. Il risultato è che con 1 cavo uscente dal Central Office è possibile avere diversi collegamenti. In italia di solito il ratio di splitting è 1:64. Lo svantaggio è che la banda va condivisia tra tutti i collegamenti presenti.
 
 DA AGGIUNGERE PEZZO DI OPEN FIBER
 
@@ -198,7 +198,7 @@ In termini assoluti, la QoS determina dei valori tali per cui determinati parame
 
 La differenza principale tra QoS e QoE, ovvero Quality of Experience, è che QoS misura la qualità di un servizio in maniera oggettiva, mentre QoE misura in modo soggettivo. Il problema principale di QoE è che le tecniche per ottenere risultati dagli utenti sono estremamente costose. Bisogna chiedere molte opinioni agli utenti, ma in caso di modifiche o aggiunte come per esempio nuovi protocolli, bisognerebbe rifare tutto da capo.
 
-In QoS, ci sono due elementi fondamentali: SLA e TCA. SLA, ovvero Service Service Level Agreement, è un vero e proprio contratto stipulato con l'ISP per definire dei Service Level Objective che l'ISP si deve impegnare a rispettare e garantire. Il problema è che non tutto il traffico è uguale, quindi è necessario definire anche su quale profilo di traffico il SLA deve valore. Questo è il compito del Traffic Conditioning Agreement, che specifica quale è il traffico IN (compliant) e OUT (non-compliant).
+In QoS, ci sono due elementi fondamentali: SLA e TCA. SLA, ovvero Service Service Level Agreement, è un vero e proprio contratto stipulato con l'ISP per definire dei Service Level Objective che l'ISP si deve impegnare a rispettare e garantire. Il problema è che non tutto il traffico è uguale, quindi è necessario definire anche su quale profilo di traffico il SLA deve valere. Questo è il compito del Traffic Conditioning Agreement, che specifica quale è il traffico IN (compliant) e OUT (non-compliant).
 I valori su cui ci si basa per la definizione del traffico sono: peak rate, average rate, maximum burst length, maximum packet lenght, minimum packet length.
 
 I tre modi per la gestione del traffico sono Policing, Shaping e Marking. Con il Policing, si prende il traffico OUT, ovvero il traffico non-compliant, e lo si scarta. Con Shaping, invece, il traffico viene ritardato per fare in modo che diventi compliant. Infine, con Marking, si marchia del traffico per decidere più tardi se scartarlo o meno.
@@ -231,7 +231,16 @@ Service Prority prevede che ogni time-slot corrisponde a un round. Il meccanismo
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+Il paradigma SDN, ovvero Software Defined Networking, si basa sulla divisione delle logiche Control Plane e Data Plane.
+
+Guardando la struttura dei dispositivi di rete, è possibile notare come il Control Plane e il Data Plane siano logicamente separate, ma fisicamente co-locate. In generale, le logiche di Data Plane sono simili tra i vari dispositivi, mentre il Control Plane è più specifico in base alle funzionalità del device.
+
+SDN stravolge questo paradigma e ha come obiettivo una separazione totale tra piano di Controllo e piano Dati; quindi, oltre ad essere separati logicamente, lo sono anche fisicamente.
+L'architettura SDN prevede un SDN controller che funge da cervello e si interfaccia superiormente tramite delle Northbound Interfaces con le applicazioni di rete all'Application Layer, come Firewall o Load Balancer. I programmatori di rete possono utilizzare queste interfacce per programmare le applicazioni tramite regole di alto livello. Verso il basso, invece, il SDN Controller si interfaccia con i dispositivi di rete all'Infrastructure Layer tramite Southbound Interfaces. In questo caso, i programmatori di rete sono in grado di programmare i dispositivi tramite istruzioni di basso livello.
+
+Quindi, grazie a SDN, si ha un notevole aumento di programmabilità della rete. Già prima era programmabile, ma grazie al paradigma SDN lo è molto di più.
+
+La Southbound Interface su cui ci siamo focalizzati è OpenFlow. L'architettura di OpenFlow prevede la suddivisione in due gruppi: Control Channel e Data Channel. Nel Control Channel, sono presenti degli OpenFlow Channel che ricevono le istruzioni e i comandi dal SDN Controller. Questi comandi vengono poi mandati dall'OpenFlow Channel alle Flow Table, ovver tabelle di flusso. Le Flow Tables vanno a costituire la Pipeline che deve essere seguita fino a raggiungere l'interfaccia di uscita. Ogni pacchetto, mentre viaggia lungo la Pipeline, ha associato dei Metadati e un Action Set. I Metadati sono delle informazioni aggiuntive che riguardano il pacchetto, ma che hanno vita soltanto all'interno della Pipeline stessa. L'Action Set, invece, è un set di informazioni che viene popolato sempre di più al passaggio da un punto all'altro.
 
 </details>
 
@@ -242,7 +251,20 @@ Service Prority prevede che ogni time-slot corrisponde a un round. Il meccanismo
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+La Mobile Radio Network è strutturalmente composta dagli UE User Equipment, che sono i terminali degli utenti che si connettono alla rete, la Radio Access Network che permette di interconnettere i vari UE e la Core Network, che connette la RAN con la rete IP esterna. <br>
+La Radio Access Network è formata da un diverso numero di antenne che prendono il nome di Base Station. Queste BT fanno da ponte tra gli UE e la Core Network, tramite un collegamento che prende il nome di Backhaul. 
+
+In una Mobile Radio Network, l'area di superficie è suddivisa in Celle; motivo per cui si chiama rete cellulare. Ogni cella ha la forma logica di un esagono, ottimo perché è la forma geometrica più simile al cerchio che permette di tassellare l'intera superficie e facilita anche i calcoli. Nella realtà, però, le aree non sono realmente a forma esagonale a causa della propagazione del segnale. Comunque, ad ogni area è assegnata una Base Station e il meccanismo fondamentale da garantire agli utenti della rete mobile è la User Mobility. Questa è garantita grazie a diverse procedure:
+
+- Cell Selection: un utente deve capire a quale BS connettersi. Si fa in mobility IDLE, ovvero quanto un utente non è coinvolto in una comunicazione. Invia un segnale a ciascuna antenna nella sua Location Area, ovvero un determinato insieme di Celle che definiscono la posizione dell'utente, e, in base alla potenza del segnale che ritorna all'utente inviato dalle BS, decide a quale connettersi. È presente un database per salvare la posizione degli utenti, utile per gestire le comunicazioni.
+
+- Paging: siccome la posizione dell'utente è conosciuta a livello di granularità di Location Area, è necessario conoscerne la posizione relativamente alle celle. La procedura di Paging prevede che ogni BS di ciascuna cella invii un messaggio indirizzato all'utente. Se questo risponde, si sa in quale cella si trova. Si fa quando l'utente passa da IDLE ad ACTIVE, ovvero quando è coinvolto in una comunicazione.
+
+- Handover: quando un utente si sposta fisicamente in un'altra cella, si rileva che la potenza del segnale con la BS di prima scarseggia ma aumenta la potenza del segnale della BS della nuova cella. La BS collegata all'utente sarà quella nuova, con l'obiettivo di non far capire all'utente che questo cambio è avvenuto.
+
+- Location Update: nella rete 2G quando un utente si sposta in un'altra cella. Può succedere che si ha uno spostamento tale per cui si cambia Base Station Controller ma non il Mobile Switching Center, oppure uno spostamento per cui si cambia sia Base Station Controller che Mobile Switching Center.
+
+Ovviamente, più una Location Area è estesa, più il Paging peggiora perché ogni singola BS deve inviare il messaggio e aspettare che l'utente risponda. Invece, la Location Update migliora perché è meno probabile che un TE si sposti da una cella all'altra.
 
 </details>
 
@@ -253,7 +275,27 @@ Service Prority prevede che ogni time-slot corrisponde a un round. Il meccanismo
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+I due principali mezzi di trasmissione guidati sono il doppino in rame e la fibra ottica.
+
+Il doppino in rame consiste in una guaina esterna che contiene diversi cavi in rame che trasportano segnale emettendo dell'energia elettromagnetica. Il problema è che, siccome emettono energia elettromagnetica nell'area, cavi in rame vicini causano interferenza reciproca; allora una soluzione è attorcigliare due cavi in rame per creare interferenza distruttiva, che mitiga, appunto, l'interferenza reciproca causata. Tuttavia, siccome all'interno di una guaina sono presenti più coppie di cavi in rame, anche queste diverse coppie attorcigliate causano ulteriore interferenza tra loro. La soluzione è attorcigliare le varie coppie a passi differenti e, ulteriormente, attorcigliare tutte le diverse coppie le une con le altre, in continuazione.
+
+I cavi in fibra ottica prevedono anche questi una guaina esterna, che contiene però un core centrale e uno strato di cladding, entrambi in pasta vitrea. Esistono due tipi di cavi in fibra ottica: multi-mode e single-mode, che si differenziano in base a quanti "modi" di trasmissione ci sono. I "modi" di trasmissione sono le possibili direzioni intraprese dal segnale all'interno del mezzo di comunicazione. I cavi single-mode sono molto più pregiati e costosi dei single mode, perché il segnale viene inviato esclusivamente lungo un'unica direzione e presentano un core di dimensioni pari a circa 8µm, mentre il multi-mode attorno ai 50µm.
+
+Le reti a comunicazione radio, invece, fanno uso di antenne per la comunicazione con gli utenti. Esistono vari tipi di reti a comunicazione radio, come Fixed Wireless Access Networks, Mobile Radio Networks e le Satellite Networks. I principali tipi di antenne sono le antenne Isotrope, che irradiano perfettamente in area sferica, però inesistenti nella realtà e utili per fare calcoli, antenne Omnidirezionali che irradiano attorno ad esse a forma di ciambella; infatti, posizionandosi sopra o sotto l'antenna, non si riesce a captare il segnale, e antenna direzionale, che può inviare il segnale lungo una determinata direzione; il problema è che generano inevitabilmente del segnale non desiderato anche in altre direzioni.
+
+Le Fixed Wireless Network prevedono una antenna di nome Base Station, collegata a un IP Router tramite rete di Backhaul. Questa antenna comunica poi con gli utenti; ovviamente ciascun utente necessita di una sua antenna di nome Subscriber Station. 
+
+Le reti satellitari prevedono una stazione di Terra che comunica con un satellite e una stazione all'utente che anch'essa comunica con il satellite. Il problema è che, nonostante aiuti contro il digital divide, questo modello di rete presenta dei ritardi non indifferenti perché la comunicazione deve passare dal satellite.
+
+Le mobile radio networks prevedono 3 principali componenti architetturali: lo UE, ovvero user equipment, una Radio Access Network e una Core Network. La RAN interconnette gli utenti con la core network, mentre quest ultima interconnette la RAN con la rete IP.
+
+Gli impairments del mezzo trasmissivo via radio sono fondamentalmente la Path Loss, ovvero l'attenuazione dovuta alla distanza dalla sorgente, calcolata come:
+$$
+P_r = P_s (\frac{λ}{4πd})^2
+$$
+dove d è la distanza dalla sorgente, $P_r$ la potenza ricevuta, $P_s$ la potenza trasmessa e λ la lunghezza d'onda, calcolata come $\frac{c}{f}$, con c velocità della luce e f frequenza.
+
+Altri fattori di attenuazione sono dovuti da condizioni atmosferiche, riflessione, shadowing, scattering e diffrazione.
 
 </details>
 
@@ -264,7 +306,15 @@ Service Prority prevede che ogni time-slot corrisponde a un round. Il meccanismo
 <details>
 <summary>❓ Clicca qui per visualizzare la risposta</summary>
 
-*Inserisci qui la tua risposta...*
+L'evoluzione delle architetture mobili è guidata dal voler passare da una rete a commutazione di circuito, a una rete a commutazione di pacchetto, usando sistemi software flessibili e basandosi sulla rete IP.
+
+Con la rete 2G GSM, si ha la prima rete digitale che però è ancora basata sulla commutazione di circuito, con una struttura che segue una gerarchia ad albero tra i componenti MS, BSC e MSC. Con GPRS, General Packet Radio Service si introducono due nuovi nodi SGSN e GGSN, oltre che il concetto di tunnel. Un tunnel agisce come un bitpipe per l'invio di dati e ne sono stabiliti 2: uno tra la MS e SGSN di livello 2, un altro tra SGSN e GGSN di livello 4.
+
+Con 3G UMTS, invece, permette velocità maggiori e inizia ad adottare una struttura ibrida sia a commutazione di circuito che a commutazione di pacchetto, introduce il concetto di Bearer che sono fondamentalmente analoghi ai tunnel ma possono garantire QoS. Esistono 4 tipi di Bearer Services: Conversational, Streaming, Interactive e Background. I Bearer più importanti sono: Core Network Bearer Service tra SGSN e GGSN, Radio Access Bearer Service tra UE e SGSN e Radio Bearer Service tra UE e RNC. Tramite il soft handover, gli utenti si possono collegare contemporaneamente fino a un massimo di 6 NodeB, migliorando qualità grazie alla ridondanza. Si ha un nuovo schema di autenticazione che risolve il problema del 2G in cui l'utente si autentica nei confronti della rete, ma non il contrario. Infine, 3G introduce anche il concetto di flat-network, ovvero dividere sempre di più il piano data dal piano di controllo, con l'obiettivo di far viaggiare i dati quando più direttamente possibile.
+
+Con 4G i concetti all-IP e flat network vengono portati al livello successivo e non si ha più una rete a commutazione di circuito.
+
+Con 5G, SBA Service Based Architecture, non si cerca solo di aumentare la velocità, ma anche di aumentare affidabilità, minimizzare i ritardi e il consumo energetico. Si utilizza il concetto di virtualizzazione, in cui è possibile creare delle slice di architetture di rete differenti da assegnare a diversi tenant. Anche l'Edge Computing è introdotto, che prevede di fare computazione in Edge Nodes locati il quanto più possibile vicino agli utenti.
 
 </details>
 
