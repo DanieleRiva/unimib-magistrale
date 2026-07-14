@@ -591,3 +591,206 @@ Il Distribution System è quello che si occupa di cachare i contenuti dell'origi
 2. Il CDN Provider gestisce l'Authoritative nameserver in modo che venga modificato per gestire la stessa logica del metodo 1, per scegliere se indirizzare verso un Replica Server o l'Origin Server. 
 
 </details>
+
+---
+
+## Nuove Domande di Ripasso (argomenti MAI usciti agli esami)
+
+:::note[Perché questa sezione]
+Confrontando **tutte le 17 lezioni** con le domande degli appelli passati, sono stati selezionati i **sotto-argomenti mai chiesti finora**, quelli che le risposte agli esami precedenti non trattano affatto.
+:::
+
+### 1. Trasformata di Fourier e banda
+**Domanda:** Cos'è la **trasformata di Fourier** e come permette di definire la **banda** di un canale di trasmissione? → [Lez. 06](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/06-teoria-della-comunicazione/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+La Fourier Transform sostiene che un qualsiasi segnale lungo nel dominio del tempo può essere trasformato in un segnale nel dominio della frequenza. Ogni segnale può essere scomposto in un infinito numero di segnali a onde sinusoidali con una determinata fase, ampiezza e frequenza.
+
+La banda di un segnale nel dominio della frequenza corrisponde al massimo segmento di frequenze lungo l'asse delle ascisse tale per cui si hanno valori non nulli.
+
+</details>
+
+---
+
+### 2. Duplexing, Power Control e MIMO
+**Domanda:** Nella trasmissione radio, come si separano le direzioni **uplink** e **downlink**? Descrivere le due tecniche di **Duplexing** (TDD e FDD). Spiegare poi a cosa serve il **Power Control** e il funzionamento del **MIMO**. → [Lez. 08](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/08-mezzi-trasmissivi/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+Nella trasmissione radio, per la separazione delle trasmissioni uplink e downlink, viene effettuato il Duplexing. Esistono due tecniche di Duplixing: Time Division Duplexing, che prevede l'invio di pacchetti ognuno in determinati time slots, in modo che se il primo è in direzione downlink, il secondo sarà in uplink e così via alternati. Il Frequency Division Duplexing consiste invece nel assegnare determinate frequenze della banda per le comunicazioni uplink e altre porzioni di frequenza per le cominicazioni downlink.
+
+Il Power Control è una tecnica per combattere il problema dell'attenuazione del segnale, impairment che si presenta quando ci si distanza dalla sorgente del segnale. Questo impairment prende il nome di Path Loss e, la formula per calcolarlo è:
+$$
+P_r = P_t (\frac{λ}{4 pi d})^2
+$$
+
+Grazie al power control, si aumenta o diminuisce la potenza delle trasmissioni appropriatamente. Per esempio, se con il nostro cellulare ci troviamo lontani da un'antenna, questo aumenterà la potenza delle trasmissioni, in modo da cercare di ottenere segnale maggiore, a discapito di un maggiore consumo energetico. Il contrario se ci troviamo vicino all'antenna.
+
+Il MIMO, Multiple Input Multiple Output, è una tecnica di trasmissione utilizzata per ovviare al problema della diafonia. MIMO prevede che ci siano più antenne che trasmettono e più antenne che ricevono lo stesso identico segnale, ma sono posizioni in modo tale da creare Destructive Interference e cancellare quindi il fenomeno di diafonia e interferenza. Tecnica simili all'attorcigliamento dei cavi in rame nel caso dei doppini in rame.
+
+</details>
+
+---
+
+### 3. Tecnologie xDSL e Vectoring
+**Domanda:** Descrivere le tecnologie **xDSL** e il trade-off banda/distanza sul doppino in rame. Spiegare in dettaglio il **Vectoring**. → [Lez. 09](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/09-broadband-access-networks/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+Esistono diversi tipi di Digital Subscriber Line, ognuna con standard diversi che permettono maggiore capacità di banda, nonostante la distanza massima supportata rimane pressoché identica tra i vardi standard. Questo è reso possibile dal Vectoring, che è una tecnica utilizzata per eliminare completamente la diafonia tra i cavi in rame vicini. Questi doppini in rame, più aumentano in termini di distanza, più la banda diminuisce a causa dell'attenuazione del segnale, causano diafonia reciproca; è possibile mitigare questa diafonia attorcigliano i cavi tra loro, a passi differenti per creare la Destructive Interference.
+
+Ciononostante, la diafonia è ancora presente e il Vectoring permette di eliminarla completamente. Il Vectoring definisce che, se si stanno trasmettendo due segnali s_1 e s_2 e quindi ricevendo dal lato mittente r_1 e r_2, è possibile calcolare la potenza del segnale ricevuto, tenendo in considerazione il rumore causato dall'interferenze dell'altro segnale. Quindi:
+$$
+r_1 = s_1 + k_2r_2
+$$
+$$
+r_2 = s_2 + k_1r_1
+$$
+
+Dove $k_1$ e $k_2$ sono appunto i segnali di interferenza causati rispettivamente dal segnale 1 e dal segnale 2. Il DSLAM, presente nelle Hybrid Fiber-Copper Access Networks, ha il compito di utilizzare queste due formule per mettere in atto il vectoring e cancellare la diafonia. Rappresentato in forma matriciale, risulta che:
+$$
+r = T * s
+$$
+
+Con T = [1, k2, k2, 1].
+
+Quindi, se il DLSAM deve inviare un segnale,calcola la matrice inversa $T^{-1}$ trasmette s* = $T^{-1}$*s. Risulta quindi che $r=s$.
+
+Il problema del vectoring è che richiede complessità computazionale dato che la matrice inversa di T deve essere calcolata ogni volta.
+
+</details>
+
+---
+
+### 4. Distribuzione delle etichette MPLS e Traffic Engineering
+**Domanda:** Come vengono creati gli **LSP (Label Switched Path)** in una rete MPLS? Confrontare i tre meccanismi di signalling **LDP**, **CR-LDP** e **RSVP-TE**, spiegando perché LDP non supporta il **Traffic Engineering** e cosa sono il **Constraint-Based Routing** e il **Protection Switching**. → [Lez. 10](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/10-wan-connectivity-services/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+MPLS, Multi Protocol Label Switching, è un protocollo utilizzato nelle MPLS WAN. MPLS si basa su Label Swapping Forwarding, .........
+
+Esistono tre modi per definire 
+
+</details>
+
+---
+
+### 5. Middlebox: Firewall, IDS e Anti-DDoS
+**Domanda:** Cosa sono le **Middlebox**. Descrivere i diversi tipi di Middlebox visti a lezione. → [Lez. 11](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/11-network-devices-and-advances-networking-technologies/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+*Inserisci qui la tua risposta...*
+
+</details>
+
+---
+
+### 6. Token Bucket e Leaky Bucket
+**Domanda:** Descrivere gli algoritmi di regolazione del traffico **Token Bucket** e **Leaky Bucket**. Per il Token Bucket, spiegare il ruolo dei parametri ($p$, $r$, $k$), come si realizzano **policing** e **shaping** e la formula della durata massima del burst $L = \frac{k}{p-r}$. Spiegare perché il Leaky Bucket **non preserva la burstiness**. → [Lez. 12](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/12-quality-of-service/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+*Inserisci qui la tua risposta...*
+
+</details>
+
+---
+
+### 7. IntServ, RSVP e Call Admission Control
+**Domanda:** Descrivere il modello **IntServ** e le sue classi di servizio. Spiegare il protocollo **RSVP**, i tre tipi di **Call Admission Control** e perché IntServ non è scalabile. → [Lez. 12](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/12-quality-of-service/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+*Inserisci qui la tua risposta...*
+
+</details>
+
+---
+
+### 8. Degradazione della voce e Mouth-to-Ear Delay
+**Domanda:** Descrivere le sorgenti di ritardo che compongono il **Mouth-to-Ear Delay** in una chiamata VoIP. Spiegare cos'è il **Jitter** e come il **Playout Buffer** lo compensa. Descrivere infine la tecnica di **Silence Suppression**. → [Lez. 13](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/13-voice-over-ip/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+*Inserisci qui la tua risposta...*
+
+</details>
+
+---
+
+### 9. PCM, DPCM, ADPCM e Mean Opinion Score
+**Domanda:** Partendo dai Waveform Codec, descrivere le codifiche **PCM**, **DPCM** e **ADPCM**. Spiegare infine come si valuta la qualità di un codec con il **Mean Opinion Score (MOS)** e i suoi limiti. → [Lez. 13](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/13-voice-over-ip/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+*Inserisci qui la tua risposta...*
+
+</details>
+
+---
+
+### 10. GSM: identificatori, autenticazione e cifratura
+**Domanda:** Descrivere i principali **identificatori GSM** (**MSISDN**, **MSRN**, **IMSI**, **TMSI**, **LAI**) e perché serve il TMSI oltre all'IMSI. Descrivere poi la procedura di **autenticazione e cifratura** (chiave $K_i$, numero RAND, algoritmi **A3/A8/A5**) e il **problema di sicurezza** del GSM. → [Lez. 16](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/16-2g-3g-4g/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+*Inserisci qui la tua risposta...*
+
+</details>
+
+---
+
+### 11. GSM: Location Update, chiamata entrante e Handover
+**Domanda:** Descrivere la procedura di **Location Update** (caso stesso MSC/VLR vs nuovo MSC) e cosa succede all'accensione di una MS (IMSI Attach). Descrivere ad alto livello una **MS Terminated Call**. Elencare infine i tre tipi di **Handover** GSM. → [Lez. 16](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/16-2g-3g-4g/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+*Inserisci qui la tua risposta...*
+
+</details>
+
+---
+
+### 12. 3G UMTS: architettura, bearer e soft handover
+**Domanda:** Descrivere l'architettura **UMTS** (UTRAN, NodeB, RNC, consolidamento di HLR/AUC in **HSS**) e le novità del 3G: il concetto di **Bearer** con le quattro classi di QoS e i tipi di Bearer Service, il **soft handover** e la nuova **autenticazione**. → [Lez. 16](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/16-2g-3g-4g/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+*Inserisci qui la tua risposta...*
+
+</details>
+
+---
+
+### 13. Architettura della rete 4G LTE
+**Domanda:** Descrivere l'architettura **4G LTE**: il ruolo della **eNodeB** e i componenti della **EPC** con le loro funzioni. Spiegare cos'è la **X2 Interface**, la procedura di **Attach** con il **Default Bearer** e come si concretizzano i concetti di **all-IP** e **flat network**. → [Lez. 16](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/16-2g-3g-4g/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+*Inserisci qui la tua risposta...*
+
+</details>
+
+---
+
+### 14. Allocazione delle risorse: Peak Allocation e Dual Leaky Bucket
+**Domanda:** Spiegare la differenza tra allocazione **deterministica** e **statistica** delle risorse. Descrivere la **Peak Allocation** ($N_p = \frac{C}{p}$) e la **Dual Leaky Bucket**, spiegando perché il DLB permette di ammettere **più flussi senza perdite** rispetto alla Peak Allocation ($N_{DLB} > N_p$). → [Lez. 12](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/12-quality-of-service/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+*Inserisci qui la tua risposta...*
+
+</details>
+
+---
+
+### 15. Direttive HTTP di caching e validazione dei contenuti
+**Domanda:** Descrivere come si gestisce il **ciclo di vita dei contenuti** in cache tramite le direttive HTTP e le direttive imperative. Spiegare il meccanismo di **validazione** da parte del client. → [Lez. 14](/unimib-magistrale/sistemi-e-servizi-di-telecomunicazione/teoria/14-content-delivery-network/)
+<details>
+<summary>❓ Clicca qui per visualizzare la risposta</summary>
+
+*Inserisci qui la tua risposta...*
+
+</details>
