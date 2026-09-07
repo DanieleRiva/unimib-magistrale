@@ -100,6 +100,24 @@ const sidebarCorsi = [
                 ]
             },
         ]
+    },
+    {
+        label: 'Architetture Dati',
+        collapsed: true,
+        items: [
+            { label: 'Introduzione al corso', link: '/architetture-dati/' },
+
+            {
+                label: '📝 Esami',
+                collapsed: true,
+                items: [
+                    {
+                        label: 'Domande di Esami',
+                        link: '/architetture-dati/esami/'
+                    },
+                ]
+            },
+        ]
     }
 ];
 
