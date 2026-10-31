@@ -10,3 +10,4 @@ Raccoglie appunti, esercizi e materiale vario delle varie lezioni, organizzati p
 | --- | --- | --- |
 | Qualità del Software | ⭐⭐⭐⭐⭐⭐☆☆☆☆ (6/10) | 28 |
 | Sistemi e Servizi di Telecomunicazione | _in corso_ | _in corso_ |
+| Teoria della Computazione | _in corso_ | _in corso_ |

@@ -118,6 +118,19 @@ const sidebarCorsi = [
                 ]
             },
         ]
+    },
+    {
+        label: 'Teoria della Computazione',
+        collapsed: true,
+        items: [
+            { label: 'Introduzione al corso', link: '/teoria-della-computazione/' },
+
+            {
+                label: '📖 Teoria',
+                collapsed: true,
+                autogenerate: { directory: 'teoria-della-computazione/teoria' }
+            },
+        ]
     }
 ];
 
