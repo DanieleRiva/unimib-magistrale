@@ -131,6 +131,61 @@ const sidebarCorsi = [
                 autogenerate: { directory: 'teoria-della-computazione/teoria' }
             },
         ]
+    },
+    {
+        label: 'Cloud Computing',
+        collapsed: true,
+        items: [
+            { label: 'Introduzione al corso', link: '/cloud-computing/' },
+
+            {
+                label: '📖 Teoria',
+                collapsed: true,
+                autogenerate: { directory: 'cloud-computing/teoria' }
+            },
+
+            {
+                label: '🧪 Laboratorio',
+                collapsed: true,
+                autogenerate: { directory: 'cloud-computing/laboratorio' }
+            },
+
+            {
+                label: '📝 Esami',
+                collapsed: true,
+                items: [
+                    {
+                        label: 'Preparazione all\'Esame',
+                        link: '/cloud-computing/esami/'
+                    },
+                ]
+            },
+        ]
+    },
+    {
+        label: 'Applicazioni Web',
+        collapsed: true,
+        items: [
+            { label: 'Introduzione al corso', link: '/applicazioni-web-progettazione-e-sviluppo/' },
+
+            {
+                label: '📖 Teoria',
+                collapsed: true,
+                autogenerate: { directory: 'applicazioni-web-progettazione-e-sviluppo/teoria' }
+            },
+
+            {
+                label: '🧪 Laboratorio',
+                collapsed: true,
+                autogenerate: { directory: 'applicazioni-web-progettazione-e-sviluppo/laboratorio' }
+            },
+
+            {
+                label: '🧩 Esercizi',
+                collapsed: true,
+                autogenerate: { directory: 'applicazioni-web-progettazione-e-sviluppo/esercizi' }
+            },
+        ]
     }
 ];
 
