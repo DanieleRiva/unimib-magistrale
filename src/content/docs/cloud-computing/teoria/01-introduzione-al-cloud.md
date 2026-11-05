@@ -1,250 +1,273 @@
 ---
-title: Introduzione al Cloud Computing
-description: Definizione NIST, caratteristiche essenziali, data center, modelli di servizio IaaS, PaaS, SaaS e modelli di deployment.
+title: Introduction to Cloud Computing
+description: NIST definition, essential characteristics, data centers, regions and availability zones, IaaS, PaaS, SaaS service models and deployment models.
 sidebar:
   order: 1
 ---
 
-## Che Cos'è il Cloud
+## Cloud Definitions
 
-La definizione da ricordare, quella che le slide presentano come il minimo indispensabile, è questa:
+The slides introduce this as the definition to remember "when you forget everything":
 
-:::tip[Definizione di base]
-Un **cloud** è un tipo di sistema distribuito composto da computer **interconnessi e virtualizzati**, forniti **on demand** e accessibili **attraverso una rete**.
+:::tip[Basic definition]
+A **Cloud** is a type of distributed system consisting of **interconnected and virtualized computers**, **provisioned on demand** and **accessible through a network**.
 :::
 
-Le parole chiave contano tutte: *distribuito* perché le risorse stanno su molte macchine, *virtualizzato* perché l'utente non vede l'hardware fisico, *on demand* perché le risorse si ottengono nel momento in cui servono, *attraverso la rete* perché non stanno in casa tua.
+Every keyword matters: *distributed* because resources live on many machines, *virtualized* because the user never sees the physical hardware, *on demand* because resources are obtained when they are needed, *through a network* because they are not on your premises.
 
-La definizione di riferimento del settore è quella del **NIST** (*National Institute of Standards and Technology*):
+The reference definition is the one from **NIST** (*National Institute of Standards and Technology*):
 
-:::tip[Definizione NIST]
-Il cloud computing è un modello che permette un accesso di rete **comodo e on demand** a un **pool condiviso** di risorse di calcolo configurabili (reti, server, storage, applicazioni, servizi), che possono essere **fornite e rilasciate rapidamente** con il minimo sforzo di gestione o interazione con il provider.
+:::tip[NIST definition]
+"Cloud computing is a model for enabling **convenient, on-demand network access** to a **shared pool of configurable computing resources** (e.g., networks, servers, storage, applications, and services) that can be **rapidly provisioned and released** with minimal management effort or service provider interaction."
 :::
 
-Il modello NIST è la **bussola del corso**: promuove la disponibilità ed è composto da **5 caratteristiche essenziali**, **3 modelli di servizio** e **4 modelli di deployment**.
+This cloud model **promotes availability** and is composed of **five essential characteristics**, **three service models** and **four deployment models**. The slides call it "our compass", and stress that the cloud is a **technological, economical, and societal model**.
 
 ![](../../../../assets/cloud-computing/nist-modello.png)
 
-Le slide sottolineano che il cloud è insieme un modello **tecnologico, economico e sociale**.
+:::note[Why "cloud"?]
+The cloud shape is often used in network diagrams to represent a **"black box" network**: the access interfaces are known, but not the internal structure. The metaphor goes further:
 
-:::note[Perché si chiama "cloud"]
-Nei diagrammi di rete la nuvola rappresenta una rete **a scatola nera**: conosci le interfacce di accesso ma non la struttura interna. La metafora regge bene anche oltre: una nuvola è opaca e grande, ne esistono tipi diversi (come i servizi), possono sovrapporsi (lo stesso vendor offre più modelli) e cambiano forma (applicazioni e servizi si adattano dinamicamente).
+- A cloud is **opaque** and considered very large and distant.
+- As in the sky there are different types of clouds, there are **different types of services** and features offered in the cloud. Their internal implementation is opaque.
+- Clouds may **overlap**: different models of clouds can be implemented by the same vendor.
+- Clouds can **dynamically change shape**: applications and services in the cloud can dynamically adapt.
 :::
 
-## Le 5 Caratteristiche Essenziali
+## Essential Characteristics
 
-| Caratteristica | Significato |
+| Characteristic | Meaning (from the slides) |
 | --- | --- |
-| **On-demand self-service** | Il consumatore si procura da solo risorse (server, storage) quando servono, in automatico, senza interazione umana con il provider |
-| **Broad network access** | Le risorse sono disponibili in rete tramite meccanismi standard, da client eterogenei (telefoni, laptop) o da altri servizi |
-| **Resource pooling** | Le risorse del provider sono raggruppate per servire più consumatori con un modello **multi-tenant**, e vengono assegnate e riassegnate dinamicamente secondo la domanda |
-| **Rapid elasticity** | Le risorse si allocano e rilasciano rapidamente e automaticamente. Al consumatore sembrano illimitate, acquistabili in qualsiasi quantità e momento |
-| **Measured service** | Il sistema misura l'uso delle risorse, lo controlla e lo ottimizza. L'utilizzo è monitorato e riportato, con trasparenza per provider e consumatore |
+| **On-demand self-service** | A consumer can **unilaterally provision** computing capabilities, such as server time and network storage, as needed **automatically**, without (or with little) human interaction with the provider |
+| **Broad network access** | Capabilities are available **over the network** and accessed through **standard mechanisms**, by heterogeneous thin or thick clients (mobile phones, laptops, PDAs) and by other traditional or cloud-based software services |
+| **Resource pooling** | The provider's resources are **pooled to serve multiple consumers** using a **multi-tenant model**, with physical and virtual resources **dynamically assigned and reassigned** according to demand |
+| **Rapid elasticity** | Capabilities can be rapidly and elastically provisioned to **scale up**, and rapidly released to **scale down**, automatically. To consumers they often **appear unlimited** and can be purchased in any quantity at any time |
+| **Measured service** | Cloud systems **automatically control and optimize** resource usage through a **metering capability**. Usage can be monitored, controlled and reported, providing **transparency** for both provider and consumer |
 
-:::tip[Per ricordarle]
-Pensa a come usi l'elettricità: la attivi da solo (*self-service*), ti arriva ovunque ci sia una presa (*network access*), la centrale serve tutti (*pooling*), ne puoi consumare quanta vuoi (*elasticity*) e il contatore la misura (*measured service*).
+:::tip[How to remember them]
+Think of electricity: you switch it on yourself (*self-service*), it is available wherever there is a socket (*network access*), one power plant serves everybody (*pooling*), you can use as much as you want (*elasticity*), and a meter measures it (*measured service*).
 :::
 
-## Il Data Center
+## Data Centers
 
-I **data center** sono edifici che ospitano moltissimi server che supportano contemporaneamente molti servizi e applicazioni. Un data center tipico ha da **50.000 a 80.000 server** (25-30 MW). Spesso si usano processori **ARM** per ridurre i costi energetici, e la **virtualizzazione** è sfruttata massicciamente.
+**Data centers** are buildings that house a large number of servers that **simultaneously support many services and applications**:
 
-I data center sono costruiti su larga scala per ridurre i costi di manutenzione, **ma non troppo grandi**: anche per limitare il *blast radius*, cioè l'ampiezza dei danni in caso di guasto.
+- A data center has **50,000 to 80,000 servers** (25 to 30 MW).
+- **ARM processors** are often used to reduce energy costs.
+- Data centers are built **on a large scale** to reduce maintenance costs, **but not very large**, also to **limit the blast radius**, i.e. how far the damage of a single failure spreads.
+- Data centers **exploit virtualization massively** to run applications.
 
 :::caution[Slide 7]
-La stessa slide dice "centinaia di migliaia di server" e subito dopo "da 50.000 a 80.000". I due numeri non coincidono: il dato da ricordare è il secondo, che è quello preciso.
+The same slide says "hundreds of thousands of servers" and then "50,000 to 80,000". The two numbers do not match: the figure to remember is the second, more precise one.
 :::
 
-Un data center ha bisogno di:
+A data center needs:
 
-- **Alimentazione** con generatori per superare i blackout.
-- **Raffreddamento** continuo.
-- **Sicurezza**: antincendio, ventilazione, controllo degli accessi, videosorveglianza, biometria, armadi chiusi.
-- **Rete ad alta velocità** interna, tra data center e verso Internet, spesso in fibra ottica su linee dedicate, anche intercontinentali.
+- **Power supply**, with a generator system to overcome possible power failures.
+- A **continuous cooling system**.
+- A **security system**: fire alarms, ventilation to eliminate smoke, authorized access, video cameras, security code, biometric and card reader access, locked cabinets.
+- A **high-speed network** within the data center, between data centers and to the Internet. Often optical fiber, dedicated and proprietary lines, including intercontinental ones.
 
-### Region e Availability Zone
+### Regions and Availability Zones
 
-| Concetto | Definizione |
+| Concept | Definition |
 | --- | --- |
-| **Availability Zone (AZ)** | Un data center indipendente, con **propria alimentazione e rete**, protetto dai guasti degli altri data center |
-| **Region** | Cluster di AZ geograficamente vicine (ad esempio Milano), collegate tra loro con connessioni a **bassa latenza**, per tolleranza ai guasti e stabilità |
+| **Availability Zone** | An **independent data center** with its **own power grid and network**, so that it is protected from possible failures in other data centers |
+| **Region** | A **cluster of geographically close data centers** for fault tolerance and stability: a set of availability zones in the same geographic area (e.g., Milan), connected to each other with **low-latency connections** |
 
-I grandi provider hanno region sparse in tutto il mondo. La distinzione è fondamentale: AZ diverse proteggono da un guasto locale, region diverse da un disastro geografico.
+Large providers have regions spread across the globe. The distinction is important: different AZs protect from a local failure, different regions from a geographic disaster.
 
 ### Virtual Infrastructure Manager
 
-Il problema chiave per un provider è gestire **in modo olistico** risorse fisiche e virtuali (server, storage, reti), orchestrandole per consegnarle rapidamente a utenti e applicazioni.
+A key challenge for cloud providers is managing physical and virtual resources (servers, storage and networks) **holistically**. Resource orchestration must quickly and dynamically deliver resources to users and applications.
 
-Il software che se ne occupa è il **Virtual Infrastructure Manager (VIM)**. Assomiglia a un sistema operativo tradizionale, un "**cloud operating system**", ma invece di gestire un singolo computer **aggrega le risorse di molti computer**, presentando una vista uniforme a utenti e applicazioni.
+:::tip[Definition]
+The software tool responsible for the orchestration is the **Virtual Infrastructure Manager (VIM)**. It resembles a traditional operating system (a "**cloud operating system**"), but instead of dealing with a single computer, it **aggregates resources from multiple computers**, presenting a **uniform view** to users and applications.
+:::
 
-## I Modelli di Servizio
+## Service Models
 
-Un **modello di servizio** è una caratterizzazione ad alto livello del cloud, che si concentra sui servizi offerti e sul tipo di utenti. L'insieme dei tre modelli è una **tassonomia**, detta **modello SPI** (SaaS, PaaS, IaaS).
+A **service model** is a high-level characterization (model) of the cloud that focuses primarily on the **services offered** and the **type of users**. The set of service models defines a possible **taxonomy**: the **SPI model** (SaaS, PaaS, IaaS), the most common classification of cloud services.
 
-La differenza sta in **chi gestisce cosa**:
+The difference is **who manages what**:
 
 ![](../../../../assets/cloud-computing/iaas-paas-saas.png)
 
 | | IaaS | PaaS | SaaS |
 | --- | --- | --- | --- |
-| **Cosa ottieni** | Infrastruttura virtuale | Piattaforma per sviluppare ed eseguire | Applicazione finita |
-| **Cosa gestisci** | Applicazioni, runtime, dati, sistema operativo | Applicazioni e parte della configurazione | Solo impostazioni dell'utente |
-| **Cosa non gestisci** | Infrastruttura sottostante | Rete, server, sistema operativo, storage | Tutto il resto |
-| **Tecnica abilitante** | Virtualizzazione | Runtime environment | Web service |
-| **Flessibilità** | Alta | Media | Bassa |
-| **Esempi** | AWS EC2 | Azure App Service, Google App Engine | Webmail, office online |
+| **What you get** | Virtual infrastructure | A platform to develop and deploy applications | A finished application |
+| **What you control** | OS, storage, deployed applications, some networking | Deployed applications and hosting environment configuration | Only user-specific settings |
+| **Enabling technique** | Virtualization | Runtime environment | Web service |
+| **Flexibility** | High | Medium | Low |
+| **Examples** | AWS EC2 | Azure App Service, Google App Engine | Web-based email, online office suites |
 
-:::tip[In una riga]
-**IaaS** astrae l'infrastruttura, **PaaS** astrae infrastruttura, sistema operativo e middleware per aumentare la produttività dello sviluppatore, **SaaS** è l'applicazione finita che affitti e personalizzi.
+:::tip[Takeaways from the slides]
+- **IaaS** is the service model that **abstracts the infrastructure**.
+- **PaaS** is the deployment (and development) platform that **abstracts the infrastructure, OS, and middleware** to drive developer productivity.
+- **SaaS** is the **finished applications that you rent and customize**.
 :::
 
 ### IaaS - Infrastructure as a Service
 
-Il consumatore può fornirsi di **macchine virtuali, storage, reti** e altre risorse fondamentali, e può installare ed eseguire software arbitrario, compresi sistemi operativi e applicazioni. Non gestisce l'infrastruttura sottostante, ma controlla sistema operativo, storage, applicazioni e, in parte, alcuni componenti di rete.
+The capability provided to the consumer (user or application) is to provision **virtual machines, storage, networks** and other fundamental computing resources. The consumer can **deploy and run arbitrary software**, including OS and applications. The consumer **does not manage or control the underlying cloud infrastructure**, but has control over operating systems, storage, deployed applications, and possibly limited control of selected networking components.
 
-La **tecnica abilitante** è la **virtualizzazione**, in tre forme: server, storage e rete. IaaS fornisce due interfacce.
+The **enabling technique** is **virtualization**, in three forms: **server, storage and network virtualization**. IaaS provides two services.
 
-**Resource Management Interface** (RMI), per ottenere e gestire le risorse virtuali, via GUI o API:
+The **Resource Management Interface (RMI)** enables the customer to obtain and manage virtualized resources. It can be user or application oriented: **GUI** or **API**.
 
-| Risorsa | Operazioni di base |
+| Resource | Basic operations |
 | --- | --- |
-| **Virtual Machine** | Creazione, sospensione, ripresa, terminazione |
-| **Virtual Storage** | Allocazione e rilascio dello spazio, lettura e scrittura |
-| **Virtual Network** | Allocazione di indirizzi IP, registrazione di domini, connessione, banda |
+| **Virtual Machine** | Creation, suspension, resumption and termination |
+| **Virtual Storage** | Space allocation, space release, data writing and data reading |
+| **Virtual Network** | IP address allocation, domain name registration, connection establishment and bandwidth provision |
 
-**System Monitoring Interface**, per monitorare le metriche:
+The **System Monitoring Interface** offers several types of monitoring metrics:
 
-| Risorsa | Metriche |
+| Resource | Metrics |
 | --- | --- |
-| **Virtual Machine** | Carico CPU, uso memoria, carico I/O, carico rete interna |
-| **Virtual Storage** | Utilizzo dello spazio, duplicazione dei dati, banda di accesso |
-| **Virtual Network** | Banda, connettività, bilanciamento del carico |
+| **Virtual Machine** | CPU loading, memory utilization, IO loading and internal network loading |
+| **Virtual Storage** | Virtual space utilization, data duplication and storage device access bandwidth |
+| **Virtual Network** | Virtual network bandwidth, network connectivity and network load balancing |
 
-La virtualizzazione supporta tre coppie di proprietà:
+Properties supported by the virtualization technique:
 
-- **Manageability e Interoperability**: controllo del sistema, billing, API.
-- **Availability e Reliability**: più copie delle VM, ridondanza dello storage.
-- **Scalability e Elasticity**: risorse fornite on demand.
+- **Manageability and Interoperability**: system control, billing, API.
+- **Availability and Reliability**: multiple copies of VMs, storage redundancy.
+- **Scalability and Elasticity**: on-demand resource (e.g., VM) provisioning.
 
 ### PaaS - Platform as a Service
 
-Il consumatore può sviluppare e installare sul cloud applicazioni create con linguaggi e strumenti **supportati dal provider**. Non controlla rete, server, sistema operativo o storage, ma controlla le applicazioni e, in parte, la configurazione dell'ambiente di hosting.
+The capability provided to the consumer is to **develop and deploy** onto the cloud applications created using **programming languages and tools supported by the provider**. The consumer does not manage or control the underlying infrastructure (network, servers, operating systems, storage), but has control over the **deployed applications** and possibly the **application hosting environment configurations**.
 
-La **tecnica abilitante** è il **Runtime Environment**, una collezione di servizi software implementata di solito da **librerie** e da un **motore di esecuzione**. Le sue proprietà comuni sono manageability, interoperability, performance, ottimizzazione, availability, reliability, scalability ed elasticity.
+The **enabling technique** is the **Runtime Environment**: the collection of software services available, usually implemented by a **collection of program libraries** and an **application execution engine**. Its common properties are manageability and interoperability, performance and optimization, availability and reliability, scalability and elasticity.
 
-PaaS fornisce:
+PaaS provides two services:
 
-- **Programming IDE**: integra le funzionalità del runtime e strumenti come profiler, debugger e testing. Le API variano tra provider, ma esistono funzioni comuni su calcolo, storage e comunicazione.
-- **System Control Interface**, con due approcci:
-    - **Policy-based**: regole del tipo *if condition then action* che guidano le decisioni.
-    - **Workflow-based**: descrive il flusso di installazione e configurazione delle risorse.
+- **Programming IDE**: users develop their service with an IDE that integrates the full functionality of the runtime environment and provides **development tools** such as profiler, debugger and testing environment. The programming APIs may be **heterogeneous across providers**, but there are still some common functions: computation, storage and communication resource operations.
+- **System Control Interface**, with two approaches:
+    - **Policy-Based Control**: a principle or rule that guides decisions according to some requirements: *if &lt;condition&gt; then &lt;action&gt;*.
+    - **Workflow Control**: describes the flow of installation and configuration of resources, for a speedy and efficient construction and management of cloud resources.
 
 ### SaaS - Software as a Service
 
-Il consumatore usa le **applicazioni del provider**, accessibili da vari dispositivi tramite un thin client come il browser (ad esempio la webmail). Non controlla nulla, tranne eventuali impostazioni dell'utente.
+The capability provided to the consumer is to **use the provider's applications** running on a cloud infrastructure. The applications are accessible from various client devices through a **thin client interface** such as a web browser (e.g., web-based email). The consumer does not manage or control anything, **except for limited user-specific application configuration settings**.
 
-La **tecnica abilitante** sono i **Web Service**. La logica è quella del Web 2.0: Internet come piattaforma di calcolo, applicazioni interattive eseguite nel browser, interconnessione e mobilità dei dispositivi. Internet fornisce le proprietà di **accessibility e portability**.
+The **enabling technique** is the **Web Service**. **Web 2.0** is the trend of using the full potential of the web: viewing the Internet as a computing platform, running interactive applications through a web browser, leveraging interconnectivity and mobility of devices, with greater human participation. The Internet provides **accessibility and portability**.
 
-SaaS fornisce:
+SaaS provides two services:
 
-- **Applicazioni web**, per quattro ambiti: generali (office, messaggistica), business (ERP, CRM), scientifiche (simulazioni), governative (sanità, trasporti).
-- **Web Portal**: oltre alla ricerca offrono altri servizi (mail, notizie) e permettono alle aziende di dare un'interfaccia coerente, con controllo di accesso, a più applicazioni e basi di dati.
+- **Web-based Applications**: conventional applications translate their access interface onto a web-based platform. Four domains:
+    - **General**: office suites, multimedia, instant messaging.
+    - **Business**: ERP, CRM, market trading systems.
+    - **Scientific**: aerospace and biochemistry simulations.
+    - **Government**: national medical systems, public transportation services.
+- **Web Portal**: apart from search, portals offer e-mail, news, stock prices, databases and entertainment. They let enterprises give a **consistent look and feel, with access control**, to multiple applications and databases that would otherwise be separate entities. Examples: iGoogle, MSNBC, Netvibes, Yahoo!.
 
-:::caution[Il cloud reale è sfumato]
-Il modello SPI è la classificazione più comune, ma nella realtà i confini sono sfumati: un provider offre servizi a livelli diversi e non è sempre facile classificarli. Le slide collocano ad esempio EC2, Azure, App Engine e Force.com lungo un continuum, da basso livello con poca gestione ad alto livello con molta gestione.
+:::caution[The real cloud is blurry]
+The SPI model is the most common classification, but the real cloud is **blurry**: a provider can offer different services at different levels, and it is not always easy to classify them. Moving from IaaS to SaaS, **flexibility decreases** and the service becomes more **self-managed**.
 :::
 
-## I Modelli di Deployment
+## Deployment Models
 
-Un **modello di deployment** dipende da **dove risiede l'infrastruttura** e **chi la controlla**. È una delle decisioni più importanti, e i modelli differiscono per accesso, dimensioni e proprietà.
+A **cloud deployment model** is defined according to **where the infrastructure resides** and **who has control over it**. Choosing it is one of the most important cloud deployment decisions. The four models differ primarily in the **access, size and ownership** of the cloud services.
 
-| Modello | Chi lo usa | Caratteristiche |
+| Model | Definition | Basic characteristics |
 | --- | --- | --- |
-| **Public** | Pubblico generale, proprietà di chi vende il servizio | Infrastruttura omogenea, policy comuni, risorse condivise e multi-tenancy, infrastruttura in affitto, economie di scala |
-| **Private** | Una sola organizzazione, gestita da essa o da terzi, on o off premise | Infrastruttura eterogenea, policy su misura, risorse dedicate, controllo end-to-end |
-| **Community** | Più organizzazioni con esigenze comuni (missione, sicurezza, compliance) | Accesso ristretto ai membri. Esempio: università che collaborano a una ricerca |
-| **Hybrid** | Composizione di due o più cloud che restano entità distinte | Tecnologia che permette portabilità di dati e applicazioni, ad esempio il **cloud bursting** |
+| **Public** (external, multi-tenant cloud) | Made available to the **general public**, owned by an organization **selling cloud services** | Homogeneous infrastructure, common policies, shared resources and multi-tenancy, leased or rented infrastructure, economies of scale |
+| **Private** (internal, on-premise cloud) | Operated **solely for one organization**, managed by it or by a third party, **on or off premise**. Access is limited to the organization's consumers | Heterogeneous infrastructure, customized and tailored policies, dedicated resources, in-house infrastructure, end-to-end control |
+| **Community** | **Shared by several organizations** with shared concerns: mission, security requirements, policy, compliance | Access typically restricted to the members. Example: universities cooperating in research |
+| **Hybrid** | A **composition of two or more clouds** that remain unique entities, bound together by standardized or proprietary technology that enables **data and application portability** | Example: **cloud bursting** for load balancing between clouds. Typical case: **private-public for scalability** |
 
 :::note[Cloud bursting]
-Tipico caso ibrido: un'azienda lavora normalmente sul cloud privato e, nei picchi di carico, trabocca sul pubblico. Così dimensiona il privato per il carico medio e non per il massimo.
+A typical hybrid case: a company normally runs on its private cloud and, during load peaks, "bursts" into the public cloud. The private cloud can then be sized for the average load instead of the peak.
 :::
 
-:::caution[Non confondere i due assi]
-*Modello di servizio* (IaaS, PaaS, SaaS) e *modello di deployment* (public, private, community, hybrid) sono indipendenti. Una PaaS può essere pubblica o privata. Nelle domande a risposta multipla è una trappola classica.
+:::caution[Do not mix up the two axes]
+*Service models* (IaaS, PaaS, SaaS) and *deployment models* (public, private, community, hybrid) are independent: a PaaS can be public or private. This is a classic trap in multiple-choice questions.
 :::
 
-## Autotest
+## Self-Test
 
-**1.** Quali sono i tre elementi che compongono il modello NIST? Elenca i loro componenti.
+**1.** What does the NIST model consist of? List all components.
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-**5 caratteristiche**: on-demand self-service, broad network access, resource pooling, rapid elasticity, measured service. **3 modelli di servizio**: IaaS, PaaS, SaaS. **4 modelli di deployment**: public, private, community, hybrid.
+**5 essential characteristics**: on-demand self-service, broad network access, resource pooling, rapid elasticity, measured service. **3 service models**: IaaS, PaaS, SaaS. **4 deployment models**: public, private, community, hybrid.
 
 </details>
 
-**2.** Un'azienda installa il proprio database su una VM che ha affittato. Chi gestisce il sistema operativo? Che modello è?
+**2.** A company installs its own database on a rented VM. Who manages the operating system? Which service model is it?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-L'azienda, perché è **IaaS**: il provider gestisce virtualizzazione, server, storage e rete, il consumatore tutto ciò che sta sopra.
+The company, because it is **IaaS**: the consumer controls OS, storage and deployed applications, while the provider manages the underlying infrastructure.
 
 </details>
 
-**3.** Che differenza c'è tra Availability Zone e Region?
+**3.** What is the difference between an Availability Zone and a Region?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Una AZ è un singolo data center indipendente, con propria alimentazione e rete. Una region è un insieme di AZ geograficamente vicine, connesse a bassa latenza.
+An AZ is an independent data center with its own power grid and network. A region is a set of geographically close AZs connected with low-latency links.
 
 </details>
 
-**4.** Quale tecnica abilita ciascun modello di servizio?
+**4.** What is the enabling technique of each service model?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-IaaS: virtualizzazione. PaaS: runtime environment. SaaS: web service.
+IaaS: virtualization. PaaS: runtime environment. SaaS: web service.
 
 </details>
 
-**5.** Perché i data center non vengono costruiti grandi a piacere?
+**5.** Why are data centers large, but not very large?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Oltre una certa dimensione conviene distribuire il rischio: un guasto colpirebbe troppi servizi. Si vuole limitare il *blast radius*.
+Large scale reduces maintenance costs, but a very large data center would increase the **blast radius**: a single failure would hit too many services.
 
 </details>
 
-**6.** Che cos'è il cloud bursting e a quale modello di deployment appartiene?
+**6.** What is cloud bursting, and which deployment model does it belong to?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-È il trabocco del carico da un cloud a un altro durante i picchi, tipicamente da privato a pubblico. Appartiene al modello **hybrid**.
+Moving load from one cloud to another during peaks, typically from private to public. It belongs to the **hybrid** model.
 
 </details>
 
-**7.** A cosa serve un Virtual Infrastructure Manager?
+**7.** What is a Virtual Infrastructure Manager?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Orchestra risorse fisiche e virtuali di molti computer, presentando una vista uniforme. È una sorta di sistema operativo del cloud.
+The software that orchestrates the physical and virtual resources of many computers, presenting a uniform view to users and applications: a "cloud operating system".
 
 </details>
 
-## Glossario
+**8.** What are the two services provided by IaaS, and the two approaches of the PaaS System Control Interface?
 
-- **NIST** - Ente statunitense la cui definizione di cloud è il riferimento del corso.
-- **Multi-tenant** - Modello in cui le stesse risorse servono più clienti, isolati tra loro.
-- **Availability Zone (AZ)** - Data center indipendente all'interno di una region.
-- **Region** - Insieme di AZ geograficamente vicine.
-- **Blast radius** - Estensione dei danni causati da un singolo guasto.
-- **Virtual Infrastructure Manager (VIM)** - Software che orchestra le risorse del cloud.
-- **SPI** - Classificazione dei servizi cloud in SaaS, PaaS, IaaS.
-- **Cloud bursting** - Trabocco del carico verso un altro cloud durante i picchi.
+<details>
+<summary>Solution</summary>
+
+IaaS: Resource Management Interface and System Monitoring Interface. PaaS System Control Interface: policy-based control and workflow control.
+
+</details>
+
+## Glossary
+
+- **NIST** - US institute whose cloud definition is the course reference.
+- **Multi-tenant** - Model where the same resources serve multiple isolated consumers.
+- **Availability Zone (AZ)** - Independent data center within a region.
+- **Region** - Set of geographically close AZs.
+- **Blast radius** - Extent of the damage caused by a single failure.
+- **Virtual Infrastructure Manager (VIM)** - Software that orchestrates cloud resources.
+- **SPI model** - Classification of cloud services into SaaS, PaaS, IaaS.
+- **Runtime environment** - Libraries and execution engine that enable PaaS.
+- **Cloud bursting** - Moving load to another cloud during peaks.

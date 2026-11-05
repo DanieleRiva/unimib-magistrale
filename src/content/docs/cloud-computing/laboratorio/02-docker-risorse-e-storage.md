@@ -1,230 +1,258 @@
 ---
-title: "Docker: Risorse e Storage"
-description: Lab 2 - informazioni di sistema, limiti di CPU e memoria, ispezione dei container, volumi, bind mount e tmpfs.
+title: "Docker: Resources and Storage"
+description: Lab 2 - system information, CPU and memory limits, inspecting containers, volumes, bind mounts and tmpfs.
 sidebar:
   order: 2
 ---
 
-## Informazioni dal Sistema
+## Information from the Docker System
 
-| Comando | A cosa serve |
+| Command | Purpose |
 | --- | --- |
-| `docker system df` | Spazio usato da immagini, container e volumi. `-v` per i dettagli |
-| `docker system events` | Mostra in tempo reale gli eventi. Prova ad aprirlo in un terminale e ad agire sui container in un altro |
-| `docker system prune` | Recupera spazio eliminando gli oggetti inutilizzati. `-a` per una pulizia più aggressiva |
+| `docker system df` | Shows the **disk usage** of images, containers and volumes. `-v` (verbose) for details |
+| `docker system events` | Shows events in real time. Open it in one terminal, then start, stop, kill or restart containers in another |
+| `docker system prune` | **Reclaims disk space** by deleting unused objects (images, containers, volumes). `-a` for a more aggressive cleanup |
 
-## Limitare le Risorse
+## Limiting Resources
 
-Di default un container **non ha vincoli** e può usare tutto ciò che il kernel gli concede. Con due container su un host da 4 CPU e 8 GB, ciascuno crede di averle tutte.
+By default, a container has **no resource constraints** and can use as much of a resource as the host's kernel scheduler allows: this is a "no limits world". With two containers on a host with 4 CPUs and 8 GB, each one sees all 4 CPUs and 8 GB.
 
-Docker può imporre due tipi di limite:
+Linux provides ways to control how much memory, CPU or block I/O a container can use. Docker can enforce:
 
-| Tipo | Significato | Esempio |
+| Type | Meaning | Example |
 | --- | --- | --- |
-| **Hard limit** | Il container non può superare la quantità | `docker run -m 256m <img>` |
-| **Soft limit** | Il container può usare ciò che serve, finché non c'è contesa sull'host | `docker run --memory-reservation 256m <img>` |
+| **Hard limit** | The container uses **no more than a given amount** | `docker run -m 256m <app>` (or `--memory`) |
+| **Soft limit** | The container uses **as much as it needs**, unless certain conditions occur, such as **contention** on the host | `docker run --memory-reservation 256m <app>` |
 
-Per la CPU le opzioni principali sono:
+CPU options:
 
-| Opzione | Significato |
+| Option | Meaning |
 | --- | --- |
-| `--cpus=1.5` | Quanta CPU può usare al massimo. È l'opzione da preferire |
-| `--cpu-period`, `--cpu-quota` | Periodo e quota del CFS: l'equivalente a basso livello di `--cpus` |
-| `--cpuset-cpus=0-3` | Su quali core può girare, ad esempio `0-3` o `1,3` |
-| `--cpu-shares` | Peso relativo, 1024 di default. Vale **solo quando la CPU è contesa** |
+| `--cpus=<value>` | How much of the available CPU a container can use. With 2 CPUs and `--cpus="1.5"`, it can access **at most one and a half CPUs**. **The preferred option** |
+| `--cpu-period=<value>` | The CFS (Completely Fair Scheduler) period, used with `--cpu-quota`. Default 100 ms. Use `--cpus` instead |
+| `--cpu-quota=<value>` | Microseconds per `--cpu-period` of guaranteed CPU access. Use `--cpus` instead |
+| `--cpuset-cpus` | The **specific CPUs or cores** a container can use, e.g. `0-3` or `1,3` |
+| `--cpu-shares` | **Relative weight**, default **1024**. Enforced **only when CPU cycles are constrained**: with plenty of CPU, all containers use as much as they need |
 
-:::note[Esempio dal laboratorio]
+:::note[Ex. 4: limit resource utilization]
 ```bash
 docker run --name fullcpu -d alpine dd if=/dev/zero of=/dev/null
 docker run --name halfcpu -d --cpus=.5 -m 100m alpine dd if=/dev/zero of=/dev/null
 ```
-Il primo porta la CPU al 100%, il secondo si ferma al 50%: lo verifichi con `docker stats`.
+The first one takes the CPU to 100%, the second stops at 50%: check it with `docker stats`. `alpine` is a minimal image of only 5 MB.
 :::
 
-## Ispezionare i Container
+## Inspecting Containers
 
-| Comando | A cosa serve |
+Getting information about a container is of paramount importance, especially in production.
+
+| Command | Purpose |
 | --- | --- |
-| `docker exec <id> env` | Mostra le variabili d'ambiente |
-| `docker inspect <id>` | Tutti i dettagli del container, in JSON |
-| `docker inspect -f '{{ .NetworkSettings.IPAddress }}' <id>` | Filtra un campo con un template Go |
-| `docker logs <id>` | Output del comando. Opzioni: `--follow`, `--details`, `--tail 5`, `--timestamps` |
+| `docker exec <id> env` | Environment variables defined in the container |
+| `docker inspect <id>` | All container details, in JSON |
+| `docker inspect -f '{{ .NetworkSettings.IPAddress }}' <id>` | Filters a field with a **Go template** |
+| `docker logs <id>` | The command output, as it would appear in a terminal. Options: `--follow`, `--details`, `--tail 5`, `--timestamps` |
 
-## Storage Persistente
+## Persistent Storage
 
-Salvare i dati nel layer scrivibile del container ha diversi problemi:
+Data can be stored in the **writable layer** of a container, but there are downsides:
 
-- I dati **non sopravvivono** alla rimozione del container.
-- È difficile farli usare a un altro processo.
-- Il layer è legato alla macchina host.
-- Serve uno storage driver, e il filesystem a layer è più lento di un volume, che scrive direttamente sull'host.
+- Data **will not persist** when the container is removed.
+- It is **difficult to get the data out** if another process needs it.
+- The writable layer is **coupled to the host** where the container runs.
+- It requires a **storage driver** providing a **union filesystem**, which **reduces performance** compared to data volumes, which write directly to the host filesystem.
 
-L'esercizio con MySQL lo dimostra: crei un database, rimuovi il container, ne crei uno identico e i dati sono spariti.
+The MySQL exercise (Ex. 3) shows it: you create a database, remove the container, create an identical one, and the data is gone.
 
-Docker offre tre soluzioni. La differenza principale è **dove stanno i dati sull'host**.
+Docker offers three ways to persist data. **The main difference is where the data lives on the Docker host.**
 
 ![](../../../../assets/cloud-computing/docker-volumi.png)
 
-| Tipo | Dove stanno i dati | Gestito da | Quando usarlo |
+| Type | Where data lives | Managed by | When to use it |
 | --- | --- | --- | --- |
-| **Volume** | In un'area gestita da Docker (`/var/lib/docker/volumes/`) | Docker | **Il modo preferito** per persistere i dati |
-| **Bind mount** | Ovunque sull'host | L'utente | Condividere file con l'host, come il codice in sviluppo |
-| **tmpfs** | Solo nella **memoria** dell'host | Docker | Stato non persistente o dati sensibili |
+| **Volume** | A part of the host filesystem **managed by Docker** (`/var/lib/docker/volumes/` on Linux). Non-Docker processes should not modify it | Docker | **The preferred way** to persist data |
+| **Bind mount** | **Anywhere** on the host. Non-Docker processes and containers can modify it | The user | Sharing files with the host, e.g. `/my/own/datadir` on `/var/lib/mysql` |
+| **tmpfs** | **Host memory only**, never written to the filesystem | Docker | **Non-persistent state** or **sensitive information** |
 
-### Volumi
+### Volumes
 
-- Si creano esplicitamente con `docker volume create` oppure li crea Docker con il container.
-- Sono isolati dalle funzioni principali dell'host.
-- Possono essere **montati in più container** insieme.
-- Possono essere **con nome** o **anonimi**.
-- Supportano i **volume driver**, plugin per salvare i dati su host remoti o cloud provider.
+- Created and managed by Docker: explicitly with `docker volume create`, or by Docker at container creation.
+- The related directory is mounted into the container, like a bind mount, but managed by Docker and **isolated from the core functionality of the host**.
+- A volume can be **mounted into multiple containers** at the same time.
+- A volume can be **named or anonymous**.
+- Volumes support **volume drivers** (plugins) to store data on remote hosts or cloud providers.
 
-### Bind Mount
+### Bind Mounts
 
-Sono il tipo più vecchio, con funzioni più limitate. Un file o una directory dell'host viene montato nel container, indicandone il percorso. Sono performanti, ma dipendono dalla struttura delle directory dell'host, e la CLI di Docker non può gestirli. Poiché il container può modificare il filesystem dell'host, comportano **rischi di sicurezza**.
+- The **oldest** type, with limited functionality compared to volumes.
+- A file or directory on the host is mounted into a container, **referenced by its path**.
+- The file or directory is **created on demand** if it does not exist.
+- Can be **performing**, but rely on the host having a **specific directory structure**.
+- The **Docker CLI cannot manage** them: you define the bind but cannot create or remove it.
+- The container can **modify the host filesystem**: **security issues**.
 
-### Regole di Montaggio
+### tmpfs Mounts
 
-| Situazione | Risultato |
+A tmpfs mount is **not persisted on disk**, either on the host or in the container. It is used during the container's lifetime for non-persistent state or sensitive information.
+
+### Mount Rules
+
+| Situation | Result |
 | --- | --- |
-| **Volume vuoto** su una directory con file | I file vengono **copiati** nel volume |
-| Volume che **non esiste** | Viene creato vuoto |
-| **Bind mount o volume non vuoto** su una directory con file | I file originali vengono **oscurati**: non sono cancellati, ma non sono accessibili finché dura il mount |
+| **Empty volume** mounted on a container directory with files | The files are **copied into the volume** |
+| A volume that **does not exist** | An **empty volume is created**. The host-side directory is typically owned by `root:root`, because the daemon (traditionally running as root) creates it |
+| **Bind mount or non-empty volume** on a directory with files | The files are **obscured**: not removed or altered, but **not accessible** while the mount is in place |
 
-Una directory creata così appartiene di solito a `root:root`, perché a crearla è il daemon, tradizionalmente in esecuzione come root.
+### Specifying a Volume
 
-### Specificare un Volume
+In `docker run` both `-v` and `--mount` can be used, with the same behavior. `--mount` takes comma-separated `<key>=<value>` pairs:
 
-`-v` e `--mount` hanno lo stesso comportamento di base. `--mount` è più esplicito, con coppie chiave-valore: `type` (`bind`, `volume`, `tmpfs`), `source`, `destination` e `readonly`.
+- `type`: `bind`, `volume` or `tmpfs`. It can be omitted for managed volumes.
+- `source` (or `src`): the volume name. Omitted for anonymous volumes.
+- `destination` (or `dst`, `target`): the path in the container.
+- `readonly`: mounts the volume read-only.
 
 ```bash
-docker run -d --name nginxtest \
+docker run -d -it --name=nginxtest \
   --mount source=nginx-vol,destination=/usr/share/nginx/html \
   nginx:latest
 ```
 
 ```bash
-docker run -d -v my-vol:/var/lib/mysql mysql/mysql-server:8.0.20   # volume con nome
+docker run -d -v my-vol:/var/lib/mysql mysql/mysql-server:8.0.20   # named volume
 docker run -it -v "$(pwd)/es-python:/app" adreeve/python-numpy python ./app/es-python.py   # bind mount
 ```
 
-:::note[Complemento: una differenza tra -v e --mount]
-Con un bind mount su una directory host inesistente, `-v` la crea, mentre `--mount` dà errore. Le slide dicono che la directory viene creata on demand, ed è il comportamento di `-v`.
+`$(pwd)` returns the absolute path of the current directory. `-v` is the compact notation.
+
+:::note[Beyond the slides: one difference between -v and --mount]
+With a bind mount on a host directory that does not exist, `-v` creates it, while `--mount` returns an error. The slides' "created on demand" is the `-v` behavior.
 :::
 
-| Comando | A cosa serve |
+| Command | Purpose |
 | --- | --- |
-| `docker volume create <nome>` | Crea |
-| `docker volume ls` | Elenca |
-| `docker inspect <nome>` | Dettagli |
-| `docker volume rm <nome>` | Elimina |
-| `docker volume prune` | Elimina i volumi non montati |
+| `docker volume create <name>` | Create |
+| `docker volume ls` | List |
+| `docker inspect <name>` | Details |
+| `docker volume rm <name>` | Remove |
+| `docker volume prune` | Remove unmounted volumes |
 
-:::caution[Ambienti multi-host]
-In produzione, con più host e container che si spostano, il volume locale non basta. Servono i **volume driver**, come Azure file storage, GlusterFS o Ceph RBD, che salvano i dati su storage condiviso.
-:::
+### Volume Drivers
 
-## Docker come Strumento di Sviluppo
+In production, with a **multi-host infrastructure** and containers subject to relocation, the base volume technology **falls short**. Docker provides an extensible architecture based on third-party plugins called **drivers**: Local Persist, Azure file storage, Flocker, GlusterFS, OpenStorage, gce-docker, Ceph RBD, Fuse derivatives.
 
-Docker permette di compilare ed eseguire senza installare nulla sull'host: basta un bind mount sul progetto.
+## Docker as a Development Tool
+
+Docker provides images to compile and run without installing anything on the host: a bind mount on the project is enough.
 
 ```bash
-# Esercizio 6: compilare con Maven
+# Ex. 6: compile with Maven
 docker run --rm -v "$(pwd)/es-micro:/app" -w /app maven:3.5-jdk-8 \
   mvn clean install -Dmaven.test.skip=true
 
-# Esercizio 7: eseguire il jar prodotto
+# Ex. 7: run the jar
 docker run --rm -p 8080:8080 -v "$(pwd)/es-micro:/app" -w /app/target maven:3.5-jdk-8 \
   java -jar ./micro-0.0.1-SNAPSHOT.jar
 ```
 
-`-w` imposta la directory di lavoro, e `--rm` elimina il container al termine.
+`-w` sets the working directory, `--rm` removes the container when done. Then visit `http://localhost:8080/measure/temperature`.
 
-## Esercizi Svolti
+## Worked Exercises
 
-**MySQL con un volume** (esercizi 3 e 4):
+**MySQL with a volume** (Ex. 3 and 4):
 
 ```bash
 docker volume create my-vol
 docker run -d --name mysql-server -p 3306:3306 \
   -e MYSQL_ROOT_PASSWORD='cloud' -e MYSQL_ROOT_HOST='%' \
   -v my-vol:/var/lib/mysql mysql/mysql-server:8.0.20
-docker exec -it mysql-server bash   # poi: mysql -uroot -p
+docker exec -it mysql-server bash   # then: mysql -uroot -p
 ```
 
-Rimuovendo il container e creandone uno nuovo con lo stesso volume, il database è ancora lì.
+After removing the container and creating a new one with the same volume, the database is still there.
 
-**Condividere un file con l'host** (esercizio 5):
+**Share a file with the host** (Ex. 5):
 
 ```bash
 docker run -it --rm -v "$(pwd)/shared:/mnt/shared" alpine ash
-# dentro al container
+# inside the container
 echo "Laboratorio di CC" >> /mnt/shared/cloud.txt
 ```
 
-Alpine non ha `bash`, quindi si usa `ash`. Dopo la rimozione del container il file resta nella cartella dell'host.
+Alpine comes without `bash`, so `ash` is used. After the container is removed, the file is still in the host folder.
 
-## Autotest
+## Self-Test
 
-**1.** Che differenza c'è tra hard limit e soft limit?
+**1.** What is the difference between a hard limit and a soft limit?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-L'**hard limit** non può mai essere superato. Il **soft limit** viene applicato solo in presenza di contesa sull'host.
+A **hard limit** can never be exceeded. A **soft limit** lets the container use what it needs, and is enforced only under contention on the host.
 
 </details>
 
-**2.** Quando ha effetto `--cpu-shares`?
+**2.** When does `--cpu-shares` take effect?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Solo quando i cicli di CPU sono contesi. Se c'è CPU libera, tutti i container ne usano quanta serve.
+Only when CPU cycles are constrained. With plenty of CPU, all containers use as much as they need.
 
 </details>
 
-**3.** Quali sono le tre forme di storage di Docker, e dove stanno i dati?
+**3.** What are Docker's three storage types, and where does the data live?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-**Volume**: nell'area dell'host gestita da Docker. **Bind mount**: in un percorso qualsiasi dell'host. **tmpfs**: nella memoria dell'host.
+**Volume**: in the host area managed by Docker. **Bind mount**: anywhere on the host. **tmpfs**: in host memory only.
 
 </details>
 
-**4.** Perché i volumi sono preferiti ai bind mount?
+**4.** Why are volumes preferred to bind mounts?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Perché sono gestiti da Docker, isolati dall'host, indipendenti dalla sua struttura di directory, e supportano i driver per storage remoto. Sono anche più sicuri, dato che un bind mount permette di modificare il filesystem dell'host.
+They are managed by Docker, isolated from the host, independent of its directory structure, and support drivers for remote storage. They are also safer, since a bind mount lets the container modify the host filesystem.
 
 </details>
 
-**5.** Monti un bind mount su `/usr/share/nginx/html`, che nell'immagine contiene dei file. Cosa succede a quei file?
+**5.** You bind mount a host folder on `/usr/share/nginx/html`, which contains files in the image. What happens to those files?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Vengono **oscurati**: non sono cancellati, ma non sono visibili finché dura il mount. Con un volume **vuoto**, invece, i file sarebbero stati copiati nel volume.
+They are **obscured**: not removed, but not accessible while the mount is in place. With an **empty volume**, instead, they would have been copied into the volume.
 
 </details>
 
-**6.** Quando useresti tmpfs?
+**6.** When would you use tmpfs?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Per stato non persistente o dati sensibili che non devono finire su disco.
+For non-persistent state or sensitive information that must not be written to disk.
 
 </details>
 
-## Glossario
+**7.** List the downsides of storing data in the container's writable layer.
 
-- **Hard / Soft limit** - Limite invalicabile e limite applicato solo in caso di contesa.
-- **Volume** - Spazio persistente gestito da Docker.
-- **Bind mount** - Montaggio di un percorso dell'host nel container.
-- **tmpfs** - Montaggio in memoria, non persistente.
-- **Volume driver** - Plugin per salvare i volumi su storage remoto.
-- **docker inspect** - Comando che mostra i dettagli di un oggetto Docker.
+<details>
+<summary>Solution</summary>
+
+Data does not persist when the container is removed, it is hard to get out, the layer is coupled to the host, and the union filesystem is slower than volumes.
+
+</details>
+
+## Glossary
+
+- **Hard / Soft limit** - Unbreakable limit, and limit enforced only under contention.
+- **CFS** - Completely Fair Scheduler, the Linux CPU scheduler.
+- **Volume** - Persistent storage managed by Docker.
+- **Bind mount** - Host path mounted into the container.
+- **tmpfs** - In-memory, non-persistent mount.
+- **Union filesystem** - Layered filesystem provided by the storage driver.
+- **Volume driver** - Plugin to store volumes on remote storage.
+- **docker inspect** - Command showing the details of a Docker object.

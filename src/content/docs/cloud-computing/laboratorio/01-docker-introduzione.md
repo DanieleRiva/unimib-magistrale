@@ -1,246 +1,283 @@
 ---
-title: "Docker: Introduzione"
-description: Lab 1 - perché i container, namespaces e cgroups, immagini e layer, copy-on-write, architettura di Docker e comandi di base.
+title: "Docker: Introduction"
+description: Lab 1 - why containers, namespaces and cgroups, images and layers, copy-on-write, Docker architecture and basic commands.
 sidebar:
   order: 1
 ---
 
-:::note[Preparazione dell'ambiente]
-Il laboratorio si svolge in una **VM Linux** (consigliata Ubuntu 24.04, con 2 vCPU, 4 GB di RAM e 25 GB di disco), creata con Multipass o VirtualBox, con **Docker Engine installato dentro la VM**. Docker Desktop direttamente sul laptop è sconsigliato, perché non fornisce l'ambiente necessario ad alcuni esercizi. Aggiungendo l'utente al gruppo `docker` si evita `sudo`, ma si ottengono privilegi amministrativi sulla VM.
+:::note[Environment setup]
+The lab runs in a **Linux VM** (Ubuntu 24.04 recommended, 2 vCPUs, 4 GB RAM, 25 GB disk), created with Multipass or VirtualBox, with **Docker Engine installed inside the VM**. Docker Desktop directly on the laptop is discouraged, because it does not provide the environment some exercises need. Adding your user to the `docker` group avoids `sudo`, but grants administrative privileges on the VM.
 :::
 
-## Perché le VM Non Bastano
+## Virtualization Recap
 
-Una VM dà un isolamento forte intercettando le operazioni sensibili sull'hardware, ma questa astrazione ha un costo: trap su CPU, seconda traduzione della memoria, emulazione dell'I/O. L'hardware moderno riduce l'overhead, ma una VM non è mai gratis (vedi [Virtualizzazione](../../teoria/03-virtualizzazione/)).
+**Virtualization** is the emulation of hardware and software components by a different system, to run a single application (or a complete OS) **as if it had a particular physical machine at its disposal**. A **virtual machine** provides a complete emulated hardware platform; the physical resources are shared among several VMs, each with its own OS, created and managed by a **hypervisor** (VMM). The hypervisor is a software layer underneath the virtualized OSes that shares **CPU, memory, storage and network** so that each VM sees them as dedicated. See [Virtualization](../../teoria/03-virtualizzazione/).
 
-Con una VM per componente si ha forte isolamento, ma ogni VM si porta dietro un **sistema operativo guest completo**. Per i **microservizi** questo è un problema:
+### Performance Ain't Cheap
 
-- **Confine di isolamento grossolano**: la VM è un'unità troppo grande per un servizio leggero.
-- **Unità di scaling grande**: scalare un servizio significa replicare una VM intera.
-- **Overhead operativo**: patch, monitoraggio e aggiornamenti si moltiplicano per ogni macchina.
-- **Spreco di risorse**: i guest OS duplicati consumano CPU, memoria e disco.
+A VM gives **strong isolation** by intercepting hardware-sensitive operations, but that abstraction **has a cost**:
 
-## Che Cos'è un Container
+| Cost | Why |
+| --- | --- |
+| **CPU** | Trap-and-emulate or binary translation handles sensitive instructions |
+| **Memory** | Shadow page tables or EPT/NPT maintain a second translation layer |
+| **I/O** | Device emulation, paravirtual drivers or SR-IOV trade portability for speed |
 
-Un **container** è come una valigia già pronta per il software: contiene l'applicazione con tutto ciò che le serve (librerie, strumenti, configurazioni), così funziona allo stesso modo su qualsiasi macchina.
+Modern hardware reduces the overhead, but **the VM abstraction is never free**.
 
-- **Pacchettizzazione standard** di software e dipendenze.
-- **Isolamento** dell'applicazione, per sicurezza e condivisione delle risorse.
-- **Leggerezza**: i container condividono il kernel dell'host.
+### VMs Aren't a Good Fit for Microservices
+
+With a monolithic or multi-tier deployment on VMs, each VM hosts one component (load balancer, frontend, application services, database, cache). Isolation is strong, but **every VM carries a full guest OS**: hardware usage is not optimal and scaling happens at the granularity of a whole VM. For **microservices** this is a problem:
+
+- **Coarse isolation boundary**: the VM isolates well, but is too large a unit for a single lightweight service.
+- **Large scaling unit**: scaling a service means replicating a whole VM with its guest OS.
+- **Per-VM operational overhead**: patching, monitoring and updates multiply for every machine.
+- **Resource waste**: duplicated guest OSes consume CPU, memory and disk, reducing deployment density.
+
+## What's a Container?
+
+Think of a container as a **pre-packed suitcase for software**: it bundles an application with **everything it needs to run** (libraries, tools, settings), so it **works the same on any machine**. Everything specific to the app stays inside the container; everything outside stays clean and standardized.
+
+- **Isolates** the application (security and resource sharing).
+- **Lightweight**: containers **share the same OS kernel**.
+- Works with Linux and Windows Server.
 
 ![](../../../../assets/cloud-computing/docker-vs-vm.png)
 
-| | Container | Macchina virtuale |
+| | Container | Virtual machine |
 | --- | --- | --- |
-| **Contiene** | Applicazione e librerie, **senza kernel** | Sistema operativo guest completo |
-| **Processi** | Di solito uno | Molti altri oltre all'applicazione |
-| **Disco** | Layer condivisi | Disco virtuale, un file con l'OS intero |
-| **Avvio** | Immediato | Boot di un sistema operativo |
-| **Isolamento** | Processo isolato sullo stesso kernel | Forte, con hypervisor |
+| **Contains** | App and libraries, **no kernel** | A full guest OS |
+| **Processes** | Usually **one** | Several other processes besides the app |
+| **Disk** | Shared layers | A virtual disk (a file) with a full OS |
+| **Start** | Immediate | OS boot |
+| **Isolation** | Isolated process on the same kernel | Strong, through the hypervisor |
 
-**Docker** automatizza il deployment delle applicazioni in container, fornendo un livello di astrazione sulla virtualizzazione a livello di sistema operativo di Linux. Il nome viene da *docker*, lo scaricatore di porto. L'obiettivo è impacchettare ed eseguire il software in modo uniforme: *Build, Ship and Run Any App, Anywhere*. Come un container navale, è sempre uguale qualunque cosa contenga, e quindi si adatta a camion, gru e navi.
+:::tip[What's Docker?]
+**Docker** is an open-source project that **automates the deployment of applications inside software containers**, providing an additional layer of abstraction and automation of **operating-system-level virtualization on Linux**. *Docker* (nautical) means port worker.
 
-## Container = Processi Limitati
+Goal: uniform software packaging and execution, **"Build, Ship and Run Any App, Anywhere"**. Like shipping containers, the container is always the same regardless of its contents, so it fits on all trucks, cranes and ships.
+:::
 
-Il punto concettuale più importante è questo: **un container non è un sistema operativo separato, è un processo isolato che gira sul kernel condiviso dell'host**.
+## Linux Containers: Restricted Processes
+
+The key concept: **a container is not a separate operating system, it is a restricted process running on the host's shared kernel**.
 
 ![](../../../../assets/cloud-computing/linux-container.png)
 
-Il kernel Linux fornisce gli strumenti:
+The Linux kernel provides the tools:
 
-| Meccanismo | A cosa serve | Cosa controlla |
+| Mechanism | Purpose | What it covers |
 | --- | --- | --- |
-| **Namespaces** | **Isolano**: danno al processo la sua vista del sistema | `pid` (processi), `net` (rete), `mnt` (filesystem), `uts` (hostname), `ipc` (semafori), `user` (UID) |
-| **Cgroups** | **Limitano e misurano** l'uso delle risorse | Memoria, CPU, I/O a blocchi, rete |
-| **Seccomp** | Filtra le system call utilizzabili | System call |
-| **Chroot / pivot_root** | Cambia il filesystem radice | Directory privata |
+| **Namespaces** | Resource **isolation**: provide processes with **their own system view** | `pid` (processes), `net` (networks), `mnt` (mount points, fs), `uts` (hostname), `ipc` (semaphores), `user` (UIDs) |
+| **Control groups (cgroups)** | Resource **limitation and monitoring**, and device access control | Memory, CPU, block I/O, network |
+| **Seccomp** | Filters the system calls a process can use | System calls |
+| **Chroot / pivot_root** | Changes the root filesystem | Private directory |
 
-:::tip[Per ricordarlo]
-I **namespaces** decidono **cosa può vedere** un processo, i **cgroups** decidono **quanto può usare**.
+:::tip[How to remember it]
+**Namespaces** decide **what a process can see**, **cgroups** decide **how much it can use**.
 :::
 
-## Immagini e Container
+## Images and Containers
 
-| Concetto | Significato |
+| Concept | Meaning |
 | --- | --- |
-| **Immagine** | Modello **di sola lettura** per creare container: codice, librerie e dipendenze. Può basarsi su altre immagini |
-| **Container** | **Istanza in esecuzione** di un'immagine, isolata ed effimera |
-| **Registry** | Archivio per conservare e distribuire immagini, pubblico o privato |
-| **Container runtime** | Software che crea ed esegue i container |
+| **Image** | A **read-only template** used to create containers: application code, libraries and dependencies. Stored in Docker Hub or another registry. **Images can be built upon other images** |
+| **Container** | A **running instance of an image**: an application in isolated, **ephemeral** execution, self-contained, **based on and linked to one image**. Lightweight and portable |
+| **Container registry** | A repository for **storing and distributing images**, enabling sharing and versioning. Public or private |
+| **Container runtime / engine** | Software that **creates and runs containers** and manages their lifecycle, exposing APIs or a CLI |
 
-La relazione ricorda quella tra classe e oggetto, o tra [AMI e istanza](../../teoria/04-amazon-aws/#immagine-e-istanza): da un'immagine si creano tanti container.
+The relation is like class and object, or [AMI and instance](../../teoria/04-amazon-aws/#image-vs-instance): many containers are created from one image.
 
-### Filesystem a Layer
+### Layered File System
 
-Il filesystem di un container è ottenuto "cucendo" più **layer**:
+Containers' virtual disks contain file systems created by **sewing different layers together**:
 
 ![](../../../../assets/cloud-computing/container-filesystem.png)
 
-- Un'immagine è fatta di più **layer immutabili**, ciascuno un file con un pezzo di filesystem.
-- I layer si possono **condividere** tra immagini, e tra container.
-- Un container **non copia** l'immagine ma ci si collega, per questo parte subito.
-- Ogni container ha sopra un sottile **layer scrivibile** tutto suo.
+- A virtual disk is **immutable**: it cannot be changed.
+- Its file system is made of several **immutable layers**, each a file containing a piece of a file system (like zip files).
+- A layer **can be shared among images** (good idea!), and several containers can be created from the same image: **sharing is caring**.
+- A container is **linked** to its virtual disk, **no copy is involved**, so it **starts immediately**.
+- Each container has a **thin writable layer** on top of the image file system, to implement changes. The **R/W layer exists only for containers**; read-only layers belong to both images and containers.
 
-### Copy-on-Write
+### Copy-on-Write Strategy
 
 ![](../../../../assets/cloud-computing/copy-on-write.png)
 
-- I layer dell'immagine sono in sola lettura, sia per le immagini sia per i container.
-- Se un container deve **modificare** un file, prima lo copia nel suo layer scrivibile, e la copia **oscura** quella sottostante.
-- I file non modificati non vengono copiati, così il layer scrivibile resta il più piccolo possibile.
-- Se durante la build si modifica un file, si crea un nuovo layer con quel file.
+- If a file is changed **during the image creation**, a **new layer** with the modified file is created.
+- When you start a container, a **thin writable container layer** is added on top of the other layers.
+- If a file is changed during the **life-cycle of a container**, it is stored in the **mutable container-specific layer**: all the container's changes go there, and the copy hides the underlying one.
+- Files the container does not change **are not copied**, which keeps the writable layer **as small as possible**.
 
-Quando il container viene rimosso, il suo layer scrivibile sparisce: per questo [servono i volumi](../02-docker-risorse-e-storage/#storage-persistente).
+When the container is removed, its writable layer disappears: this is why [volumes are needed](../02-docker-risorse-e-storage/#persistent-storage).
 
-## L'Architettura di Docker
+## Docker Architecture
 
-**Docker Engine** è un'applicazione **client-server** con tre componenti: il **daemon** `dockerd`, una **REST API** e il **client** `docker`, la CLI. Il daemon crea e gestisce gli oggetti Docker: immagini, container, reti e volumi. Client e daemon possono stare sulla stessa macchina o su macchine diverse, e comunicano via REST su socket UNIX o interfaccia di rete.
+**Docker Engine** is a **client-server** application with three major components:
+
+- A **server**, a long-running **daemon** process (the `dockerd` command).
+- A **REST API** that programs use to talk to the daemon and instruct it.
+- A **command line interface (CLI)** client (the `docker` command).
+
+The CLI uses the REST API to control the daemon, through scripting or direct commands. The daemon **creates and manages Docker objects**: images, containers, networks and volumes. Client and daemon can run on the **same system or on different ones**, and communicate via REST over **UNIX sockets or a network interface**.
 
 ![](../../../../assets/cloud-computing/docker-architettura.png)
 
-Il **registry** conserva le immagini. Docker Hub è quello pubblico predefinito, ma si può avere un registry privato.
+A **Docker registry** stores images. **Docker Hub** is the public default, and you can run your own **private registry**.
 
-Scendendo nel dettaglio, sotto a Docker Engine lavorano due componenti:
+### Going Deeper
+
+The user always works through the CLI, which talks to Docker Engine. Beneath it, two key components operate:
 
 ![](../../../../assets/cloud-computing/docker-engine-interno.png)
 
-| Componente | Compito |
+| Component | Role |
 | --- | --- |
-| **containerd** | Daemon che gestisce l'intero ciclo di vita: scarica e conserva le immagini, prepara il filesystem, configura la rete, supervisiona i container. Non crea i container direttamente |
-| **runc** | Runtime a basso livello, conforme allo standard **OCI**. È lui che crea ed esegue il container, usando namespaces e cgroups |
+| **containerd** | The daemon that manages the **entire container lifecycle**: pulls and stores images, prepares the filesystem, configures networking, supervises running containers. It **does not create containers directly**, but coordinates the component that does |
+| **runc** | The **low-level runtime**, compliant with the **OCI** (Open Container Initiative) standard. It **actually creates and runs** the container, using **namespaces and cgroups** |
 
-## I Comandi
+## Main Commands
 
-`docker run` fa tutto insieme: cerca l'immagine in locale, se manca la scarica dal registry (*pull*), crea il container (*create*) e lo avvia (*start*).
+`docker run` does everything at once: looks for the image locally, **pulls** it from the registry if missing, **creates** the container and **starts** it.
 
 ```bash
 docker run -d --rm -it --name web -p 8081:80 nginx:latest
 ```
 
-| Opzione | Significato |
+| Option | Meaning |
 | --- | --- |
-| `-d` | Detached: esecuzione in background |
-| `--rm` | Rimuove il container quando termina |
-| `-it` | Interattivo con terminale: `-i` tiene aperto stdin, `-t` alloca un terminale |
-| `--name` | Dà un nome al container |
-| `-p 8081:80` | Pubblica la porta del container 80 sulla porta dell'host 8081 |
-| `nginx:latest` | Immagine e tag. Il tag è facoltativo |
+| `-d` | Detached: runs in the background |
+| `--rm` | Removes the container when it exits |
+| `-it` | Interactive with a terminal: `-i` keeps stdin open, `-t` allocates a terminal |
+| `--name` | Names the container |
+| `-p 8081:80` | **Publishes** container port 80 on host port 8081 |
+| `nginx:latest` | Image name and **tag**. The tag is not necessary |
 
-:::caution[L'ordine della porta]
-In `-p 8081:80` a sinistra c'è l'**host**, a destra il **container**: la regola è `host:container`.
+:::caution[Port order]
+In `-p 8081:80` the **host** is on the left and the **container** on the right: the rule is `host:container`.
 :::
 
-| Comando | A cosa serve |
+| Command | Purpose |
 | --- | --- |
-| `docker search ubuntu` | Cerca immagini. Filtri: `--filter is-official=true`, `--filter stars=100`, `--limit 5` |
-| `docker pull alpine:3.9.4` | Scarica un'immagine |
-| `docker images` / `docker image ls` | Elenca le immagini. `-a` tutte, `-q` solo ID, `--no-trunc` ID completi |
-| `docker ps` / `docker container ls` | Elenca i container attivi. `-a` tutti, `-s` con la dimensione |
-| `docker stats <id>` | Uso delle risorse in tempo reale |
-| `docker exec <id> <cmd>` | Esegue un comando in un container attivo |
-| `docker top <id>` | Processi dentro il container |
-| `docker rmi <img>` / `docker image rm` | Elimina un'immagine |
+| `docker --version` / `docker --help` | Version and help. `docker <command> --help` for each command |
+| `docker search ubuntu` | Search images. Filters: `--filter is-official=true`, `--filter stars=100`, `--limit 5` |
+| `docker pull alpine:3.9.4` | Download an image |
+| `docker images` / `docker image ls` | List images. `-a` all, `-q` IDs only, `--no-trunc` full IDs |
+| `docker ps` / `docker container ls` | List running containers. `-a` all, `-s` with disk size |
+| `docker stats <id>` | Live resource usage |
+| `docker exec <id> <cmd>` | Run a command in a running container |
+| `docker top <id>` | Processes running inside the container |
+| `docker rmi <img>` / `docker image rm` | Delete a local image |
 
-Con `docker exec`, per aprire una shell interattiva servono entrambe le opzioni: `docker exec -it <id> bash`. Senza `-i` non puoi scrivere, senza `-t` non hai un terminale, e con `-d` il comando va in background.
+With `docker exec`, an interactive shell needs both options: `docker exec -it <id> bash`. Without `-i` you cannot type, without `-t` you have no terminal, and with `-d` the command runs in the background.
 
-### Il Ciclo di Vita
+### Container Lifecycle
 
 ![](../../../../assets/cloud-computing/container-lifecycle.png)
 
-| Comando | Effetto |
+| Command | Effect |
 | --- | --- |
-| `docker create` | Crea senza avviare |
-| `docker run` | Crea e avvia |
-| `docker start` / `stop` | Avvia e ferma |
-| `docker restart` | Ferma e riavvia |
-| `docker pause` / `unpause` | Sospende e riprende i processi, **senza rilasciare le risorse** |
-| `docker kill` | Invia il segnale SIGKILL |
-| `docker rm` | Elimina un container fermo, `-f` forza anche se è in esecuzione |
+| `docker create` | Creates a container **but does not start it** |
+| `docker run` | Creates **and starts** a container |
+| `docker start` / `stop` | Starts / stops the container |
+| `docker restart` | Stops and then starts a container |
+| `docker pause` / `unpause` | Suspends / un-suspends all processes. **The resources are not released** |
+| `docker kill` | Sends the **SIGKILL** signal |
+| `docker rm` | Removes a stopped/killed container. `-f` / `--force` also removes a running one |
 
-:::tip[Soluzioni utili]
-- Eliminare tutte le immagini: `docker rmi $(docker images -q)`.
-- **Esercizio 4** (pull di `alpine` e `miciav/micro`): il secondo pull non riscarica il layer condiviso. I layer sono identificati dal contenuto, e Docker scarica solo quelli che non ha già.
+:::tip[Useful solutions]
+- **Remove all images with a single command** (Ex. 18): `docker rmi $(docker images -q)`.
+- **Ex. 4** (pull `alpine:3.9.4`, then `miciav/micro:0.0`): the second pull does not download the shared layer again. Layers are identified by their content, and Docker only downloads the ones it does not already have.
 :::
 
-:::note[Le risorse di default]
-Un container è un processo come gli altri: **vede tutta la memoria e tutte le CPU**, senza limiti. Come limitarli si vede nella [prossima lezione](../02-docker-risorse-e-storage/#limitare-le-risorse).
+:::note[Default resources]
+Processes belonging to containers are **exactly like other processes** in user space: by default they **see all the available memory** and **have access to all CPUs** without limitation. How to limit them is in the [next lab](../02-docker-risorse-e-storage/#limiting-resources).
 :::
 
-## Autotest
+## Self-Test
 
-**1.** Che cosa sono namespaces e cgroups, e che differenza c'è?
+**1.** What are namespaces and cgroups, and how do they differ?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Sono funzioni del kernel Linux. I **namespaces** isolano, dando al processo una vista privata di processi, rete, filesystem e così via. I **cgroups** limitano e misurano le risorse come CPU e memoria.
+Both are Linux kernel features. **Namespaces** isolate, giving a process its own view of processes, network, filesystem, hostname, IPC and users. **Cgroups** limit and monitor resources such as CPU, memory, block I/O and network.
 
 </details>
 
-**2.** Che differenza c'è tra immagine e container?
+**2.** What is the difference between an image and a container?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-L'immagine è un modello di sola lettura, fatto di layer. Il container è un'istanza in esecuzione, con un sottile layer scrivibile sopra l'immagine.
+An image is a read-only template made of layers. A container is a running, isolated, ephemeral instance of it, with a thin writable layer on top.
 
 </details>
 
-**3.** Perché avviare un container è immediato?
+**3.** Why does a container start immediately?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Perché non c'è un sistema operativo da avviare e l'immagine non viene copiata: il container si collega ai suoi layer e aggiunge solo un layer scrivibile.
+There is no OS to boot and the image is not copied: the container links to its layers and only adds a writable layer.
 
 </details>
 
-**4.** Che cosa succede quando un container modifica un file di un layer dell'immagine?
+**4.** What happens when a container modifies a file belonging to an image layer?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Per il **copy-on-write**, il file viene copiato nel layer scrivibile e lì modificato. La copia oscura l'originale, che resta intatto nell'immagine.
+With **copy-on-write**, the file is copied into the container's writable layer and modified there. The copy hides the original, which stays intact in the image.
 
 </details>
 
-**5.** Che cosa fanno containerd e runc?
+**5.** What do containerd and runc do?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-**containerd** gestisce il ciclo di vita dei container, le immagini e la rete. **runc** è il runtime OCI che crea effettivamente il container con namespaces e cgroups.
+**containerd** manages the container lifecycle, images and networking. **runc** is the OCI runtime that actually creates the container with namespaces and cgroups.
 
 </details>
 
-**6.** Quale comando crea e avvia nginx in background, pubblicando la porta 80 del container sulla 8081 dell'host?
+**6.** Which command creates and starts nginx in the background, publishing container port 80 on host port 8081?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
 `docker run -d -p 8081:80 nginx`.
 
 </details>
 
-**7.** Che differenza c'è tra `docker stop`, `docker pause` e `docker kill`?
+**7.** What is the difference between `docker stop`, `docker pause` and `docker kill`?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-`stop` ferma il container, `pause` sospende i processi tenendo le risorse, `kill` invia SIGKILL.
+`stop` stops the container, `pause` suspends its processes while keeping its resources, `kill` sends SIGKILL.
 
 </details>
 
-## Glossario
+**8.** Why are VMs not a good fit for microservices?
 
-- **Container** - Processo isolato che condivide il kernel dell'host.
-- **Immagine** - Modello di sola lettura per creare container.
-- **Layer** - Porzione immutabile del filesystem di un'immagine.
-- **Copy-on-write** - Copia di un file nel layer scrivibile al momento della modifica.
-- **Registry** - Archivio di immagini, come Docker Hub.
-- **Namespace** - Vista isolata di una risorsa del kernel.
-- **Cgroup** - Limitazione e misura delle risorse.
-- **dockerd** - Il daemon di Docker.
-- **containerd** - Daemon che gestisce il ciclo di vita dei container.
-- **runc** - Runtime di basso livello conforme a OCI.
-- **OCI** - Open Container Initiative, lo standard dei container.
+<details>
+<summary>Solution</summary>
+
+Coarse isolation boundary, large scaling unit, per-VM operational overhead, and resource waste from duplicated guest OSes.
+
+</details>
+
+## Glossary
+
+- **Container** - Isolated process sharing the host kernel.
+- **Image** - Read-only template used to create containers.
+- **Layer** - Immutable piece of an image's file system.
+- **Copy-on-write** - Copying a file into the writable layer when it is modified.
+- **Registry** - Image repository, such as Docker Hub.
+- **Namespace** - Isolated view of a kernel resource.
+- **Cgroup** - Resource limitation and monitoring.
+- **dockerd** - The Docker daemon.
+- **containerd** - Daemon that manages the container lifecycle.
+- **runc** - Low-level OCI-compliant runtime.
+- **OCI** - Open Container Initiative, the container standard.

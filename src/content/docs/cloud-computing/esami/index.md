@@ -1,35 +1,35 @@
 ---
-title: Preparazione all'Esame
-description: Struttura della prova, metodo per commentare Dockerfile e file Compose, errori da evitare e checklist di ripasso.
+title: Exam Preparation
+description: Exam structure, method to comment on Dockerfiles and Compose files, common mistakes and review checklist.
 sidebar:
   order: 1
 ---
 
-## Com'è Fatta la Prova
+## How the Exam Works
 
-La prova scritta copre **lezioni e laboratorio**, con domande sui concetti ed esercizi semplici che chiedono di descrivere una soluzione o una tecnologia.
+The written exam covers **lectures and lab**, with questions on concepts and simple exercises asking to describe a solution or a technology.
 
-| Parte | Domande | Punti |
+| Part | Questions | Points |
 | --- | --- | --- |
-| Risposta multipla | 10 da 2 punti | 20 |
-| Risposte aperte | 2 da 4 punti | 8 |
-| **Totale** | | **28** |
+| Multiple choice | 10 × 2 points | 20 |
+| Open questions | 2 × 4 points | 8 |
+| **Total** | | **28** |
 
-Le informazioni complete su regole e date sono nella [pagina del corso](../).
+Full rules and dates are on the [course page](../).
 
-Dagli esempi ufficiali si capisce che almeno un tipo di domanda aperta è questa: **"Comment adequately on the following DOCKERFILE / DOCKER COMPOSE file"**. Su e-learning ci sono anche i quiz di autovalutazione (Virtualization, Cloud Computing, IaaS, PaaS, Serverless) e un esempio di domande miste, che però è su argomenti di un altro corso e serve solo a vedere il formato.
+The official examples show that at least one kind of open question is: **"Comment adequately on the following DOCKERFILE / DOCKER COMPOSE file"**. On e-learning there are also self-assessment quizzes (Virtualization, Cloud Computing, IaaS, PaaS, Serverless) and a sample of mixed questions, which covers another course and is only useful to see the format.
 
-## Come Commentare un Dockerfile
+## How to Comment on a Dockerfile
 
-Il metodo delle soluzioni ufficiali è **riga per riga**: per ogni istruzione si dice **cosa fa**, **quando agisce** (build o run) ed **eventuali conseguenze**. Non basta tradurre il nome dell'istruzione.
+The method of the official solutions is **line by line**: for each instruction, say **what it does**, **when it acts** (build or run) and **any consequences**. Translating the instruction name is not enough.
 
-1. **Commenti e direttive**. Le righe con `#` sono ignorate, ma `# syntax=...` in prima riga è una **direttiva del parser**, che seleziona il frontend di Dockerfile.
-2. **Stage**. Conta i `FROM`: più di uno significa multi-stage. Lo stage finale è l'ultimo, e un `FROM` eredita da uno stage precedente solo se lo nomina.
-3. **Cosa viene eseguito in build e cosa all'avvio**. `RUN` agisce in build, `CMD` ed `ENTRYPOINT` configurano l'avvio.
-4. **Punti di attenzione**. Chiudi con ciò che il file *non* fa: se manca lo `USER` gira come root, se un'istruzione è commentata non ha effetto, se servono file esterni devono stare nel context.
+1. **Comments and directives**. Lines starting with `#` are ignored, but `# syntax=...` on the first line is a **parser directive** that selects the Dockerfile frontend.
+2. **Stages**. Count the `FROM`s: more than one means multi-stage. The final stage is the last one, and a `FROM` inherits from a previous stage only if it names it.
+3. **What runs at build time and what at start**. `RUN` acts at build time, `CMD` and `ENTRYPOINT` configure the start.
+4. **Points of attention**. Close with what the file does *not* do: without `USER` it runs as root, a commented instruction has no effect, external files must be in the context.
 
-:::note[Esempio di commento]
-Dato questo Dockerfile, ispirato agli esempi ufficiali:
+:::note[Sample comment]
+Given this Dockerfile, inspired by the official examples:
 
 ```dockerfile
 # syntax=docker/dockerfile:1
@@ -42,47 +42,47 @@ VOLUME ["/tmp"]
 ENTRYPOINT ["/app"]
 ```
 
-| Riga | Commento |
+| Line | Comment |
 | --- | --- |
-| `# syntax=` | Non è un commento qualsiasi: è una direttiva che sceglie il frontend |
-| `FROM` | Parte da Alpine 3.24, unico stage |
-| `RUN` | In **build** installa i certificati, senza salvare l'indice dei pacchetti |
-| `ARG` | Rende disponibile la piattaforma di destinazione **in build**: non è una variabile d'ambiente a runtime |
-| `COPY` | Copia dal context il binario già compilato per quella piattaforma: non c'è compilazione nel file |
-| `EXPOSE` | **Documenta** la porta 80, che va comunque pubblicata con `-p` |
-| `VOLUME` | Dichiara un punto di mount. Senza mount esterno Docker crea un volume **anonimo** |
-| `ENTRYPOINT` | Avvia `/app` in forma exec, e gli argomenti di `docker run` gli vengono accodati |
+| `# syntax=` | Not an ordinary comment: a directive that selects the frontend |
+| `FROM` | Starts from Alpine 3.24, single stage |
+| `RUN` | At **build time**, installs certificates without keeping the package index |
+| `ARG` | Makes the target platform available **at build time**: it is not a runtime environment variable |
+| `COPY` | Copies from the context the binary already compiled for that platform: there is no compilation in the file |
+| `EXPOSE` | **Documents** port 80, which must still be published with `-p` |
+| `VOLUME` | Declares a mount point. Without an external mount, Docker creates an **anonymous** volume |
+| `ENTRYPOINT` | Starts `/app` in exec form, and `docker run` arguments are appended to it |
 
 :::
 
-### Dettagli Che Fanno la Differenza
+### Details That Make the Difference
 
-| Istruzione | Cosa precisare |
+| Instruction | What to point out |
 | --- | --- |
-| `ADD` | A differenza di `COPY`, scompatta gli archivi tar locali |
-| `COPY . dest` | Copia dal context, nel rispetto di `.dockerignore` |
-| `COPY --from=x` | Copia da uno stage o da un'immagine, non dal context |
-| `FROM scratch` | Immagine vuota: nessun programma o libreria ereditati |
-| `FROM img AS nome` | Dà un nome allo stage: da solo non rende la build multi-stage |
-| `--mount=type=cache` | Cache di BuildKit: il contenuto non finisce nel layer |
-| `ENV` | Persiste nell'immagine, sovrascrivibile con `docker run -e` |
-| `USER` | Vale per i `RUN` successivi e per il processo a runtime. Creare un utente non significa passare a esso |
-| `STOPSIGNAL` | Segnale inviato da `docker stop`, ad esempio per un arresto graceful |
-| `ONBUILD` | Registra un'istruzione per le immagini figlie, mai all'avvio |
-| `RUN ... \` | Le barre continuano **una sola istruzione**, che produce un solo layer |
-| `RUN <<EOF` | Heredoc: script su più righe in una sola istruzione |
+| `ADD` | Unlike `COPY`, it unpacks local tar archives |
+| `COPY . dest` | Copies from the context, respecting `.dockerignore` |
+| `COPY --from=x` | Copies from a stage or an image, not from the context |
+| `FROM scratch` | Empty image: no programs or libraries inherited |
+| `FROM img AS name` | Names the stage: by itself it does not make the build multi-stage |
+| `--mount=type=cache` | BuildKit cache: its content does not end up in the layer |
+| `ENV` | Persists in the image, can be overridden with `docker run -e` |
+| `USER` | Applies to following `RUN`s and to the runtime process. Creating a user does not mean switching to it |
+| `STOPSIGNAL` | Signal sent by `docker stop`, e.g. for a graceful shutdown |
+| `ONBUILD` | Registers an instruction for child images, never at container start |
+| `RUN ... \` | Backslashes continue **a single instruction**, which produces a single layer |
+| `RUN <<EOF` | Heredoc: a multi-line script in one instruction |
 
-## Come Commentare un File Compose
+## How to Comment on a Compose File
 
-Il metodo è lo stesso, elemento per elemento, servizio per servizio.
+Same method, element by element, service by service.
 
-1. **Struttura generale**: quali servizi, quali reti, quali volumi. Se non ci sono reti, tutti stanno sulla rete di default del progetto.
-2. **Ogni servizio**: immagine o build, porte, volumi, ambiente, dipendenze, riavvio.
-3. **Comunicazione**: chi vede chi, in base alle reti. I servizi si raggiungono per nome.
-4. **Punti di attenzione**: `depends_on` non attende la prontezza, password in chiaro, dati non persistiti, socket Docker esposto.
+1. **Overall structure**: which services, networks and volumes. With no networks, everything is on the project's default network.
+2. **Each service**: image or build, ports, volumes, environment, dependencies, restart.
+3. **Communication**: who sees whom, based on networks. Services reach each other by name.
+4. **Points of attention**: `depends_on` does not wait for readiness, plain-text passwords, non-persisted data, exposed Docker socket.
 
-:::note[Esempio di commento]
-Dato questo file, l'esercizio del Lab 6:
+:::note[Sample comment]
+Given this file, the Lab 6 exercise:
 
 ```yaml
 services:
@@ -101,83 +101,83 @@ volumes:
   prom_data:
 ```
 
-| Elemento | Commento |
+| Element | Comment |
 | --- | --- |
-| `image` | Immagine senza tag, quindi implicitamente `latest` |
-| `container_name` | Fissa il nome: il servizio **non può essere scalato** |
-| `command` | Sostituisce il `CMD` dell'immagine. L'`ENTRYPOINT` resta |
-| `ports` | Pubblica la porta 9090 dell'host sulla 9090 del container |
-| `restart` | `unless-stopped`: riavvia, salvo stop manuale |
-| `./prometheus:...` | **Bind mount** in lettura e scrittura, per la configurazione |
-| `prom_data:...` | **Named volume** gestito da Docker, per i dati. Sopravvive a `down`, non a `down -v` |
-| `volumes` in fondo | Dichiara il volume. Il nome reale ha il prefisso del progetto |
+| `image` | Image with no tag, so implicitly `latest` |
+| `container_name` | Fixes the name: the service **cannot be scaled** |
+| `command` | Overrides the image's `CMD`. The `ENTRYPOINT` stays |
+| `ports` | Publishes host port 9090 to container port 9090 |
+| `restart` | `unless-stopped`: restarts, unless manually stopped |
+| `./prometheus:...` | Read-write **bind mount**, for the configuration |
+| `prom_data:...` | **Named volume** managed by Docker, for the data. Survives `down`, not `down -v` |
+| `volumes` at the bottom | Declares the volume. Its real name has the project prefix |
 
 :::
 
-### Dettagli Che Fanno la Differenza
+### Details That Make the Difference
 
-| Elemento | Cosa precisare |
+| Element | What to point out |
 | --- | --- |
-| `ports` | A sinistra l'host, a destra il container |
-| `expose` | Non pubblica sull'host e non è un firewall |
+| `ports` | Host on the left, container on the right |
+| `expose` | Does not publish on the host, and is not a firewall |
 | `./dir:/path` | Bind mount |
-| `nome:/path` | Named volume, da dichiarare in `volumes` |
-| `/path` da solo | Volume anonimo. Tipico: `/usr/src/app/node_modules`, per non farlo coprire dal bind mount del codice |
-| `read_only: true` | Riguarda quel mount, non l'intero container |
-| `depends_on` | Ordine di avvio, non prontezza |
-| `build: target` | Sceglie uno stage del Dockerfile |
-| `stdin_open: true` | Come `docker run -i`, senza allocare un terminale |
-| `/var/run/docker.sock` | Dà accesso al daemon: **potere molto elevato** |
-| `${VAR}` | Sostituita da Compose, non dentro al container |
-| `cap_add: NET_ADMIN` | Aggiunge privilegi Linux rispetto a quelli predefiniti |
-| `ipv4_address` | IP statico, deve stare nella subnet della rete |
-| `version` | Campo storico, oggi obsoleto |
+| `name:/path` | Named volume, to be declared under `volumes` |
+| `/path` alone | Anonymous volume. Typical: `/usr/src/app/node_modules`, so the code bind mount does not hide it |
+| `read_only: true` | Applies to that mount, not the whole container |
+| `depends_on` | Startup order, not readiness |
+| `build: target` | Selects a Dockerfile stage |
+| `stdin_open: true` | Like `docker run -i`, without allocating a terminal |
+| `/var/run/docker.sock` | Gives access to the daemon: **very high power** |
+| `${VAR}` | Substituted by Compose, not inside the container |
+| `cap_add: NET_ADMIN` | Adds Linux privileges beyond the defaults |
+| `ipv4_address` | Static IP, must be within the network's subnet |
+| `version` | Historical field, now obsolete |
 
-:::tip[Topologie con più reti]
-Se la consegna ha più reti, disegna chi sta dove. Un servizio su due reti parla con entrambe, ma **non fa da router**: i servizi su reti diverse non si vedono tra loro.
+:::tip[Topologies with several networks]
+If the file has several networks, draw who is where. A service on two networks talks to both, but **does not act as a router**: services on different networks cannot see each other.
 :::
 
-## Gli Errori da Evitare
+## Mistakes to Avoid
 
-Le soluzioni ufficiali chiudono con questi punti, che sono gli equivoci più comuni:
+The official solutions end with these points, the most common misconceptions:
 
-- `RUN` agisce in **build**, `CMD` ed `ENTRYPOINT` configurano l'**avvio**.
-- `COPY` legge dal **build context**, non dalla directory del Dockerfile. `COPY --from` legge da uno stage o da un'immagine.
-- `EXPOSE` **documenta**: per pubblicare serve `-p`.
-- `VOLUME` dichiara un punto di mount: nome e percorso host arrivano a runtime.
-- `ARG` è un parametro di build, `ENV` persiste nell'immagine. **Nessuno dei due è adatto ai segreti**.
-- `ONBUILD` agisce nelle build figlie. Un `USER` commentato non ha effetto.
-- Un nuovo `FROM` inizia uno stage, e eredita da uno precedente solo se lo nomina.
+- `RUN` acts at **build time**, `CMD` and `ENTRYPOINT` configure the **start**.
+- `COPY` reads from the **build context**, not from the Dockerfile's directory. `COPY --from` reads from a stage or an image.
+- `EXPOSE` **documents**: publishing needs `-p`.
+- `VOLUME` declares a mount point: name and host path come at runtime.
+- `ARG` is a build parameter, `ENV` persists in the image. **Neither is suitable for secrets**.
+- `ONBUILD` acts in child builds. A commented `USER` has no effect.
+- A new `FROM` starts a stage, and inherits from a previous one only if it names it.
 
-## Checklist di Ripasso
+## Review Checklist
 
-**Teoria**
+**Theory**
 
-- [ ] Definizione NIST con 5 caratteristiche, 3 servizi, 4 deployment
-- [ ] Chi gestisce cosa in IaaS, PaaS, SaaS, e tecniche abilitanti
-- [ ] Differenze tra AZ e region
-- [ ] SLA, SLO, QoS, e il rapporto tra CA-SLA e CI-SLA
-- [ ] Scalabilità ed elasticità, verticale e orizzontale
-- [ ] Under e over-provisioning
-- [ ] Le 4 azioni della fault tolerance
-- [ ] Emulazione e virtualizzazione, full, para e OS-level
-- [ ] Ring, trap-and-emulate, binary translation, hardware-assisted
-- [ ] Shadow page tables e EPT/NPT, device emulation, VirtIO e SR-IOV
-- [ ] Hypervisor bare-metal e hosted
-- [ ] EC2, S3, EBS, risorse effimere e persistenti, modelli di prezzo
-- [ ] Ciclo di auto scaling, stati dell'allarme, tipi di policy, cooldown
-- [ ] Web e worker role, throttling, lock-in
+- [ ] NIST definition: 5 characteristics, 3 service models, 4 deployment models
+- [ ] Who manages what in IaaS, PaaS, SaaS, and enabling techniques
+- [ ] AZ vs region
+- [ ] SLA, SLO, QoS, and cloud-based vs application-based SLA
+- [ ] Scalability and elasticity, vertical and horizontal
+- [ ] Under- and over-provisioning
+- [ ] The 4 actions of fault tolerance
+- [ ] Emulation vs virtualization; full, para and OS-level
+- [ ] Rings, trap-and-emulate, binary translation, hardware-assisted
+- [ ] Shadow page tables and EPT/NPT, device emulation, VirtIO and SR-IOV
+- [ ] Bare-metal and hosted hypervisors
+- [ ] EC2, S3, EBS, ephemeral and persistent resources, pricing options
+- [ ] Auto scaling loop, alarm states, policy types, cooldown
+- [ ] Web and worker roles, throttling, lock-in
 - [ ] Serverless, FaaS, cold start, anti-pattern
 
-**Laboratorio**
+**Lab**
 
-- [ ] Namespaces e cgroups
-- [ ] Layer e copy-on-write
-- [ ] Comandi di base e ciclo di vita
-- [ ] Limiti hard e soft
+- [ ] Namespaces and cgroups
+- [ ] Layers and copy-on-write
+- [ ] Basic commands and container lifecycle
+- [ ] Hard and soft limits
 - [ ] Volume, bind mount, tmpfs
-- [ ] Istruzioni del Dockerfile, ENTRYPOINT e CMD
-- [ ] Multi-stage build
-- [ ] CNM e driver di rete, DNS sulle reti utente
-- [ ] Compose e `depends_on`
-- [ ] Architettura di Kubernetes, stato desiderato, Pod e Service
+- [ ] Dockerfile instructions, ENTRYPOINT and CMD
+- [ ] Multi-stage builds
+- [ ] CNM and network drivers, DNS on user-defined networks
+- [ ] Compose and `depends_on`
+- [ ] Kubernetes architecture, desired state, Pods and Services

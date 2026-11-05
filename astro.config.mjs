@@ -136,26 +136,26 @@ const sidebarCorsi = [
         label: 'Cloud Computing',
         collapsed: true,
         items: [
-            { label: 'Introduzione al corso', link: '/cloud-computing/' },
+            { label: 'Course introduction', link: '/cloud-computing/' },
 
             {
-                label: '📖 Teoria',
+                label: '📖 Theory',
                 collapsed: true,
                 autogenerate: { directory: 'cloud-computing/teoria' }
             },
 
             {
-                label: '🧪 Laboratorio',
+                label: '🧪 Lab',
                 collapsed: true,
                 autogenerate: { directory: 'cloud-computing/laboratorio' }
             },
 
             {
-                label: '📝 Esami',
+                label: '📝 Exams',
                 collapsed: true,
                 items: [
                     {
-                        label: 'Preparazione all\'Esame',
+                        label: 'Exam Preparation',
                         link: '/cloud-computing/esami/'
                     },
                 ]

@@ -1,28 +1,40 @@
 ---
 title: "Docker: Compose"
-description: Lab 5 e 6 - servizi e container, il file docker-compose.yml, depends_on, healthcheck, scaling, risorse e riepilogo finale di Docker.
+description: Labs 5 and 6 - services vs containers, the docker-compose.yml file, depends_on, healthcheck, scaling, resources and a final Docker recap.
 sidebar:
   order: 5
 ---
 
-## Perché Compose
+## Services vs Containers
 
-Un'applicazione distribuita è fatta di **servizi**: persistenza, frontend e così via. In Docker un servizio è, in sostanza, un "container in produzione", e può essere un insieme di **repliche** bilanciate dello stesso container. Scalare un servizio significa cambiare il numero di repliche, cioè fare **scaling orizzontale**.
+A distributed application is made of different pieces called **services**, e.g. the **persistence** service (a database) and the **front-end** service.
 
-Gestire tutto a riga di comando è scomodo: nell'[esercizio di Micro e MariaDB](../04-docker-networking/#esercizio-completo-micro-e-mariadb) servivano tre comandi lunghi, nell'ordine giusto. Come si gestiscono allora scaling, bilanciamento e disponibilità?
+- Services in Docker are **"containers in production"**.
+- A service can be a **set of replicas of a container**, usually load-balanced: more than one container of the same kind working as one.
+- **Scaling** a service changes the **number of container instances** running that piece of software, assigning more resources to it (**horizontal scaling**).
 
-**Docker Compose** definisce ed esegue applicazioni **multi-servizio su un singolo nodo**, in modo **dichiarativo** con un file YAML:
+**Multi-container apps are difficult to manage**: in the [Micro and MariaDB exercise](../04-docker-networking/#complete-exercise-micro-and-mariadb) you needed three long commands, in the right order (network, database first, then the REST service). And how about **scaling, load balancing and availability**?
+
+## Docker Compose
+
+:::tip[Definition]
+**Compose** is a tool for **defining and running multi-service Docker applications** on a **single node**. It offers a **declarative language** to define, run and scale services: specify services, images and configuration in a simple YAML file, `docker-compose.yml`, and get everything running with **one command**.
+:::
 
 ```bash
-docker compose up -d        # avvia tutto
-docker compose down         # ferma e rimuove
+docker compose up -d        # start everything
+docker compose down         # stop and remove
 ```
 
-L'obiettivo è avere ambienti di sviluppo **ripetibili, isolati e veloci**, integrabili anche in una pipeline CI/CD. Il comando è `docker compose` oppure `docker-compose`, a seconda dell'installazione.
+Compose is one of the first tools of the Docker ecosystem. It is available as `docker compose` or `docker-compose`, depending on the installation. The `-f path/to/file.yml` option is not necessary if the file is named `docker-compose.yml` and is in the current directory.
 
-## Il File Compose
+:::tip[The ultimate goal of Compose]
+Make your development environments **repeatable, isolated and fast**. It can be integrated into a **Continuous Integration / Continuous Delivery** setup (Maven, JUnit, Jenkins).
+:::
 
-Il file ha tre sezioni principali: `services`, `networks` e `volumes`.
+## The Compose File
+
+The file has three main sections: **services**, **networks** and **volumes**.
 
 ```yaml
 services:
@@ -53,65 +65,69 @@ volumes:
     driver: local
 ```
 
-Un servizio si crea da un'immagine (`image`) o da una build (`build`). Se non dichiari reti, Compose crea una **rete di default per il progetto**, e i servizi si raggiungono usando il **nome del servizio** come hostname.
+- Service `web` is **built** from a context and Dockerfile, and tagged `demochatweb:0.1`. A service can be created **from an image or built**.
+- Service `mongo` is created from the `mongo` image, with a volume named `data` on `/data/db`.
+- The `networks` section defines one network `my-net` of type `bridge`, the `volumes` section one volume `data` of type `local`.
 
-:::note[La chiave version]
-Le slide mostrano `version: '3.2'`. Nelle versioni attuali di Compose il campo è **obsoleto** e viene ignorato.
+This is a **2-tier application**: a Node.js presentation service and a MongoDB persistence service, connected by a **private virtual network**. If you declare no networks, Compose creates a **default network for the project**, and services reach each other using the **service name** as hostname.
+
+:::note[The version key]
+The slides show `version: '3.2'` (the v3 file format, Docker 17.04.0+). In current Compose versions the field is **obsolete** and ignored.
 :::
 
-### Chiavi Principali
+### Main Keys
 
-| Chiave | Significato |
+| Key | Meaning |
 | --- | --- |
-| `image` | Immagine da usare |
-| `build` | `context`, `dockerfile`, `target` per costruire l'immagine |
-| `ports` | Porte pubblicate, `"host:container"` |
-| `expose` | Dichiara una porta **senza pubblicarla** sull'host |
-| `volumes` | Named volume, bind mount o volume anonimo |
-| `networks` | Reti del servizio |
-| `environment` | Variabili d'ambiente |
-| `env_file` | Legge le variabili da un file |
-| `command` | Sostituisce il `CMD` dell'immagine |
-| `entrypoint` | Sostituisce l'`ENTRYPOINT` |
-| `restart` | Politica di riavvio |
-| `depends_on` | Ordine di avvio |
-| `healthcheck` | Comando che verifica la salute del servizio |
-| `container_name` | Nome fisso, che **impedisce di scalare** il servizio |
-| `deploy.resources` | Limiti di risorse |
-| `stop_signal` | Segnale di arresto |
-| `labels` | Metadati |
+| `image` | Image to use |
+| `build` | `context`, `dockerfile`, `target` to build the image |
+| `ports` | Published ports, `"host:container"` |
+| `expose` | Declares a port **without publishing it** on the host |
+| `volumes` | Named volume, bind mount or anonymous volume |
+| `networks` | Networks of the service |
+| `environment` | Environment variables |
+| `env_file` | Reads variables from a file |
+| `command` | Overrides the image's `CMD` |
+| `entrypoint` | Overrides the `ENTRYPOINT` |
+| `restart` | Restart policy |
+| `depends_on` | Startup order |
+| `healthcheck` | Command that checks the service's health |
+| `container_name` | Fixed name, which **prevents scaling** the service |
+| `deploy.resources` | Resource limits |
+| `stop_signal` | Stop signal |
+| `labels` | Metadata |
 
-### Politiche di Riavvio
+### Restart Policies
 
-| Valore | Comportamento |
+| Value | Behavior |
 | --- | --- |
-| `no` | Nessun riavvio (default) |
-| `always` | Riavvia sempre. Uno stop manuale vale fino al riavvio del daemon |
-| `on-failure` | Riavvia solo se il processo termina con errore |
-| `unless-stopped` | Come `always`, ma un container fermato a mano resta fermo anche dopo un riavvio del daemon |
+| `no` | Never restart (default) |
+| `always` | Always restart. A manual stop lasts until the daemon restarts |
+| `on-failure` | Restart only if the process exits with an error |
+| `unless-stopped` | Like `always`, but a manually stopped container stays stopped after a daemon restart |
 
-### Comandi
+### Commands
 
-| Comando | Effetto |
+| Command | Effect |
 | --- | --- |
-| `up` | Crea e avvia, `-d` in background |
-| `down` | Ferma e rimuove container e reti. **`-v` rimuove anche i volumi** |
-| `build` / `pull` / `push` | Gestione delle immagini |
-| `ps` / `top` / `logs` | Stato, processi e log. `logs -f` per seguire l'output |
-| `exec` / `run` | Comando in un servizio attivo, o in un nuovo container temporaneo |
-| `start` / `stop` / `restart` | Gestione dei servizi |
-| `config` | Valida e mostra il file |
-| `events` / `port` | Eventi e porta pubblica di un binding |
+| `up` | Create and start containers, `-d` in the background |
+| `down` | Stop and remove containers and networks. **`-v` also removes volumes** |
+| `build` / `pull` / `push` | Build, pull or push service images |
+| `create` / `start` / `stop` / `restart` | Manage services, also singly |
+| `ps` / `top` / `logs` | List containers, running processes, output. `logs -f` follows it |
+| `exec` / `run` | Command in a running container / one-off command in a new container |
+| `pause` / `unpause` / `kill` / `rm` | Pause, unpause, kill, remove stopped containers |
+| `config` | Validate and view the Compose file |
+| `events` / `port` / `images` | Real-time events, public port of a binding, images |
+| `version` | Compose version information |
 
-Con `-f` si indica il file se non si chiama `docker-compose.yml` o non sta nella directory corrente.
+## depends_on and Healthcheck
 
-## depends_on e Healthcheck
-
-:::caution[depends_on non attende che il servizio sia pronto]
-Nella forma breve, `depends_on` stabilisce solo l'**ordine di avvio**. Il database può essere partito ma non ancora in grado di accettare connessioni. Per aspettare davvero servono un **`healthcheck`** e la forma lunga con `condition: service_healthy`.
+:::caution[depends_on does not wait for the service to be ready]
+In its short form, `depends_on` only sets the **startup order**. The database may be started but not yet accepting connections. As the slides note, the database must be **up and running** before `micro` is deployed: use `depends_on` **and** a `healthcheck`, with the long form `condition: service_healthy`.
 :::
 
-Una possibile soluzione dell'esercizio 3 con Micro e MariaDB:
+A possible solution of Ex. 3 (Micro and MariaDB):
 
 ```yaml
 services:
@@ -161,25 +177,25 @@ networks:
     driver: bridge
 ```
 
-Qui `MYSQL_ADDRESS: db` funziona perché il DNS risolve il nome del servizio. L'esercizio 3.1 estende il file con due file di variabili, `.env` e `.env.dev`, per osservare la **precedenza** tra le fonti.
+`MYSQL_ADDRESS: db` works because DNS resolves the service name. Ex. 3.1 extends the file with two variable files, `.env.dev` (development) and `.env` (production), to observe the **precedence** of environment variables.
 
-:::caution[Due meccanismi diversi per le variabili]
-Le variabili `${VAR}` nel file Compose vengono sostituite **da Compose** prima di creare i container, leggendole dalla shell o dal file `.env` del progetto. Le variabili in `environment` ed `env_file` invece **finiscono dentro il container**.
+:::caution[Two different mechanisms for variables]
+`${VAR}` placeholders in the Compose file are substituted **by Compose** before creating containers, reading them from the shell or the project's `.env` file. Variables in `environment` and `env_file` instead **end up inside the container**.
 :::
 
-## Scaling
+## Scaling with Compose
 
-Compose tratta i container come servizi, quindi si possono replicare:
+Compose lets containers scale, since they are treated as **services**:
 
 ```bash
 docker compose up -d --scale whoami=2
 ```
 
-:::caution[Vincolo sulle porte]
-Si possono scalare solo i servizi **senza porte pubblicate su una porta fissa dell'host**: due repliche non possono occupare la stessa porta. Anche `container_name` impedisce di scalare.
+:::caution[Port constraint]
+**Only services with no bound ports can be scaled**: two replicas cannot bind the same host port. `container_name` also prevents scaling.
 :::
 
-L'esercizio 4 mostra la soluzione tipica: un **reverse proxy** davanti alle repliche.
+Ex. 4 shows the typical solution: a **reverse proxy** in front of the replicas.
 
 ```yaml
 services:
@@ -195,11 +211,11 @@ services:
       - VIRTUAL_HOST=whoami.local
 ```
 
-Solo il proxy pubblica la porta. Con `curl -H "Host: whoami.local" localhost` ripetuto, rispondono repliche diverse. Il proxy scopre i container leggendo il socket Docker, montato in sola lettura.
+Only the proxy publishes a port. Repeating `curl -H "Host: whoami.local" localhost`, different replicas answer. The proxy discovers containers by reading the Docker socket, mounted read-only.
 
-## Più Reti e Risorse
+## Multiple Networks and Resources
 
-L'esercizio 5 replica in Compose la topologia del Lab 4, con un IP statico:
+Ex. 5 replicates the Lab 4 topology in Compose, with a static IP:
 
 ```yaml
 services:
@@ -229,97 +245,108 @@ networks:
         - subnet: 172.25.0.0/16
 ```
 
-`container2` sta su entrambe le reti e parla con tutti. `container1` e `container3` non si vedono.
+`container2` is on both networks and talks to everyone. `container1` and `container3` cannot see each other.
 
-## Riepilogo di Docker
+Ex. 6 replicates the Lab 2 resource limits: two `alpine` containers running `dd if=/dev/zero of=/dev/null`, one limited to **0.5 CPUs and 100 MB** with `deploy.resources.limits`.
+
+## Docker Recap
 
 ![](../../../../assets/cloud-computing/docker-recap.png)
 
-La catena completa è **build → immagine → run**: il Dockerfile e il context producono un'immagine, modello di sola lettura. Da questa nascono i container, processi isolati con un layer scrivibile, collegati da reti definite dall'utente e con dati persistenti nei volumi. Compose coordina il tutto.
+The full chain is **build → image → run**: the Dockerfile and context produce an image, a read-only template. Containers are created from it: isolated processes with a writable layer, connected by user-defined networks, with persistent data in volumes. Compose coordinates everything.
 
-### L'Esercizio Finale
+### The Final Exercise
 
-Il Lab 6 propone un esercizio end-to-end, con consegna su e-learning:
+Lab 6 proposes an end-to-end exercise, submitted on e-learning:
 
-1. Scrivere un servizio con un database (CRUD), in qualsiasi linguaggio.
-2. Creare un **Dockerfile** con un'immagine piccola per il servizio.
-3. Creare un **docker-compose** con volume per il database, rete virtuale, politica di riavvio adeguata e limiti di risorse.
-4. Installarlo sulla VM e verificarne il funzionamento.
-5. Scrivere un README con i comandi per compilare e installare.
+1. Code a **service backed by a database** (CRUD), in any language.
+2. Create a **Dockerfile** and build a **small image** for the service. The database can use a ready-made image.
+3. Create a **docker-compose** file with a managed volume or bind mount for the database, a **virtual network**, a suitable **restart policy** and **resource limits**.
+4. Deploy it on your VM and check it works.
+5. Write a **README** with the commands to build and deploy.
 
-Il lab propone anche di commentare un file Compose con Prometheus e Grafana, che è esattamente il tipo di [domanda d'esame](../../esami/).
+Lab 6 also asks to comment a Compose file adequately, which is exactly the kind of [exam question](../../esami/).
 
-## Autotest
+## Self-Test
 
-**1.** Che differenza c'è tra Compose e Kubernetes?
+**1.** What is the difference between Compose and Kubernetes?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Compose definisce applicazioni multi-container su **un singolo nodo**. [Kubernetes](../06-kubernetes/) orchestra container su **un cluster** di macchine.
+Compose defines and runs multi-service applications on a **single node**. [Kubernetes](../06-kubernetes/) orchestrates containers on a **cluster** of machines.
 
 </details>
 
-**2.** `depends_on: [db]` garantisce che il database sia pronto?
+**2.** Does `depends_on: [db]` guarantee that the database is ready?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-No, garantisce solo l'ordine di avvio. Serve un `healthcheck` con `condition: service_healthy`.
+No, only the startup order. You need a `healthcheck` and `condition: service_healthy`.
 
 </details>
 
-**3.** Che differenza c'è tra `ports` ed `expose`?
+**3.** What is the difference between `ports` and `expose`?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-`ports` pubblica la porta sull'host. `expose` la dichiara soltanto, e resta raggiungibile dagli altri servizi sulla stessa rete.
+`ports` publishes the port on the host. `expose` only declares it: it stays reachable by other services on the same network.
 
 </details>
 
-**4.** Che differenza c'è tra `always` e `unless-stopped`?
+**4.** What is the difference between `always` and `unless-stopped`?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Dopo uno stop manuale, con `always` il container riparte al riavvio del daemon. Con `unless-stopped` resta fermo.
+After a manual stop, with `always` the container restarts when the daemon restarts. With `unless-stopped` it stays stopped.
 
 </details>
 
-**5.** Dopo `docker compose down` i dati dei named volume ci sono ancora? E dopo `down -v`?
+**5.** After `docker compose down`, is the data in named volumes still there? And after `down -v`?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Dopo `down` sì. Con `down -v` i volumi vengono rimossi.
+After `down` yes. With `down -v` the volumes are removed.
 
 </details>
 
-**6.** Perché un servizio con `ports: ["8080:8080"]` non si può scalare a 2 repliche?
+**6.** Why can't a service with `ports: ["8080:8080"]` be scaled to 2 replicas?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Perché entrambe vorrebbero occupare la porta 8080 dell'host. La soluzione è pubblicare un proxy e lasciare le repliche senza porte.
+Both would try to bind host port 8080. The solution is to publish a proxy and leave the replicas without ports.
 
 </details>
 
-**7.** Come fa un servizio a raggiungerne un altro nello stesso progetto?
+**7.** How does a service reach another one in the same project?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Usando il **nome del servizio** come hostname, grazie al DNS della rete del progetto.
+Using the **service name** as hostname, thanks to the project network's DNS.
 
 </details>
 
-## Glossario
+**8.** What does scaling a service mean?
 
-- **Servizio** - Componente di un'applicazione, realizzato da una o più repliche di un container.
-- **Docker Compose** - Strumento per definire ed eseguire applicazioni multi-servizio su un nodo.
-- **depends_on** - Ordine di avvio tra servizi.
-- **healthcheck** - Comando che verifica la salute di un container.
-- **restart policy** - Regola di riavvio di un container.
-- **Reverse proxy** - Componente che riceve le richieste e le inoltra alle repliche.
-- **Interpolazione** - Sostituzione di `${VAR}` nel file Compose.
+<details>
+<summary>Solution</summary>
+
+Changing the number of container instances (replicas) running it: horizontal scaling.
+
+</details>
+
+## Glossary
+
+- **Service** - Piece of an application, realized by one or more replicas of a container.
+- **Docker Compose** - Tool to define and run multi-service applications on a single node.
+- **depends_on** - Startup order between services.
+- **healthcheck** - Command that checks a container's health.
+- **Restart policy** - Rule for restarting a container.
+- **Reverse proxy** - Component that receives requests and forwards them to replicas.
+- **Interpolation** - Substitution of `${VAR}` in the Compose file.

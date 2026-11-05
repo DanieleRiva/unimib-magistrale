@@ -1,101 +1,101 @@
 ---
 title: Serverless Computing
-description: Definizione di serverless e FaaS, confronto con gli altri modelli, architettura, cold start, casi d'uso, sfide e limiti, dal paper The Rise of Serverless Computing.
+description: Definition of serverless and FaaS, comparison with other models, FaaS architecture, cold start, use cases, challenges and limits, from the paper The Rise of Serverless Computing.
 sidebar:
   order: 7
 ---
 
-:::note[Fonte]
-Questa pagina riassume l'articolo *The Rise of Serverless Computing* (Castro, Ishakian, Muthusamy, Slominski, Communications of the ACM, dicembre 2019), indicato come materiale di studio del Topic 01. Alcuni numeri di mercato risalgono a quell'anno.
+:::note[Source]
+This page summarizes the paper *The Rise of Serverless Computing* (Castro, Ishakian, Muthusamy, Slominski, Communications of the ACM, December 2019), listed as study material for Topic 01. There are no slides: definitions and terms come from the paper. Some market figures date back to that year.
 :::
 
-## Il Problema da Risolvere
+## The Problem
 
-Il cloud ha reso popolare il pay-as-you-go e l'elasticità, ma **il peso di scalare è rimasto agli sviluppatori**, che spesso sovradimensionano per reggere i picchi. Risultato: un grande divario tra le risorse pagate (VM affittate) e quelle usate.
+The cloud made **pay-as-you-go** and **elasticity** popular, but the **burden of scaling stayed with developers**, who often over-provision to handle peaks. The result is a large gap between the resources paid for (rented VMs) and those actually used.
 
-Il serverless nasce per realizzare la promessa originale del cloud come **utility**: pagare solo ciò che si usa, senza gestire nulla.
+Serverless aims to fulfil the original promise of the cloud as a **utility**: pay only for what you use, without managing anything.
 
-## Definizione
+## Definition
 
-:::tip[Definizione]
-Il **serverless computing** è una piattaforma che **nasconde l'uso dei server** agli sviluppatori ed esegue il codice **on demand**, scalandolo automaticamente e **fatturando solo il tempo di esecuzione**.
+:::tip[Definition]
+**Serverless computing** is a platform that **hides server usage from developers** and **runs code on-demand**, **automatically scaled** and **billed only for the time the code is running**.
 :::
 
-Il nome non significa che i server non esistano, ma che **non devi pensarci**: la gestione di provisioning, monitoraggio, manutenzione, scalabilità e tolleranza ai guasti passa al provider.
+The name does not mean there are no servers, but that developers **do not need to worry about them**: provisioning, monitoring, maintenance, scalability and fault tolerance are taken care of by the provider.
 
-Due caratteristiche chiave:
+The definition captures the **two key features**:
 
-- **Costo**: si paga solo ciò che gira. Non si pagano server inattivi né l'overhead di creazione e distruzione. La fatturazione è a granularità fine, nell'ordine delle centinaia di millisecondi. È il **"scaling to zero"**.
-- **Elasticità**: da zero a "infinito". Lo sviluppatore non scrive policy di autoscaling: è il provider ad avviare più esecuzioni parallele quando la domanda cresce.
+- **Cost**: billed **only for what is running** (pay-as-you-go). You do not pay for idle servers, nor for the overhead of creating and destroying them. Billing uses **fine-grained time units**, like hundreds of milliseconds. This is **"scaling to zero"**.
+- **Elasticity**: scaling **from zero to "infinity"**. Developers do not write autoscaling policies: the provider starts more parallel executions when demand grows.
 
 ### Function as a Service
 
-:::tip[Definizione]
-La **FaaS** è una piattaforma serverless dove l'unità di calcolo è una **funzione**, eseguita in risposta a **trigger** come eventi o richieste HTTP.
+:::tip[Definition]
+**FaaS** is a serverless platform where the unit of computation is a **function**, executed in response to **triggers** such as events or HTTP requests.
 :::
 
-Il modo più naturale di usare il serverless è fornire un pezzo di codice da eseguire. Le funzioni girano per **tempo limitato** (al massimo minuti) e **non mantengono stato persistente**, perché possono essere riavviate in qualsiasi momento. Questi due vincoli rendono facile al provider mantenerle e scalarle. Se serve uno stato, si usano servizi esterni.
+The most natural way to use serverless is to provide a **piece of code (function)** to be executed. Functions run for a **limited time** (at most minutes) and have **no persistent state**, because they may be restarted at any time. These two constraints make it easy for the provider to run and scale them. If state is needed, external services are used.
 
-Serverless e FaaS sono spesso usati come sinonimi, ma il primo è più ampio: FaaS ne è la forma più diffusa.
+Serverless and FaaS are often used **interchangeably**, but serverless is broader: **FaaS is the most popular type** of serverless computing.
 
-Un'altra definizione citata nell'articolo è quella di Paul Johnston, secondo cui una soluzione è serverless se **non costa nulla quando nessuno la usa**, esclusi i dati salvati.
+The paper also quotes **Paul Johnston** (co-founder of ServerlessDays): a solution is serverless if it **costs nothing when no one is using it**, excluding stored data.
 
-## Confronto con gli Altri Modelli
+## Comparison with Other Models
 
-Serverless può essere visto come un'**evoluzione di PaaS**: toglie all'utente il controllo sull'hosting, in cambio di scaling più semplice e fatturazione più attraente.
+Serverless can be seen as an **evolution of PaaS**: it takes away the user's control over hosting, in exchange for simpler scaling and more attractive billing.
 
-| | IaaS | PaaS (1ª gen.) | FaaS | BaaS/SaaS |
+| | IaaS | 1st Gen PaaS | FaaS | BaaS/SaaS |
 | --- | --- | --- | --- | --- |
-| **Competenze richieste** | Alte | Medie | Basse | Basse |
-| **Controllo** | Alto | Medio | Basso | Molto basso |
-| **Scaling** | Regole da costruire e tarare | Regole da costruire e tarare | Automatico, fino a zero | Nascosto |
-| **Unità di lavoro** | VM, rete, storage | Codice impacchettato, in esecuzione come servizio | Una esecuzione di funzione | Estensioni dell'app |
-| **Granularità di fatturazione** | Da minuti ad anni | Da minuti ad anni | Centinaia di ms | Mesi, per utenti |
+| **Expertise required** | High | Medium | Low | Low |
+| **Developer control / customization** | High | Medium | Low | Very low |
+| **Scaling / cost** | High expertise to build and tune auto-scaling rules | High expertise to build and tune auto-scaling rules | Auto-scaling to the requested load, pay only when running (**scale to zero**) | Hidden from users, limits based on pricing and QoS |
+| **Unit of work deployed** | Low-level infrastructure building blocks (VMs, network, storage) | Packaged code deployed and running as a service | **One function execution** | App-specific extensions |
+| **Granularity of billing** | Minutes to hours per resource, years for discounts | Minutes to hours per resource, years for discounts | **Hundreds of milliseconds** of execution time | Subscription by number of users, billed in months |
 
-:::caution[Serverless non è una quota gratuita]
-Una quota mensile gratuita è un'altra cosa: viene conteggiata anche se l'applicazione è ferma. Serverless significa che se il codice non gira non paghi nulla.
+:::caution[Serverless is not a free quota]
+A **free monthly usage quota** is something else: it is counted even if the application is not used (e.g. Google App Engine Standard priced in "instance hours"). Serverless means that if the code is not running, you pay nothing.
 :::
 
-**BaaS** (*Backend as a Service*), o MBaaS per il mobile, offre funzioni di backend pronte, come le notifiche push. Ha somiglianze con il serverless, ma il codice dell'utente resta legato a quel dominio applicativo.
+**BaaS** (*Backend as a Service*), or MBaaS for mobile, offers ready-made backend functions, such as push notifications. It is similar to serverless, but user code was typically limited to that application domain (e.g. mobile use cases).
 
-## Architettura di una FaaS
+## FaaS Architecture
 
-Il cuore di una FaaS è un **sistema di elaborazione di eventi**:
+The core of a FaaS platform is an **event processing system**:
 
 ![](../../../../assets/cloud-computing/faas-architettura.png)
 
-Il flusso di un evento è questo:
+The flow of an event:
 
-1. Un evento arriva da UI, API gateway o sorgenti cloud.
-2. La piattaforma lo **valida**: autenticazione, autorizzazione e limiti di risorse.
-3. L'evento finisce in coda.
-4. Il **dispatcher** lo assegna a un **worker**, che alloca un container, vi copia il codice della funzione e la esegue.
-5. La piattaforma raccoglie i log, rende disponibile la risposta e ferma e dealloca le istanze inattive.
+1. An event arrives from a UI, an API gateway or cloud event sources.
+2. The platform **validates** it: authentication, authorization and resource limits.
+3. The event is put in a **queue**.
+4. The **dispatcher** assigns it to a **worker**, which allocates a container, copies the function code into it and runs it.
+5. The platform collects logs, makes the response available, and stops and deallocates idle instances.
 
-Per isolare le funzioni di utenti diversi si usano di solito **container**.
+**Containers** are usually used to isolate functions of different users.
 
 ### Cold Start
 
-Creare, avviare e distruggere un container per ogni invocazione è costoso e introduce una latenza: è il **cold start problem**. Si mitiga con:
+Creating, starting and destroying a container for every invocation is expensive and adds latency: this is the **cold start problem**. It is mitigated with:
 
-- **Container warm**: già istanziati, riutilizzati per lo stesso utente.
-- **Stem cell containers**: un pool di container già avviati ma non ancora assegnati.
-- **Cache** delle librerie più usate sui worker, perché scaricarle allunga l'avvio.
+- **Warm containers**: already instantiated, reused for the same user.
+- **Stem cell containers**: a pool of containers already started but not yet assigned.
+- **Caching** of commonly used libraries on workers, since downloading them slows down startup.
 
-C'è una tensione di fondo: **scalare a zero causa i cold start**.
+There is an underlying tension: **scaling to zero causes cold starts**.
 
-### Risorse e Modello di Programmazione
+### Resources and Programming Model
 
-L'unica risorsa di solito configurabile è la **memoria**: CPU e altre risorse vengono assegnate in proporzione.
+The only resource usually configurable is **memory**: CPU and other resources are allocated proportionally.
 
-Il modello si basa su due primitive:
+The model is based on two primitives:
 
-| Primitiva | Significato |
+| Primitive | Meaning |
 | --- | --- |
-| **Action** | Funzione **stateless** che esegue codice arbitrario. Invocabile in modo sincrono o asincrono |
-| **Trigger** | Classe di eventi da varie sorgenti |
+| **Action** | A **stateless function** that runs arbitrary code. It can be invoked synchronously or asynchronously |
+| **Trigger** | A class of events from various sources |
 
-Un evento può attivare più funzioni in parallelo, e il risultato di una funzione può attivarne un'altra in sequenza. Una funzione tipica riceve un dizionario (JSON), un oggetto *context* con l'ambiente di esecuzione, e restituisce un dizionario.
+An event can trigger several functions in parallel, and the result of a function can trigger another in sequence. A typical function receives a dictionary (JSON) and a *context* object with the execution environment, and returns a dictionary.
 
 ```javascript
 function main(params, context) {
@@ -103,115 +103,115 @@ function main(params, context) {
 }
 ```
 
-Le funzioni dipendono da un **ecosistema** di servizi del provider, come storage e machine learning. La funzione scala, ma lo storage sottostante deve garantire la propria affidabilità.
+Functions depend on an **ecosystem** of provider services, such as storage and machine learning. The function scales, but the underlying storage must ensure its own reliability and QoS.
 
-## Quando Conviene
+## When It Pays Off
 
-Il vantaggio economico è massimo per i **carichi bursty**: l'elasticità è delegata alla piattaforma e, soprattutto, quando il sistema è fermo il costo è zero.
+The economic advantage is greatest for **bursty workloads**: elasticity is delegated to the platform and, above all, when the system is idle the cost is **zero**.
 
-### I Casi d'Uso
+### Use Cases
 
-| Caso | Esempio | Idea |
+| Use case | Example | Idea |
 | --- | --- | --- |
-| **Elaborazione di eventi** | Netflix: il caricamento di un video su S3 attiva funzioni che lo dividono e lo transcodificano in parallelo | Funzioni stateless e **idempotenti**: in caso di errore si rieseguono senza effetti collaterali |
-| **Composizione di API** | App mobile che chiama geolocalizzazione, meteo e traduzione | Una funzione fa da aggregatore, riducendo il codice client |
-| **Analisi in stile Map-Reduce** | PyWren su AWS Lambda | Carichi altamente paralleli, usando S3 per lo storage |
-| **Servizi multi-tenant** | A Cloud Guru: ogni utente in un contesto di sicurezza proprio | Isolamento e scalabilità con poco codice |
+| **Event processing** | Netflix: uploading a video to S3 triggers functions that split and transcode it in parallel | Stateless, **idempotent** functions: on failure they can be re-executed without side effects |
+| **API composition** | A mobile app that calls geolocation, weather and translation APIs | A function acts as aggregator, reducing client code |
+| **Map-Reduce style analytics** | PyWren on AWS Lambda | Highly parallel workloads, using S3 for storage |
+| **Multi-tenant cloud services** | A Cloud Guru: each user in its own security context | Isolation and scalability with little code |
 
-:::caution[L'anti-pattern]
-Una funzione che chiama un'API dopo l'altra aspettando ogni risposta **paga il tempo di attesa**, stando ferma sull'I/O: è un **anti-pattern serverless**. La soluzione è incapsulare ogni chiamata in una funzione e **concatenarle in sequenza**, una composizione che si comporta come una funzione unica. Strumenti come AWS Step Functions gestiscono le orchestrazioni complesse.
+:::caution[The serverless anti-pattern]
+A function that calls one API after another, waiting for each response, **pays for the waiting time** while idle on I/O: this is a **serverless anti-pattern**. The fix is to wrap each call in a function and **chain them in a sequence**, a composition that behaves like a single function. Tools like AWS Step Functions handle complex orchestrations, possibly at additional cost.
 :::
 
-Se un carico non è divisibile in piccole unità, sono meglio sistemi batch. Se tollera qualche riavvio, le [spot instance](../04-amazon-aws/#i-modelli-di-prezzo) sono una buona alternativa.
+If a workload cannot be split into small units, batch systems are better. If it tolerates restarts, [spot instances](../04-amazon-aws/#ec2-pricing) are a good alternative.
 
-## Sfide e Limiti
+## Challenges and Limits
 
-- **Modelli di programmazione e strumenti**: le funzioni sono tante e brevi, quindi debugging e individuazione dei colli di bottiglia sono difficili. Gli strumenti tradizionali che richiedono l'accesso ai server non si applicano. Servono semantiche di recupero (*at-least-once*, *at-most-once*) e supporto a refactoring e rollback.
-- **Mancanza di standard e vendor lock-in**: l'area è nuova e in rapido cambiamento. Nel frattempo si usano framework compatibili con più provider.
+- **Programming models and tooling**: functions are many and short, so debugging and finding bottlenecks is hard. Traditional tools that need server access do not apply. Recovery semantics (*at-least-once*, *at-most-once*) and support for refactoring and rollback are needed.
+- **Lack of standards and vendor lock-in**: the area is new and changing quickly. Meanwhile, frameworks compatible with multiple providers are used.
 
-## Opportunità di Ricerca
+## Research Opportunities
 
-- **A livello di sistema**: ridurre i cold start mantenendo lo scaling a zero, e capire se i container siano l'astrazione giusta, o se servano ad esempio gli **unikernel**.
-- **Codice legacy**: scomporlo automaticamente in unità più piccole.
-- **Serverless stateful**: capire se sia possibile senza perdere scalabilità e tolleranza ai guasti.
-- **SLA**: difficili da garantire, perché l'applicazione dipende da servizi esterni alla piattaforma.
-- **Serverless all'edge**: gli eventi nascono spesso ai margini della rete, con IoT e dispositivi mobili. Lì il costo può essere definito in modo diverso, ad esempio con l'energia più importante della velocità.
+- **System level**: reducing cold starts while keeping scale to zero, and asking whether containers are the right abstraction, or whether e.g. **unikernels** are needed.
+- **Legacy code**: automatically splitting it into smaller units.
+- **Stateful serverless**: whether it is possible without losing scalability and fault tolerance.
+- **SLAs**: hard to guarantee, because the application depends on services outside the platform.
+- **Serverless at the edge**: events often originate at the edge of the network, with IoT and mobile devices. There, cost may be defined differently, e.g. energy matters more than speed.
 
-## Autotest
+## Self-Test
 
-**1.** Definisci serverless computing e indica le due caratteristiche chiave.
+**1.** Define serverless computing and give its two key features.
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-È una piattaforma che nasconde i server agli sviluppatori ed esegue il codice on demand, scalato automaticamente e fatturato solo per il tempo di esecuzione. Le caratteristiche sono il **costo** (pay-as-you-go, scaling to zero) e l'**elasticità** automatica.
+A platform that hides server usage from developers and runs code on demand, automatically scaled and billed only for the time the code is running. The key features are **cost** (pay-as-you-go, scaling to zero) and automatic **elasticity**.
 
 </details>
 
-**2.** Che differenza c'è fra serverless e FaaS?
+**2.** What is the difference between serverless and FaaS?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Il serverless è il paradigma generale. La FaaS ne è la forma più diffusa, con la funzione come unità di calcolo.
+Serverless is the general paradigm. FaaS is its most popular type, with the function as the unit of computation.
 
 </details>
 
-**3.** Perché le funzioni FaaS sono stateless e di breve durata?
+**3.** Why are FaaS functions stateless and short-lived?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Perché così il provider può allocare i server quando servono, fermarli alla fine e riavviare una funzione in qualsiasi momento: la piattaforma resta facile da scalare.
+So that the provider can allocate servers when needed, stop them at the end and restart a function at any time: the platform stays easy to scale.
 
 </details>
 
-**4.** Cos'è il cold start e come si mitiga?
+**4.** What is the cold start problem, and how is it mitigated?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-È la latenza dovuta alla creazione di un container per una nuova invocazione. Si mitiga con container warm, pool di stem cell container e cache delle librerie.
+The latency of creating a container for a new invocation. It is mitigated with warm containers, pools of stem cell containers and library caching.
 
 </details>
 
-**5.** Perché una funzione che orchestra chiamate sequenziali è un anti-pattern?
+**5.** Why is a function that orchestrates sequential API calls an anti-pattern?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Perché si paga il tempo in cui la funzione attende l'I/O. Meglio una funzione per chiamata, concatenate in sequenza.
+Because you pay for the time the function waits on I/O. Better one function per call, chained in a sequence.
 
 </details>
 
-**6.** In cosa FaaS differisce dalla PaaS di prima generazione?
+**6.** How does FaaS differ from 1st generation PaaS?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Toglie all'utente il controllo sull'hosting. Scala automaticamente fino a zero, fattura al centinaio di millisecondi e non richiede regole di autoscaling.
+It removes the user's control over hosting. It scales automatically down to zero, bills in hundreds of milliseconds and needs no auto-scaling rules.
 
 </details>
 
-**7.** Per quali carichi il serverless è più conveniente?
+**7.** For which workloads is serverless most convenient?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Per i carichi **bursty** e intermittenti, perché nei periodi fermi il costo è zero. Se la domanda è sostenuta possono convenire VM riservate o cluster.
+**Bursty**, intermittent workloads, because idle periods cost nothing. With sustained demand, reserved VMs or clusters may be cheaper.
 
 </details>
 
-## Glossario
+## Glossary
 
-- **Serverless** - Modello in cui i server sono nascosti e si paga solo l'esecuzione.
-- **FaaS** - Function as a Service, serverless con la funzione come unità di calcolo.
-- **BaaS** - Backend as a Service, funzioni di backend pronte all'uso.
-- **Scaling to zero** - Nessuna risorsa attiva, e nessun costo, quando non c'è lavoro.
-- **Action / Trigger** - Funzione stateless ed evento che la attiva.
-- **Cold start** - Latenza di avvio di una funzione senza container pronto.
-- **Warm container** - Container già avviato e riutilizzabile.
-- **Stem cell container** - Container preavviato non ancora assegnato.
-- **Idempotente** - Eseguibile più volte con lo stesso effetto.
-- **Bursty** - Carico fatto di picchi brevi e irregolari.
-- **Unikernel** - Immagine minima con un'applicazione e il solo sistema necessario.
+- **Serverless** - Model where servers are hidden and only execution is billed.
+- **FaaS** - Function as a Service, serverless with functions as the unit of computation.
+- **BaaS** - Backend as a Service, ready-made backend functions.
+- **Scaling to zero** - No active resources, and no cost, when there is no work.
+- **Action / Trigger** - Stateless function and the event class that activates it.
+- **Cold start** - Startup latency of a function without a ready container.
+- **Warm container** - Already started, reusable container.
+- **Stem cell container** - Pre-started container not yet assigned.
+- **Idempotent** - Can be executed several times with the same effect.
+- **Bursty** - Workload made of short, irregular peaks.
+- **Unikernel** - Minimal image with an application and only the OS parts it needs.

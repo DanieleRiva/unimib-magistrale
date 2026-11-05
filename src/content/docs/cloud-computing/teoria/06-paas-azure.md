@@ -1,197 +1,252 @@
 ---
-title: Deep Dive su PaaS e Azure
-description: Il cambio di paradigma introdotto da PaaS, web role e worker role, auto scaling, throttling, storage in Azure e vendor lock-in.
+title: Deep Dive into PaaS and Azure
+description: The shift introduced by PaaS, web roles and worker roles, Azure Auto Scaling Application Block, throttling, Azure storage and PaaS lock-in.
 sidebar:
   order: 6
 ---
 
-## PaaS: Ripasso
+## Platform as a Service: Recap
 
-Una **PaaS** è un ambiente integrato per sviluppare, eseguire e gestire applicazioni cloud, orientato a sviluppo e operations. Offre strumenti di progettazione, middleware, API e servizi chiave (storage, cache, posta), e supporta un insieme di linguaggi.
+**PaaS** is an **integrated environment** that supports the **development, running and management** of cloud-based applications:
+
+- Oriented to **software development and operations**, with proper design tools, middleware and APIs.
+- Offers **key services** (data storage, caching, mail).
+- Typically supports a **set of programming languages** (Python, Java, C#, Scala).
+- The user deploys applications onto the cloud infrastructure, and **does not manage or control the underlying cloud**, but has control over the deployed applications and possibly the hosting environment configuration.
+
+The **main services** belonging to PaaS are:
+
+- Application **development and execution** services.
+- Integrated **lifecycle** services.
+- **Workload management** services.
+- **Data management** services.
+
+The enabling technique is the **runtime environment**, and the provided service is the **programming IDE** (see [Introduction](../01-introduzione-al-cloud/#paas---platform-as-a-service)).
 
 ![](../../../../assets/cloud-computing/paas-elementi.png)
 
-:::tip[In una riga]
-**PaaS = piattaforma di sviluppo ed esecuzione + servizi**. I servizi principali riguardano lo sviluppo e l'esecuzione, il ciclo di vita, la gestione del carico e la gestione dei dati.
+:::tip[In one line]
+**PaaS = Development-execution platform + services.** It sits between IaaS (below) and SaaS (above): operating system, runtime, database, framework and life-cycle services.
 :::
 
-## Il Cambio di Paradigma
+## The Shift Introduced by PaaS
 
-Creare un ambiente di sviluppo tradizionale significa procurarsi i server, installare e configurare sistemi operativi, runtime e database, creare un repository, spostare il codice, poi installare, testare ed eseguire. La difficoltà vera è costruire una **replica fedele dell'ambiente di produzione**.
+**Traditional development issues.** Creating a traditional development environment means:
 
-PaaS cambia il quadro:
+- Acquiring servers.
+- Installing and configuring operating systems, runtime environments and databases.
+- Creating and configuring a source control repository (configuration management) like Git.
+- Moving or copying existing code.
+- Deploying, testing and running the code.
 
-- Gli sviluppatori non si occupano di installazione e gestione dei server, ma di sviluppo, versioni e configurazione.
-- Sono supportati da **servizi di sviluppo** (build, test, repository) e **servizi di runtime** (sandbox per eseguire e scalare).
-- Possono testare picchi di carico lasciando che l'applicazione acquisisca risorse da sola.
-- Il ciclo di vita diventa **agile**, con sviluppo e deployment continui. Il deployment è più rapido e sicuro, lo stato del software è più visibile e sviluppatori e tester lavorano sulla stessa applicazione e runtime degli operatori.
+The **challenge** is building a **proper replica of the operation environment**.
 
-L'obiettivo è un flusso di lavoro **ripetibile, affidabile, prevedibile e veloce**.
+**The shift introduced by PaaS:**
 
-## Azure: Web Role e Worker Role
+- Developers **do not need to care about installation, configuration and operation** of servers, runtime and databases. They focus on development and on managing **versions and configuration** of the application.
+- They are supported by:
+    - **Development services**: build, test, software repositories.
+    - **Run-time services**: containers/sandboxes for running and scaling applications.
+- They can **test workload spikes** by letting the application **self-acquire new resources**, possibly released automatically when no longer needed. Different test workload patterns can be generated.
+- The application life-cycle can be made **"agile"**, with **continuous development and deployment**:
+    - Deployment is **faster and safer**.
+    - The state of software becomes **more visible** to the organization.
+    - Collaboration increases, even in a dispersed/global team.
+    - Developers and testers interact with the **same hosted application and runtime as the operators**.
 
-**Microsoft Azure** offre un vasto insieme di servizi: applicazioni (web e worker role), gestione dei dati (SQL Azure, Tables, Blobs), messaggistica (Queues, Service Bus), caching, networking, identità. L'ambiente è un PaaS gestito: le applicazioni girano in **sandbox isolate** e lo sviluppatore si occupa della logica, non dei server.
+:::tip[Goals]
+Make the workflow **repeatable, reliable, predictable and fast** (low cycle time).
+:::
+
+## Azure: Web Roles and Worker Roles
+
+**Azure App Service** provides a **fully managed PaaS environment** for deploying and running web applications. Applications execute inside **isolated sandboxes**, where developers focus on **application logic** rather than managing servers or operating systems. There are two execution roles.
 
 | | Web Role | Worker Role |
 | --- | --- | --- |
-| **Ruolo** | Tier **frontend** | Tier **backend** |
-| **Funzione** | Logica verso l'utente, richieste HTTP(S) | Lavori asincroni o lunghi, slegati dall'interazione diretta |
-| **Ambiente** | IIS gestito | VM gestita |
-| **Riceve il lavoro da** | Load balancer | Coda o service bus |
-| **Esempi** | Sito web, API | Trasformazione dati, calcolo batch, integrazione |
-| **Scaling** | Dinamico (CPU, numero di richieste) | Indipendente dai web role |
-| **Stato** | **Stateless**, stato esterno | **Stateless**, stato esterno |
+| **Tier** | **Frontend** | **Backend** |
+| **Purpose** | User-facing logic, processes **HTTP(S) requests** and exposes HTTP endpoints | **Asynchronous or long-running** workloads, decoupled from direct user interaction |
+| **Environment** | A **managed IIS** (Internet Information Services) environment, preconfigured by Azure | An isolated, managed VM provisioned and monitored by Azure |
+| **Gets work from** | Azure's **load balancer** | A **queue or service bus**, with tasks generated by Web Roles or other services |
+| **Examples** | Web applications in ASP.NET, Java, Python, PHP, Node.js | Data transformation, batch computation, integration tasks |
+| **Scaling** | Scaled out dynamically on demand (CPU usage, request rate) | **Independently of Web Roles** |
+| **State** | **Stateless by design**: state is externalized (Azure Storage, Redis, SQL Database) | **Stateless**: state in external storage (Blob, Table, SQL Database) |
+
+:::tip[In essence]
+- The **Web Role** is the **frontend tier** of a PaaS application: an automatically managed web-hosting environment that hides infrastructure complexity while keeping scalability and resilience.
+- The **Worker Role** is the **backend execution tier**: it processes queued or event-driven workloads while Azure manages infrastructure, scaling and availability.
+:::
 
 ![](../../../../assets/cloud-computing/azure-ruoli.png)
 
-Nell'esempio, il load balancer distribuisce il traffico tra due istanze web, che inseriscono lavori in una **coda**. Da lì li prelevano le istanze di backend e il generatore di report. **La coda disaccoppia il backend dal resto**: i due lati possono scalare e guastarsi in modo indipendente.
+In the example, a **load balancer** distributes traffic between web role instances (MyWebApp), which put tasks in a **queue**. Backend instances (MyBackEnd) and a report generator take them from there. Communication between web and worker roles is typically handled through a **message queue** or a **service bus (pub-sub)**. **The queue decouples the back-end from the rest**: the two sides can scale and fail independently.
 
-Entrambi i ruoli girano su VM che **non sono esposte all'utente**. Sistema operativo, rete, patch, scaling, recovery e bilanciamento spettano ad Azure. Quello che installi è il **role package**: codice, configurazione, sicurezza e attività di avvio. Il *fabric controller* lo colloca in una VM.
+### More on Roles
 
-:::caution[Perché i ruoli devono essere stateless]
-La VM può essere riciclata o sostituita dalla piattaforma in qualsiasi momento, per aggiornamenti o scaling. Qualunque cosa salvata localmente può sparire, quindi i dati persistenti vanno nello storage esterno. È lo stesso ragionamento delle [istanze EC2 effimere](../04-amazon-aws/#risorse-effimere-e-persistenti).
+- Both roles run inside **Azure Cloud Services**, composed of one or more VMs that are **not directly exposed to the user**: the platform abstracts and orchestrates them as PaaS components.
+- You do not manage the VM's OS, networking or runtime: **Azure takes care of deployment, patching, scaling, fault recovery and load balancing**.
+- What you deploy is your **role package**: an application bundle with your **code, configuration, security and startup tasks**. Azure's **fabric controller** places it into a VM instance.
+
+:::caution[Why roles must be stateless]
+The VM **can be recycled or replaced by the platform at any time** (for updates or scaling), which is why roles must be **stateless** and store persistent data **externally**. It is the same reasoning as [ephemeral EC2 instances](../04-amazon-aws/#ephemeral-resources).
 :::
 
-:::caution[Slide 11-13 e 14: dove stanno i ruoli?]
-Le slide 11-13 collocano i ruoli in *Azure App Service*, la slide 14 in *Azure Cloud Services*. La seconda è quella corretta: web e worker role sono il modello di **Cloud Services**, un servizio più vecchio che Microsoft sta dismettendo. Per l'esame conta il **concetto** di ruolo, cioè la separazione tra frontend e backend stateless.
+:::caution[Slides 12-14 vs 15: where do roles live?]
+Slides 12-14 place the roles in *Azure App Service*, slide 15 in *Azure Cloud Services*. The second is correct: web and worker roles are the model of **Cloud Services**, an older Azure service. For the exam, what matters is the **concept** of role: a stateless frontend and backend, separated by a queue.
 :::
 
-## Auto Scaling e Throttling
+## Auto Scaling and Throttling
 
-### Auto Scaling Application Block
+### Azure Auto Scaling Application Block
 
-Il componente regola automaticamente il numero di istanze secondo delle policy.
+A component that enables **automatic adjustment of deployed instances** based on scaling policies: it **scales out** (adds instances) or **scales in** (removes instances) in response to workload changes, for performance stability and cost efficiency.
 
-| Regole | Scopo |
+| Scaling rules | Purpose |
 | --- | --- |
-| **Constraint rules** | Limiti minimi e massimi al numero di istanze di un ruolo |
-| **Reactive rules** | Azioni di scaling in risposta alle metriche (CPU, lunghezza della coda, richieste) |
+| **Constraint rules** | Lower or upper **bounds** on the number of instances of a role |
+| **Reactive rules** | Dynamically trigger scaling actions in response to **monitored metrics** (CPU usage, queue length, request rate) |
 
-Meccanismi collegati:
+Related mechanisms:
 
-- **Scaling Groups**: più ruoli condividono logica e soglie.
-- **Throttling Actions**: limitano temporaneamente il carico quando lo scaling non tiene il passo.
-- **Stabilizer**: è il cooldown, che impone un tempo minimo tra azioni, tipicamente **20 minuti**, per evitare oscillazioni.
+- **Scaling Groups**: multiple roles share common scaling logic and thresholds.
+- **Throttling Actions**: temporarily limit workload intensity **when scaling cannot keep up**.
+- **Stabilizer (Cooldown Period)**: prevents frequent up/down oscillations by enforcing a minimum time between scaling actions, typically **20 minutes**.
 
 ### Throttling
 
-Il **throttling** limita la velocità con cui clienti o carichi consumano risorse quando il sistema è sotto stress. Mantiene il sistema stabile e previene il sovraccarico. I concetti chiave sono:
+:::tip[Definition]
+**Throttling** is a **protective mechanism** that **limits the rate** at which clients or workloads can consume resources **when system capacity is under stress**. It keeps the system **stable** and serving legitimate requests, preventing overload or resource exhaustion.
+:::
 
-- **Rate limit e quote**: numero massimo di operazioni per finestra di tempo.
-- **Rifiuto o ritardo**: oltre il limite, le richieste vengono rifiutate (ad esempio **HTTP 429**) o accodate.
-- **Graceful degradation**: le funzioni non essenziali vengono rallentate o disabilitate per preservare quelle centrali.
-- **Combinazione con l'auto scaling**: il throttling fa da cuscinetto finché non arriva la nuova capacità.
-- **Limiti per tenant**: impediscono a un utente di monopolizzare le risorse condivise.
+Key concepts:
 
-Ad esempio, un web role sovraccarico può ammettere solo 100 utenti alla volta, migliorando le prestazioni ed evitando il crash nelle ore di punta.
+- **Rate limits / quotas**: a maximum number of operations per time window (requests per second, calls per minute).
+- **Rejecting or delaying excess requests**: once limits are hit, requests are refused (e.g. **HTTP 429**) or queued/delayed.
+- **Graceful degradation**: nonessential operations are slowed or disabled to **preserve core functionality**.
+- **Combining with auto-scaling**: throttling acts as a **buffer until scaling completes**. Once new capacity is available, normal rates resume.
+- **Per-tenant / per-user limits**: in a multi-tenant system, throttling prevents one user from **monopolizing** shared resources.
 
-## Lo Storage in Azure
+Example of rejecting: an overloaded web role may throttle its users by only allowing **100 at a time**. This improves performance and can prevent the system from crashing during busy times.
 
-| Tipo | Cos'è | Note |
+## Persistent Data and Azure Storage
+
+| Type | What it is | Notes |
 | --- | --- | --- |
-| **Blob** | File con metadati | Distribuiti su più server, replicati almeno 3 volte. Un solo livello di cartelle: i **container** |
-| **Table** | NoSQL chiave-valore, schema flessibile | Non relazionale. Fino a 255 proprietà e 1 MB per entità. Fortemente consistente |
-| **Queue** | Messaggi | Memorizzazione e consegna affidabile |
-| **SQL Azure** | SQL Server nel cloud | Nessuna amministrazione, 99,99% di disponibilità, modello familiare |
-| **Cosmos DB** | Database multi-modello, senza schema | Chiave-valore, grafo, colonne, documenti. Latenza sotto i 10 ms al 99° percentile |
+| **Blobs** | Named files with **metadata** | Binary Large Objects. A **Distributed File Service**: each blob is distributed among multiple servers and **replicated at least 3 times**. **Only one level of folders**, called **containers** |
+| **Tables** | Lightly structured storage: entities with properties | **Not an RDBMS**, no relationships. **NoSQL key-value** with flexible schema. Up to 255 properties and 1 MB per entity. **Strongly consistent** |
+| **Queues** | Messages | **Reliable storage and delivery** of messages |
+| **SQL Azure** | **SQL Server in the cloud** | No administrative overhead, shared or dedicated hardware, **99.99% availability**, automatic patching and backups, pay-as-you-grow, familiar development model |
+| **Cosmos DB** | Fully managed, schema-free document database | **Multi-model NoSQL**: key-value, graph, column-family, document. Automatic indexing, **under 10 ms latency** for reads and writes at the 99th percentile, worldwide |
 
 ![](../../../../assets/cloud-computing/azure-blob.png)
 
-La struttura di un blob è **account → container → blob → blocchi o pagine**, con URL del tipo `http://<account>.blob.core.windows.net/<container>/<blobname>`.
+A blob's structure is **account → container → blob → blocks or pages**, with URLs like `http://<account>.blob.core.windows.net/<container>/<blobname>`.
 
-Nelle **Table**, ogni entità ha tre proprietà obbligatorie: **PartitionKey** e **RowKey**, le uniche indicizzate, che insieme identificano l'entità e ne definiscono l'ordinamento, e il **Timestamp**. La stessa RowKey può comparire in PartitionKey diverse.
+In **Tables**, every entity has three mandatory properties: **PartitionKey** and **RowKey**, the **only indexed properties**, which together **uniquely identify** the entity and define the **sort order**, and the **Timestamp**. The same RowKey can be used in different PartitionKeys. *Strongly consistent* means every reader sees the latest version of the data.
 
-:::caution[Slide 25]
-La slide scrive *CosmoDB*: il nome corretto è **Cosmos DB**.
+:::caution[Slide 26]
+The slide writes *CosmoDB*: the correct name is **Cosmos DB**.
 :::
 
-## Valore e Rischi di PaaS
+## Remarks: Value and Issues of PaaS
 
-**Valore di business**:
+**Business value**:
 
-- **Meno costi**: server, storage, rete, manutenzione della piattaforma, personale di supporto.
-- **Più velocità e agilità**: arrivo rapido sul mercato senza grandi investimenti, con la possibilità di espandersi quando serve.
+- **Reducing costs**: server, storage and network, maintenance of the platform, support personnel.
+- **Improving speed, flexibility and agility**: fast time-to-market without huge upfront investment and planning, and support for expanding the investment as needed.
 
-**Rischi**: usare strumenti non supportati può essere un problema, e soprattutto c'è il **vendor lock-in**, la difficoltà di lasciare il provider. Si può limitare in tre modi:
+**Issues**:
 
-1. Usare cloud che offrono framework di programmazione ed esecuzione standard.
-2. Sfruttare i tentativi di standardizzare le API, come **Cloud Foundry**.
-3. Adottare approcci di sviluppo e deployment **multi-cloud**.
+- Adopting **tools not supported** by the PaaS can be a problem.
+- The **PaaS lock-in problem**: it is hard to leave the provider. Ways to limit it:
+    1. Use only clouds that offer **standard programming and execution frameworks**.
+    2. Rely on attempts by PaaS providers to **standardize APIs** (see **Cloud Foundry**).
+    3. Develop approaches that support **multi-cloud** development, deployment and operation.
 
-## Autotest
+## Self-Test
 
-**1.** Che differenza c'è tra web role e worker role?
+**1.** What is the difference between a web role and a worker role?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Il **web role** è il frontend ed espone endpoint HTTP dietro al load balancer. Il **worker role** è il backend ed esegue lavori asincroni, di solito prelevati da una coda.
+The **web role** is the frontend tier: it runs in managed IIS, processes HTTP(S) requests and sits behind the load balancer. The **worker role** is the backend tier: it runs asynchronous or long-running workloads, usually taken from a queue or service bus.
 
 </details>
 
-**2.** Perché tra web role e worker role si mette una coda?
+**2.** Why is there a queue between web roles and worker roles?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Per **disaccoppiarli**: i due livelli scalano in modo indipendente, e un picco o un guasto del backend non blocca il frontend.
+To **decouple** them: the two tiers scale independently, and a spike or failure in the backend does not block the frontend.
 
 </details>
 
-**3.** Perché i ruoli devono essere stateless?
+**3.** Why must roles be stateless?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Perché la piattaforma può riciclare o sostituire le VM in qualsiasi momento. Lo stato va nello storage esterno.
+Because the platform can recycle or replace the VM at any time, for updates or scaling. Persistent data goes to external storage.
 
 </details>
 
-**4.** Che differenza c'è tra auto scaling e throttling?
+**4.** What is the difference between auto scaling and throttling?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-L'**auto scaling** aumenta la capacità. Il **throttling** limita la domanda quando la capacità non basta, facendo da cuscinetto finché non arrivano nuove risorse.
+**Auto scaling** increases capacity. **Throttling** limits demand when capacity is not enough, acting as a buffer until new capacity arrives.
 
 </details>
 
-**5.** Quale codice HTTP indica una richiesta respinta dal throttling?
+**5.** Which HTTP status code indicates a request rejected by throttling?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-429.
+429 (Too Many Requests).
 
 </details>
 
-**6.** Che cos'è il vendor lock-in e come si può limitare?
+**6.** What is PaaS lock-in, and how can it be limited?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-È la dipendenza da un provider, che rende costoso cambiarlo. Si limita con framework standard, API standardizzate come Cloud Foundry e approcci multi-cloud.
+The dependence on one provider, which makes leaving it hard. It is limited by using standard frameworks, standardized APIs such as Cloud Foundry, and multi-cloud approaches.
 
 </details>
 
-**7.** Quali sono le proprietà obbligatorie di un'entità in Azure Table?
+**7.** What are the mandatory properties of an Azure Table entity?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-PartitionKey, RowKey e Timestamp.
+PartitionKey, RowKey and Timestamp. PartitionKey and RowKey are the only indexed properties.
 
 </details>
 
-## Glossario
+**8.** What are the two types of scaling rules in the Azure Auto Scaling Application Block?
 
-- **Web Role** - Componente frontend di un'applicazione PaaS.
-- **Worker Role** - Componente backend per lavori asincroni.
-- **Role package** - Pacchetto con codice, configurazione e attività di avvio di un ruolo.
-- **Service Bus** - Messaggistica publish-subscribe di Azure.
-- **Constraint rule / Reactive rule** - Regole di limite e di reazione alle metriche.
-- **Stabilizer** - Cooldown nell'auto scaling di Azure.
-- **Throttling** - Limitazione del consumo di risorse sotto stress.
-- **Graceful degradation** - Riduzione controllata delle funzioni non essenziali.
-- **Vendor lock-in** - Dipendenza da un provider.
-- **Blob** - Oggetto binario di grandi dimensioni.
+<details>
+<summary>Solution</summary>
+
+Constraint rules (lower and upper bounds on instances) and reactive rules (scaling in response to metrics).
+
+</details>
+
+## Glossary
+
+- **Web Role** - Frontend tier of a PaaS application.
+- **Worker Role** - Backend tier for asynchronous workloads.
+- **Role package** - Bundle with code, configuration, security and startup tasks.
+- **Fabric controller** - Azure component that places role packages into VMs.
+- **Service Bus** - Azure publish-subscribe messaging.
+- **Constraint rule / Reactive rule** - Bound rules and metric-driven rules.
+- **Stabilizer** - Cooldown in Azure auto scaling.
+- **Throttling** - Limiting resource consumption under stress.
+- **Graceful degradation** - Slowing or disabling nonessential features.
+- **PaaS lock-in** - Dependence on a single provider.
+- **Blob** - Binary Large Object.

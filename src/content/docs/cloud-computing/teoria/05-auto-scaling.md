@@ -1,232 +1,294 @@
 ---
 title: Amazon Auto Scaling
-description: Architettura a livelli, load balancing, auto scaling group, CloudWatch, health check, trigger, policy, target tracking e cooldown.
+description: Layered architecture, load balancing, Auto Scaling groups, CloudWatch, health checks, triggers, policies, target tracking and cooldown.
 sidebar:
   order: 5
 ---
 
-## Dal Monolite all'Architettura a Livelli
+## From Monolith to Layered Architecture
 
-Nel **deployment monolitico** tradizionale, database, API e logica di business stanno su un unico server. Quando gli utenti crescono, la qualità del servizio peggiora, e l'unica strada è lo **scaling verticale**. Questo introduce un single point of failure e diventa antieconomico, perché il costo dell'hardware cresce in modo non lineare: un SSD da 16 TB costa più del doppio di uno da 8 TB.
+In **traditional monolithic deployments**, the application's database, API and business logic coexist on a **single physical or virtual server**. As the user base grows, the system's ability to maintain a consistent **QoS deteriorates**.
 
-Le architetture moderne separano i componenti in **livelli**:
+The only available strategy is **vertical scaling**: increasing the resources of a single machine (CPU, RAM, storage). This:
+
+- Introduces a **single point of failure**.
+- Quickly becomes **economically inefficient**, due to the **nonlinear growth of hardware costs**: a 16 TB SSD is more than twice as expensive as an 8 TB one.
+
+This limitation paved the way for cloud architectures, where scalability and resilience come from **distributed resources** rather than hardware upgrades.
+
+In modern architectures, applications are organized in **layers** that separate **stateless** components from **stateful** ones:
 
 ![](../../../../assets/cloud-computing/architettura-a-livelli.png)
 
 | | Stateless | Stateful |
 | --- | --- | --- |
-| **Esempi** | Web server, API | Database, storage persistente |
-| **Come scala** | **Orizzontalmente**, replicando le istanze | Richiede gestione specializzata per consistenza e durabilità |
-| **Vincolo tipico** | CPU | I/O e storage |
+| **Examples** | Web servers, APIs | Databases, persistent storage |
+| **How it scales** | **Horizontally**, by replicating instances across machines | Requires **specialized handling** to preserve data consistency and durability |
+| **Typical bottleneck** | **CPU-bound** | **I/O and storage** |
 
-:::tip[Da ricordare]
-Stateless e stateful vanno **progettati, installati e scalati in modo indipendente**.
+:::tip[Takeaway]
+Stateless and stateful workloads should be **designed, deployed and scaled independently**.
 :::
 
 ## Load Balancing
 
-In un sistema scalato orizzontalmente, il **load balancer** è il **punto di ingresso unico** per le richieste, che distribuisce tra le istanze. Ottimizza l'uso delle risorse, riduce il tempo di risposta e garantisce alta disponibilità.
+In horizontally scaled systems, a **load balancer** acts as the **single entry point** for all client requests, distributing traffic among multiple application instances. Its goal is to **optimize resource utilization, minimize response time and ensure high availability**.
 
-| Algoritmo | Come sceglie |
+| Algorithm | How it chooses |
 | --- | --- |
-| **Round Robin (RR)** | Inoltra ogni richiesta al nodo successivo, in sequenza |
-| **Least Used (LU)** | Sceglie il nodo con il carico minore |
+| **Round Robin (RR)** | Sequentially forwards each request to the **next available node** |
+| **Least Used (LU)** | Selects the node with the **lowest current load** |
 
-I load balancer moderni fanno anche **health check** e collaborano con gli altri servizi per adattare il numero di istanze attive. Abilitano quindi elasticità e resilienza.
+Modern cloud load balancers continuously perform **health checks** and cooperate with other services to dynamically adjust the number of active instances.
 
-## Auto Scaling Group
-
-Un'applicazione bilanciata mostra agli utenti un'unica interfaccia, ma dietro ha molte VM identiche. Gestirle a mano è scomodo. La soluzione è l'**Auto Scaling group**:
-
-:::tip[Definizione]
-Un **Auto Scaling group** è una collezione di istanze EC2 con le **stesse caratteristiche**, trattate come un unico gruppo logico per scaling e gestione. Ha un numero **minimo e massimo** di istanze.
+:::tip[Takeaway]
+Load balancing enables **elasticity and resilience**.
 :::
 
-Il gruppo può scalare il numero di istanze (**horizontal scaling**) oppure mantenerlo fisso per recuperare dai guasti (**fleet management**). Le istanze devono stare nella **stessa region**, ma possono appartenere a una o più **AZ**.
+## Auto Scaling Groups
+
+Usually multiple copies of a service run simultaneously. End users see **only one interface**, but behind it many **identical VMs** (EC2 instances) run, each handling a share of the requests. Managing groups of instances can be cumbersome: EC2 provides **Auto Scaling groups**, defined with a **minimum and maximum number** of identical instances, useful to control a fleet that handles a variable load.
+
+:::tip[Definition]
+An **Auto Scaling group** is a collection of EC2 instances that **share the same characteristics** (homogeneous VMs) and are treated as **one logical grouping** for scaling and management.
+:::
+
+Auto Scaling groups automatically:
+
+- **Scale** the number of instances (**horizontal scaling**), or
+- **Maintain a fixed number** of instances (failure recovery, **fleet management**).
+
+A group contains instances from the **same region**, possibly from **one or more Availability Zones**.
 
 ### Launch Configuration
 
-Ogni gruppo è associato a una **launch configuration**, che descrive le istanze con i parametri necessari a crearle. Ce n'è una sola alla volta. Se la cambi, solo le **nuove** istanze la usano, mentre le esistenti non vengono toccate. In fase di scale-in, Auto Scaling termina per prime le istanze con la configurazione più vecchia.
+Every Auto Scaling group is associated with a **launch configuration**, which **describes an instance** of the group with the parameters needed to create new instances.
 
-:::note[Complemento]
-AWS ha sostituito le launch configuration con i **launch template**, che svolgono lo stesso ruolo con più funzioni. All'esame vale il termine delle slide, ma se leggi la documentazione attuale troverai quest'ultimo.
+- Only **one** launch configuration can be attached to a group at a time.
+- A new or updated configuration can be introduced: **future instances** use it, **existing instances are not affected**.
+- When scaling down, Auto Scaling **first terminates instances with an older launch configuration**.
+
+:::note[Beyond the slides]
+AWS has since replaced launch configurations with **launch templates**, which play the same role with more features. For the exam use the slides' term, but current documentation uses the new one.
 :::
 
-## Il Servizio Auto Scaling
+## The Auto Scaling Service
 
-**Auto Scaling** è un web service che avvia o termina automaticamente istanze in base a tre fonti:
+**Auto Scaling** is a web service that **launches or terminates EC2 instances automatically** based on:
 
-1. **Policy** definite dall'utente, ad esempio "aggiungi un'istanza se la CPU media supera l'80% per dieci minuti".
-2. **Pianificazioni**, ad esempio "dimezza le istanze nel fine settimana".
-3. **Health check**.
+1. **User-defined policies**, e.g. "launch an additional instance whenever the average CPU usage exceeds 80% for ten minutes".
+2. **Schedules**, e.g. "terminate half of the instances over the weekend".
+3. **Health checks**.
 
-Garantisce che il numero di istanze **cresca** nei picchi, **cali** nei periodi di calma e **resti lo stesso** in caso di guasti.
+It guarantees that the number of running instances:
 
-### I Tre Servizi Coinvolti
+- **Increases seamlessly** during demand spikes.
+- **Decreases automatically** during demand lulls.
+- **Stays the same** in case of failures.
 
-| Servizio | Ruolo |
+### The Auto Scaling Ecosystem
+
+| Service | Role |
 | --- | --- |
-| **CloudWatch (CW)** | Monitora le istanze (carico CPU, I/O disco, I/O rete) |
-| **Elastic Load Balancer (ELB)** | Distribuisce il traffico, anche su più AZ. Fa health check periodici e smette di inviare traffico alle istanze malate |
-| **Auto Scaling** | Usa i dati di CloudWatch per aggiungere o togliere istanze, attuando una policy |
+| **CloudWatch (CW)** | Monitoring over EC2: CPU load average, disk I/O rate, network I/O rate |
+| **Elastic Load Balancer (ELB)** | Distributes traffic across EC2 instances, in one AZ or across several AZs of a region. Performs **periodic health checks** and **stops sending traffic to unhealthy instances**. Health information is collected by CloudWatch |
+| **Auto Scaling** | Uses CloudWatch data to **scale out** (add instances) and **scale in** (shut down instances) over an Auto Scaling group. Usually responds to triggers on CPU/memory utilization and latency, implementing a **policy** |
 
-### Il Ciclo di Auto Scaling
+### The Auto Scaling Loop
 
 ![](../../../../assets/cloud-computing/auto-scaling-loop.png)
 
-1. ELB e le istanze inviano le **metriche** a CloudWatch.
-2. Una metrica supera la soglia e scatta l'**allarme**.
-3. L'allarme attiva una **policy** che decide di scalare.
-4. Viene **lanciata** una nuova istanza dalla AMI.
-5. ELB esegue l'**health check** sulla nuova istanza.
-6. Se è sana, l'istanza entra nel gruppo e **riceve traffico**.
+1. ELB and the instances send **metrics** to CloudWatch.
+2. A metric crosses its threshold and the **alarm** fires.
+3. The alarm triggers a **policy** that decides to scale.
+4. A new instance is **launched** from the AMI.
+5. ELB runs a **health check** on the new instance.
+6. If healthy, the instance joins the group and **receives traffic**.
 
-## Health Check
+## Health Checks
 
-Un **health check** è un test periodico sullo stato di ogni istanza, che chiama un endpoint predefinito o usa una sonda di monitoraggio. Se un'istanza non risponde correttamente, Auto Scaling la **termina e la sostituisce**. Il gruppo risulta coerente, disponibile e **self-healing**, senza intervento manuale.
+:::tip[Definition]
+A **health check** is a **periodic test** of the operational status of each instance in an Auto Scaling group. It typically invokes a **predefined endpoint** or uses a built-in **monitoring probe** to verify that the instance responds correctly and within acceptable thresholds.
+:::
 
-## Trigger, Allarmi e Policy
+When an instance fails a health check, due to degraded performance or unresponsiveness, Auto Scaling **automatically terminates it and launches a replacement**. The group stays consistent, available and **self-healing**, without manual intervention.
 
-Un **trigger** definisce la condizione in cui si esegue un'azione di scaling, e combina due elementi:
+:::tip[Takeaway]
+Health checks implement an **autonomous feedback loop** that maintains reliability and fault tolerance.
+:::
 
-**CloudWatch Alarm**: osserva **una singola metrica** per valutare il superamento di una soglia. Per crearlo si specificano la metrica, la soglia e il numero di periodi di valutazione. Ha tre stati:
+## Triggers, Alarms and Policies
 
-| Stato | Significato |
+A **trigger** defines the condition under which an Auto Scaling action is executed. It combines two elements:
+
+- A **CloudWatch Alarm**, which monitors a chosen metric (CPU utilization, latency, network throughput) and detects when it crosses a threshold.
+- An **Auto Scaling Policy**, which specifies the **corrective action** (launch or terminate instances) when the alarm changes state.
+
+### CloudWatch Alarm
+
+An object that **watches over a single metric** and changes state depending on its value. When an alarm changes state, one or more actions are triggered. To create one, specify **the metric**, **the threshold values** and **the number of evaluation periods**.
+
+| State | Meaning |
 | --- | --- |
-| **OK** | La metrica è entro la soglia |
-| **ALARM** | La metrica è fuori dalla soglia |
-| **INSUFFICIENT_DATA** | La metrica non è disponibile o i dati non bastano |
+| **OK** | The metric is within the defined threshold |
+| **ALARM** | The metric is outside the defined threshold |
+| **INSUFFICIENT_DATA** | The metric is not available, or there is not enough data to set the state to OK |
 
-L'azione parte quando l'allarme **cambia stato e ci resta** per più periodi.
+An action is invoked when an alarm **changes state and remains in that state for several periods**.
 
-**Auto Scaling Policy**: specifica l'azione correttiva, cioè come e di quanto cambiare la capacità.
+### Auto Scaling Policy
 
-| Tipo di policy | Funzionamento |
+A policy defines the scaling action a group performs when an alarm changes state: **how and by how much** capacity changes, e.g. a fixed number of instances or a percentage.
+
+| Policy type | How it works |
 | --- | --- |
-| **Simple scaling** | Una regola e un aggiustamento fisso |
-| **Step scaling** | Più soglie, con azioni proporzionali all'entità dello sforamento |
-| **Target tracking** | Retroazione continua attorno a un valore obiettivo |
-| **Scheduled scaling** | Capacità modificata in base al tempo |
+| **Simple scaling** | Single rule and fixed adjustment |
+| **Step scaling** | Multiple thresholds with proportional actions |
+| **Target tracking scaling** | Continuous feedback around a target metric |
+| **Scheduled scaling** | Time-based capacity adjustments |
 
-## Gli Scenari
+:::tip[Takeaway]
+Policies encapsulate the **control rules** that translate monitoring signals into automated resource reconfiguration.
+:::
 
-**Fleet management**: mantiene la flotta in salute. Monitora le istanze, sostituisce quelle malate e bilancia il traffico tra le AZ.
+## Auto Scaling Scenarios
 
-**Scheduled scaling**: per carichi prevedibili. Si specificano data e ora, e capacità minima, massima e desiderata.
+**Fleet management** ensures that the instances are performing as designed. ELB and CW monitor the health of each instance, and if one terminates unexpectedly, the termination is detected and a replacement is launched. Three main functions:
 
-**Dynamic scaling**: per picchi imprevedibili. Si creano policy per salire e scendere, più un cooldown. Le istanze spot possono essere una buona idea. I due approcci sono **step scaling** e **target tracking**.
+- Monitoring the health of running instances.
+- Automatically replacing unhealthy instances.
+- Balancing traffic across Availability Zones.
 
-### Target Tracking
+**Scheduled scaling**: a time-based plan, for predictable load. Specify the **date and time** of execution, and the **minimum, maximum and desired** capacity.
 
-Si specifica il valore desiderato di una metrica, ad esempio **CPU media al 50%**, e AWS adatta il numero di istanze per restarci vicino:
+**Dynamic scaling**: for unpredictable load. Create policies for both **scaling up and scaling down**, plus a **cooldown**. Using **spot instances** can be a good idea. Two possible approaches: **step scaling** and **target tracking**.
 
-- Se la CPU sale sopra il 50%, aggiunge istanze per ridurre il carico.
-- Se scende, ne termina per ridurre i costi.
+### Target Tracking Example: CPU at 50%
 
-A differenza dello scaling a soglie, **non servono allarmi separati** per salire e scendere: il ciclo di retroazione è gestito internamente da AWS.
+In target tracking, the **desired value** of a metric (e.g. average CPU utilization) is specified as a target, and Auto Scaling adjusts the number of instances to keep the metric close to it. With a target of **50%**:
+
+- When average CPU rises **above 50%**, Auto Scaling **launches** instances to reduce load.
+- When it drops **below 50%**, Auto Scaling **terminates** instances to reduce cost.
+
+The metric is monitored continuously through CloudWatch. Unlike traditional threshold-based scaling, **no separate up/down alarms are needed**: the feedback loop is **managed internally by AWS**.
 
 ![](../../../../assets/cloud-computing/target-tracking.png)
 
-Nel grafico il traffico aumenta, la CPU sale sopra il target, le istanze passano da 10 a 15 e la CPU torna al 50%.
+In the chart the workload increases, CPU goes above the target, instances go from 10 to 15 and CPU returns to 50%.
 
 ## Cooldown
 
-Il **cooldown** è un intervallo configurabile dopo un'azione di scaling, in cui Auto Scaling sospende nuove azioni. Dà tempo al sistema di stabilizzarsi e alle metriche di riflettere l'effetto della modifica.
-
-Senza cooldown, le azioni si susseguirebbero prima di raggiungere l'equilibrio, causando **oscillazioni** (*thrashing*) e consumo inutile di risorse.
-
-:::note[Perché serve davvero]
-Una VM impiega minuti a partire. Se la CPU resta alta nel frattempo, senza cooldown il sistema ne avvierebbe altre, poi troppe, quindi le terminerebbe e ripartirebbe da capo.
+:::tip[Definition]
+A **cooldown period** is a configurable interval following a scaling activity during which Auto Scaling **temporarily suspends additional scaling actions**. It lets the system **stabilize** and the metrics **reflect the impact** of the previous adjustment.
 :::
 
-## Distribuzione tra le Zone
+Without a cooldown, consecutive scaling events could occur before the system reaches equilibrium, leading to **oscillations (thrashing)** and unnecessary resource churn.
 
-Auto Scaling cerca di distribuire le istanze **uniformemente tra le AZ** abilitate, lanciando le nuove nella zona con meno istanze. Se fallisce, prova nelle altre. Se il gruppo si sbilancia, possono avvenire attività di **ribilanciamento**.
+:::tip[Takeaway]
+The cooldown ensures **dynamic stability** of reactive elasticity by **preventing premature scaling actions**.
+:::
 
-## Autotest
+:::note[Why it matters]
+A VM takes minutes to boot. If CPU stays high in the meantime, without a cooldown the system would start more VMs, then too many, then terminate them and start over.
+:::
 
-**1.** Perché lo scaling verticale di un monolite non basta?
+## Instance Distribution Across Zones
+
+Auto Scaling attempts to **distribute instances evenly** between the AZs enabled for the group, launching new instances in the **AZ with the fewest instances**. If that fails, it tries the other zones until it succeeds. Some operations can make a group **unbalanced**, and **rebalancing** activities can take place.
+
+## Self-Test
+
+**1.** Why is vertical scaling of a monolith not enough?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Introduce un single point of failure e i costi crescono più che linearmente rispetto alle prestazioni.
+It introduces a single point of failure and becomes economically inefficient, because hardware costs grow nonlinearly.
 
 </details>
 
-**2.** Quali sono i tre servizi coinvolti in Auto Scaling, e cosa fa ciascuno?
+**2.** Which three services are involved in Auto Scaling, and what does each do?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-**CloudWatch** monitora, **ELB** distribuisce il traffico e fa health check, **Auto Scaling** aggiunge o rimuove istanze attuando le policy.
+**CloudWatch** monitors, **ELB** distributes traffic and runs health checks, **Auto Scaling** adds or removes instances implementing the policies.
 
 </details>
 
-**3.** Quali sono gli stati di un CloudWatch Alarm?
+**3.** What are the states of a CloudWatch Alarm?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-OK, ALARM e INSUFFICIENT_DATA.
+OK, ALARM and INSUFFICIENT_DATA.
 
 </details>
 
-**4.** Che cosa succede quando un'istanza fallisce un health check?
+**4.** What happens when an instance fails a health check?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Auto Scaling la termina e ne lancia una sostitutiva. Intanto ELB smette di mandarle traffico.
+Auto Scaling terminates it and launches a replacement. Meanwhile ELB stops sending it traffic.
 
 </details>
 
-**5.** Che differenza c'è tra step scaling e target tracking?
+**5.** What is the difference between step scaling and target tracking?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Lo **step scaling** ha più soglie e azioni definite dall'utente, proporzionali allo sforamento. Il **target tracking** richiede solo un valore obiettivo, e il ciclo di retroazione è gestito da AWS.
+**Step scaling** uses multiple thresholds with proportional actions. **Target tracking** only needs a target value: the feedback loop is managed by AWS, with no separate up/down alarms.
 
 </details>
 
-**6.** A cosa serve il cooldown?
+**6.** What is the cooldown for?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Evita oscillazioni, sospendendo le azioni finché le metriche non riflettono l'effetto della modifica precedente.
+It suspends further scaling until the metrics reflect the previous change, avoiding oscillations (thrashing).
 
 </details>
 
-**7.** Le istanze di un Auto Scaling group possono stare in region diverse?
+**7.** Can the instances of an Auto Scaling group be in different regions?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-No: devono stare nella stessa region, anche se in AZ diverse.
+No: they must be in the same region, possibly in different AZs.
 
 </details>
 
-**8.** Quali strategie useresti per un negozio online con picco ogni venerdì sera, e per un sito soggetto a notizie virali?
+**8.** Which strategies fit an online shop with a peak every Friday evening, and a site hit by viral news?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Per il picco prevedibile, **scheduled scaling**. Per quelli imprevedibili, **dynamic scaling** con target tracking o step scaling, più un cooldown.
+For the predictable peak, **scheduled scaling**. For unpredictable ones, **dynamic scaling** with target tracking or step scaling, plus a cooldown.
 
 </details>
 
-## Glossario
+**9.** When a launch configuration is updated, what happens to existing instances?
 
-- **Stateless / Stateful** - Componente senza o con stato da preservare.
-- **Load balancer** - Punto di ingresso che distribuisce le richieste tra le istanze.
-- **Auto Scaling group** - Insieme di istanze identiche gestite come un'unità.
-- **Launch configuration** - Descrizione delle istanze di un gruppo.
-- **CloudWatch** - Servizio di monitoraggio di AWS.
-- **Health check** - Test periodico dello stato di un'istanza.
-- **Trigger** - Allarme più policy di scaling.
-- **Target tracking** - Scaling che mantiene una metrica vicino a un valore obiettivo.
-- **Cooldown** - Pausa dopo un'azione di scaling.
-- **Thrashing** - Oscillazione continua tra scale-out e scale-in.
-- **Fleet management** - Mantenimento in salute della flotta di istanze.
+<details>
+<summary>Solution</summary>
+
+Nothing: only future instances use it. When scaling in, instances with the older configuration are terminated first.
+
+</details>
+
+## Glossary
+
+- **Stateless / Stateful** - Component without or with state to preserve.
+- **Load balancer** - Single entry point that distributes requests among instances.
+- **Auto Scaling group** - Homogeneous instances managed as one logical group.
+- **Launch configuration** - Description of the instances of a group.
+- **CloudWatch** - AWS monitoring service.
+- **Health check** - Periodic test of an instance's status.
+- **Trigger** - CloudWatch alarm plus scaling policy.
+- **Target tracking** - Scaling that keeps a metric close to a target value.
+- **Cooldown** - Pause after a scaling activity.
+- **Thrashing** - Continuous oscillation between scale-out and scale-in.
+- **Fleet management** - Keeping the instance fleet healthy.

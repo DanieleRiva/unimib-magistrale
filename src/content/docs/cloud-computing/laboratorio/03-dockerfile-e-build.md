@@ -1,42 +1,47 @@
 ---
-title: "Docker: Dockerfile e Build"
-description: Lab 3 - costruzione delle immagini, istruzioni del Dockerfile, ENTRYPOINT e CMD, multi-stage build, registry e push.
+title: "Docker: Dockerfile and Build"
+description: Lab 3 - image building, Dockerfile instructions, ENTRYPOINT and CMD, multi-stage builds, registries and push.
 sidebar:
   order: 3
 ---
 
-## Il Processo di Build
+## Image Building
 
-La **build** è il processo che crea un'immagine: impacchetta librerie e programmi in un filesystem a layer e aggiunge metadati, come il processo da eseguire e le opzioni di sicurezza.
+**Building** is the Docker process that **creates a Docker image**:
 
-Riceve in input un **Dockerfile** con le istruzioni e un **context**, l'insieme dei file disponibili in un certo percorso o URL, e produce un'immagine. Durante il processo vengono creati ed eseguiti diversi container intermedi, committati in layer.
+- It **packs libraries and programs** in a **layered filesystem** (e.g. UnionFS).
+- It adds **configuration info (metadata)**: memory quota, disk quota, CPU share, processes to be executed (entrypoint), security options.
+
+The build receives as input a **Dockerfile** with the instructions and a **context**, the set of files available at a specified location (**PATH or URL**), and produces a **Docker image**. During the process several **intermediate containers** are created, run and **committed into images**.
 
 ```bash
-docker build -t mymongo:0.1 .                       # il punto è il context
-docker build -t mymongo:0.1 -f path/to/Dockerfile . # Dockerfile con altro nome o percorso
+docker build -t mymongo:0.1 .                       # the dot is the context
+docker build -t mymongo:0.1 -f path/to/Dockerfile . # Dockerfile with another name or path
 ```
 
-| Opzione | Significato |
+| Option | Meaning |
 | --- | --- |
-| `-t` | Nome e tag `name:tag`. Puoi assegnarne più di uno alla stessa immagine |
-| `-f` | Percorso del Dockerfile |
-| `--build-arg` | Imposta una variabile di build |
-| `--target` | Sceglie lo stage di build finale |
-| `--pull` | Prova sempre a scaricare una versione più nuova dell'immagine base |
-| `--rm`, `--force-rm` | Rimuove i container intermedi |
-| `-q` | Stampa solo l'ID dell'immagine |
+| `--tag`, `-t` | Name and optionally a tag, `name:tag`. You can assign **multiple tags** to one image (e.g. `myimage:1.0.0` and `myimage:latest`) |
+| `--file`, `-f` | Name of the Dockerfile (default `PATH/Dockerfile`) |
+| `--build-arg` | Sets build-time variables |
+| `--target` | Sets the target build stage |
+| `--pull` | Always attempts to pull a newer version of the base image |
+| `--rm` / `--force-rm` | Removes intermediate containers after a successful build / always |
+| `--quiet`, `-q` | Suppresses the output and prints the image ID |
 
-:::note[Limiti di risorse in build]
-Le opzioni come `--memory` e `--cpu-shares` limitano **ogni istruzione RUN** durante la build, non l'immagine finale. Più RUN possono girare in parallelo, quindi il consumo totale può essere superiore. Il Docker moderno usa **BuildKit**, e `docker build` è di solito un alias di `docker buildx build`.
+:::note[Resource limits during build]
+Options like `--cpu-period`, `--cpu-quota`, `--cpu-shares`, `--cpuset-cpus`, `--memory` and `--memory-swap` limit the resources of **each RUN step**, **not the final image**. Multiple RUN steps can run in parallel, so overall usage may be higher. Modern Docker uses **BuildKit** by default, and `docker build` is generally an alias for `docker buildx build`, which configures limits with `--resource`, e.g. `--resource memory=2g,cpu-quota=50000,cpu-period=100000`.
 :::
 
-Esiste anche un'alternativa manuale, la **image promotion**: avvii un container, ci installi qualcosa e fai `docker commit`. Il risultato non è riproducibile, ed è per questo che si usa il Dockerfile.
+The manual alternative is the **image promotion process**: run a container, install something, then `docker commit`. The result is not reproducible, which is why Dockerfiles are used.
 
-## Il Dockerfile
+## The Dockerfile
 
-Un **Dockerfile** è uno script di istruzioni eseguite in sequenza. Ogni riga ha la forma `ISTRUZIONE argomenti`, e i commenti iniziano con `#`.
+A **Dockerfile** is a **script** containing instructions and arguments that Docker uses to create an image, **executed in sequential order**. Each statement has the format `INSTRUCTION argument`, and comments start with `#`.
 
-| Solo build | Build e run | Run |
+Some instructions are used to build the image, others when a container is instantiated:
+
+| Build | Both | Run |
 | --- | --- | --- |
 | `FROM` | `WORKDIR` | `CMD` |
 | `MAINTAINER` | `USER` | `EXPOSE` |
@@ -48,79 +53,88 @@ Un **Dockerfile** è uno script di istruzioni eseguite in sequenza. Ogni riga ha
 
 ![](../../../../assets/cloud-computing/dockerfile-layers.png)
 
-### Istruzioni di Base
+### Main Instructions
 
-| Istruzione | Cosa fa | Da sapere |
+| Instruction | What it does | Notes |
 | --- | --- | --- |
-| `FROM` | Immagine di partenza | Prima istruzione. `FROM scratch` parte da un'immagine vuota |
-| `LABEL` | Metadati | Va dopo `FROM`. Vengono ereditati, e vale l'ultimo valore |
-| `RUN` | Esegue un comando in build | Crea un nuovo layer. Conviene concatenare i comandi con `&&` per fare meno layer |
-| `COPY` | Copia dal context all'immagine | Preferibile quando basta copiare |
-| `ADD` | Come `COPY`, ma la sorgente può essere un URL, e scompatta gli archivi | |
-| `WORKDIR` | Directory di lavoro per le istruzioni seguenti | La crea se manca. Meglio di `RUN cd ...`, e con percorsi assoluti |
-| `ENV` | Variabile d'ambiente persistente | Disponibile in build e nel container |
-| `ARG` | Variabile **solo in build** | Si passa con `--build-arg`, può avere un default, non persiste |
-| `USER` | Utente per le istruzioni seguenti e a runtime | Riduce i privilegi |
-| `EXPOSE` | **Documenta** la porta | **Non pubblica** la porta: servono `-p` o `-P` |
-| `VOLUME` | Dichiara un punto di mount | Senza mount esterno, Docker crea un volume anonimo |
-| `ONBUILD` | Istruzione eseguita **nelle immagini figlie** | Non viene eseguita nel Dockerfile corrente, ma prima delle istruzioni del figlio |
+| `FROM` | Defines the **base image** the build starts from | Dockerfiles begin with it. `FROM scratch` is an explicitly empty image |
+| `LABEL` | Sets **metadata** (documentation) | Right after `FROM`. Labels of base images are **inherited**, and the most recent value overrides |
+| `RUN` | The **central executing directive**: runs a command in a temporary container from the previous step | **Forms a new layer**. Chain commands with `&&` to use the disk wisely: one RUN that downloads and unpacks avoids using `ADD` |
+| `COPY` | Copies files from the **context** to the destination | Two arguments: source and destination |
+| `ADD` | Like `COPY`, but the source **can be a URL**: contents are downloaded, **unpacked** if necessary and placed at the destination | |
+| `WORKDIR` | Working directory for following `RUN`, `CMD`, `ENTRYPOINT`, `COPY`, `ADD` | Created if missing, can be set multiple times. Use **absolute paths**, and use it instead of `RUN cd ...` |
+| `ENV` | Sets an **environment variable** for all subsequent commands | Two forms: `ENV <key> <value>` and `ENV <key>=<value> ...` for multiple variables |
+| `ARG` | A variable passed **at build time** with `--build-arg <name>=<value>` | Multiple ARGs allowed, defaults allowed, **not persisted** |
+| `USER` | Username/UID and optionally group/GID | Used when running the image and for following `RUN`, `CMD`, `ENTRYPOINT` |
+| `EXPOSE` | Informs Docker that the container **listens on a port** at runtime (TCP by default, or UDP) | **Does not publish the port**: it is documentation. Use `docker run -p` or `-P` |
+| `VOLUME` | Creates a **mount point** for an externally mounted volume | JSON array (`VOLUME ["/var/log/"]`) or plain string. `docker run` initializes the **anonymous volume** with data from the image |
+| `ONBUILD` | An instruction the parent gives to the **child** Dockerfile | **Not executed** in the current Dockerfile. Runs in images derived FROM it, **before any command of the child**. Useful to automate software stack builds |
 
-Nelle variabili si può usare `$var` o `${var}`, con due forme speciali: `${var:-word}` vale `word` se la variabile non è impostata, `${var:+word}` vale `word` se è impostata.
+**Environment replacement**: variables are used as `$variable_name` or `${variable_name}`, with two special forms:
 
-Il file **`.dockerignore`** non è un'istruzione, ma controlla quali file finiscono nel context. Usa pattern come `*.md`, e `!README*.md` per le eccezioni.
+- `${variable:-word}`: the variable's value if set, otherwise `word`.
+- `${variable:+word}`: `word` if the variable is set, otherwise the empty string.
 
-:::caution[EXPOSE non pubblica]
-È la confusione più frequente. `EXPOSE 80` è **documentazione**. Per raggiungere il container dall'host servono `-p host:container` oppure `-P`, che pubblica tutte le porte esposte su porte casuali.
+**`.dockerignore`** is not an instruction, but controls **which files are added to the build context**: a newline-separated list of patterns like `*.md`, with `!README*.md` for exceptions.
+
+:::caution[EXPOSE does not publish]
+The most common confusion. `EXPOSE 80` is **documentation**. To reach the container from the host you need `-p host_port:container_port`, or `-P`, which publishes all exposed ports to **random host ports**.
 :::
 
-### ENTRYPOINT e CMD
+### ENTRYPOINT and CMD
 
-Sono le istruzioni più importanti, e anche quelle che si confondono più facilmente.
+The most important instructions, and the easiest to confuse.
 
 | | `ENTRYPOINT` | `CMD` |
 | --- | --- | --- |
-| **Scopo** | Il comando principale del container | I **valori di default** |
-| **Quante** | Vale l'ultima | Vale l'ultima |
-| **Con argomenti in `docker run`** | Li riceve come argomenti | Viene **sostituito** |
-| **Per sovrascriverlo** | `--entrypoint` | Gli argomenti dopo l'immagine |
+| **Purpose** | The command **executed at starting time** | **Provides defaults** for an executing container |
+| **How many** | The last one counts | Only one: if more are listed, **only the last takes effect** |
+| **With arguments in `docker run`** | **Receives them as arguments**: `docker run <image> --pippo` passes `--pippo` to the entrypoint | Is **replaced** |
+| **To override it** | `--entrypoint` | Arguments after the image name |
 
-Hanno due forme:
+ENTRYPOINT has two forms, CMD three:
 
-| Forma | Sintassi | Note |
+| Form | Syntax | Notes |
 | --- | --- | --- |
-| **Exec** (consigliata) | `ENTRYPOINT ["executable", "param1"]` | Il processo riceve direttamente i segnali |
-| **Shell** | `ENTRYPOINT executable param1` | Avviato come `/bin/sh -c`, che non inoltra i segnali: `docker stop` non funziona bene |
+| **Exec** (recommended) | `ENTRYPOINT ["executable", "param1"]`, `CMD ["executable", "param1"]` | The process receives signals directly. The ENTRYPOINT exec form can be **combined with CMD** |
+| **Default parameters** | `CMD ["param1", "param2"]` | Default parameters to ENTRYPOINT. If the executable is omitted, ENTRYPOINT must be specified |
+| **Shell** | `ENTRYPOINT executable param1`, `CMD command param1` | Started as a subcommand of `/bin/sh -c`, **which does not pass signals**: `docker stop` does not work, zombie containers |
 
-La combinazione tipica è `ENTRYPOINT` in forma exec per il comando e `CMD` per i parametri di default:
+The typical combination is ENTRYPOINT in exec form for the command, and CMD for the default parameters:
 
 ```dockerfile
 ENTRYPOINT ["/usr/bin/mongod"]
 CMD ["--port", "27017", "--dbpath", "/data/db", "--bind_ip_all"]
 ```
 
-| Comando | Cosa viene eseguito |
+| Command | What runs |
 | --- | --- |
 | `docker run mymongo` | `mongod --port 27017 --dbpath /data/db --bind_ip_all` |
-| `docker run mymongo --port 28000` | `mongod --port 28000`: il `CMD` è stato sostituito |
-| `docker run --entrypoint sh mymongo` | `sh`, senza il `CMD` del Dockerfile |
+| `docker run mymongo --port 28000` | `mongod --port 28000`: CMD has been replaced |
+| `docker run --entrypoint sh mymongo` | `sh`, without the Dockerfile's CMD |
 
-:::caution[Slide 26: esempio impreciso]
-La slide contiene tre imprecisioni:
+To override the defaults you **do not need to rebuild** the image: `docker run --entrypoint=<my-entrypoint> [options] <image> <my-cmd>`.
 
-- `CMD ["--port 27017"]` passa un **unico** argomento con lo spazio dentro. Vanno separati: `["--port", "27017"]`.
-- `ENTRYPOINT usr/bin/mongod` è in forma shell, e **in forma shell il `CMD` viene ignorato**. Va usata la forma exec, con il percorso assoluto.
-- Dice che si può sovrascrivere ENTRYPOINT o CMD "ma non entrambi", subito dopo aver mostrato un comando che li sovrascrive entrambi. Si possono sovrascrivere uno, l'altro o tutti e due.
+:::caution[Slide 26: inaccurate example]
+The slide has three inaccuracies:
 
-Il [Dockerfile di MongoDB](#esempio-completo) dell'esercizio è scritto correttamente.
+- `CMD ["--port 27017"]` passes a **single** argument containing a space. They must be separated: `["--port", "27017"]`.
+- `ENTRYPOINT usr/bin/mongod` is in shell form, and **in shell form CMD is ignored**. Use the exec form with the absolute path.
+- It says you can override ENTRYPOINT or CMD "not both", right after showing a command that overrides both. You can override either one, or both.
+
+The [MongoDB Dockerfile](#complete-example) of the exercise is written correctly.
 :::
 
-### Più Servizi in un Container
+### Multiple Services in a Container
 
-La raccomandazione è **un servizio per container**, anche se quel servizio può generare più processi. Se proprio servono più servizi nello stesso container si usa uno **script wrapper** come `CMD`, oppure un process manager come **supervisord**.
+The recommendation is to separate areas of concern by using **one service per container**; that service may fork into multiple processes. The container's main process is responsible for managing all the processes it starts. If several services are really needed:
 
-### Esempio Completo
+- Put all the commands in a **wrapper script** and run it as your CMD.
+- Use a **process manager** like **supervisord**, packaged in the image with its configuration.
 
-Il Dockerfile dell'esercizio 1 installa MongoDB su Ubuntu:
+### Complete Example
+
+The Dockerfile of Ex. 1 installs MongoDB on Ubuntu:
 
 ```dockerfile
 FROM ubuntu:24.04
@@ -139,13 +153,15 @@ ENTRYPOINT ["/usr/bin/mongod"]
 CMD ["--port", "27017", "--dbpath", "/data/db", "--bind_ip_all"]
 ```
 
-Nota il dettaglio del `RUN`: è una sola istruzione, che alla fine **pulisce** i file temporanei nello stesso layer. Un `RUN rm` separato non ridurrebbe la dimensione dell'immagine, perché i file resterebbero nel layer precedente.
+Note the `RUN`: it is a single instruction that **cleans up** temporary files in the same layer. A separate `RUN rm` would not reduce the image size, because the files would stay in the previous layer.
 
-## Multi-Stage Build
+Build and run it with `docker build -t mymongo:0.1 .`, then `docker run -d --name mymongocontainer -P mymongo:0.1`, and check with `docker logs` and `docker inspect`.
 
-Con la **multi-stage build** si usano più `FROM` nello stesso Dockerfile: ognuno inizia un nuovo stage, e si copiano selettivamente solo gli artefatti necessari. Il risultato è un'immagine finale **piccola**, senza strumenti di compilazione.
+## Multi-Stage Builds
 
-Ecco la soluzione ufficiale dell'esercizio 6:
+With **multi-stage builds** you use **multiple `FROM` statements** in your Dockerfile. Each `FROM` can use a different base and **begins a new stage**. The idea is to **selectively copy artifacts** from one stage to another, **leaving behind everything you don't need** in the final image: a small image, without build tools.
+
+The official solution of Ex. 6 (dockerize a Java application):
 
 ```dockerfile
 FROM maven:3.9-eclipse-temurin-8 AS build
@@ -161,9 +177,9 @@ EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "micro-0.0.1-SNAPSHOT.jar"]
 ```
 
-Con `--target` ci si ferma a uno stage intermedio: `docker build -t mybuild --target build .`.
+`--target` specifies an intermediate stage by name as the final stage; commands after it are skipped: `docker build -t mybuild --target build .`.
 
-Un'altra soluzione ufficiale, per l'esercizio 3 su NGINX:
+The official solution of Ex. 3 (custom NGINX):
 
 ```dockerfile
 FROM nginx:1.18.0
@@ -174,114 +190,115 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-Da avviare ad esempio con `docker run -d -m 500m -p 80:80 <immagine>`.
+Run it with the memory limited to 500 MB and port 80 published: `docker run -d -m 500m -p 80:80 <image>`.
 
-## Distribuire le Immagini
+## Distributing Images
 
-Docker può costruire anche da un repository Git remoto, usato come context:
+`docker build` supports **Git repositories as build contexts**: the repository is pulled into a temporary directory and sent to the daemon. A fragment after `:` selects a branch, tag or remote reference.
 
 ```bash
 docker build -t <user>/nginx-example github.com/atbaker/nginx-example
 ```
 
-Il **registry** è lo strumento che distribuisce le immagini. **Docker Hub** offre repository pubblici gratuiti e privati a pagamento.
+One of Docker's main strengths is **streamlining the sharing and distribution of images**, and the **Docker registry** is the tool in charge of it. **Docker Hub** offers **free public** repositories and **pay-per-use private** ones.
 
 ```bash
 docker login
-docker push <utente>/<immagine>:<tag>
+docker push <user>/<image>:<tag>
 ```
 
-Si può anche avere un registry locale:
+Ex. 7 uses a **local registry**:
 
 ```bash
 docker run -d -p 5000:5000 --restart=always --name registry registry:latest
-docker tag <immagine> localhost:5000/<immagine>
-docker push localhost:5000/<immagine>
+docker tag <image> localhost:5000/<image>
+docker push localhost:5000/<image>
 curl http://localhost:5000/v2/_catalog
-docker pull localhost:5000/<immagine>
+docker pull localhost:5000/<image>
 ```
 
-## Autotest
+## Self-Test
 
-**1.** Che differenza c'è tra `COPY` e `ADD`?
+**1.** What is the difference between `COPY` and `ADD`?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Entrambe copiano dal context. `ADD` accetta anche un URL come sorgente e scompatta gli archivi locali.
+Both copy from the context. `ADD` also accepts a URL as source, and unpacks archives.
 
 </details>
 
-**2.** Che differenza c'è tra `ARG` ed `ENV`?
+**2.** What is the difference between `ARG` and `ENV`?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-`ARG` esiste solo in build e si imposta con `--build-arg`. `ENV` persiste nell'immagine ed è disponibile nel container.
+`ARG` exists only at build time and is set with `--build-arg`, it is not persisted. `ENV` persists in the image and is available in the container.
 
 </details>
 
-**3.** Il Dockerfile ha `EXPOSE 80`. Se lanci `docker run nginx-custom`, la porta è raggiungibile dall'host?
+**3.** The Dockerfile has `EXPOSE 80`. If you run `docker run nginx-custom`, is the port reachable from the host?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-No, perché `EXPOSE` è documentazione. Servono `-p 80:80` oppure `-P`.
+No: `EXPOSE` is documentation. You need `-p 80:80` or `-P`.
 
 </details>
 
-**4.** Dato `ENTRYPOINT ["python"]` e `CMD ["app.py"]`, cosa esegue `docker run img test.py`?
+**4.** Given `ENTRYPOINT ["python"]` and `CMD ["app.py"]`, what does `docker run img test.py` execute?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-`python test.py`: gli argomenti sostituiscono il `CMD`, mentre l'`ENTRYPOINT` resta.
+`python test.py`: the arguments replace CMD, while ENTRYPOINT stays.
 
 </details>
 
-**5.** Perché si preferisce la forma exec di `ENTRYPOINT`?
+**5.** Why is the exec form of `ENTRYPOINT` preferred?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Perché il processo principale riceve direttamente i segnali. In forma shell gira sotto `/bin/sh -c`, che non li inoltra, e `docker stop` non lo ferma in modo pulito. Inoltre la forma shell ignora `CMD`.
+The main process receives signals directly. In shell form it runs under `/bin/sh -c`, which does not pass signals, so `docker stop` does not stop it cleanly. The shell form also ignores CMD.
 
 </details>
 
-**6.** Quando viene eseguita un'istruzione `ONBUILD`?
+**6.** When is an `ONBUILD` instruction executed?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Quando si fa la build di un'immagine **figlia**, prima delle istruzioni del Dockerfile figlio. Mai all'avvio del container.
+When building a **child** image, before the child Dockerfile's instructions. Never in the current build, and never at container start.
 
 </details>
 
-**7.** Quale vantaggio dà la multi-stage build?
+**7.** What is the advantage of multi-stage builds?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Un'immagine finale piccola, che contiene solo gli artefatti e non compilatori e dipendenze di build.
+A small final image, containing only the artifacts, without compilers and build dependencies.
 
 </details>
 
-**8.** Perché `RUN rm file` in un'istruzione separata non riduce la dimensione dell'immagine?
+**8.** Why doesn't a separate `RUN rm file` reduce the image size?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Perché ogni `RUN` crea un layer: il file resta nel layer precedente, e quello nuovo si limita a nasconderlo.
+Each `RUN` creates a layer: the file stays in the previous layer, and the new one only hides it.
 
 </details>
 
-## Glossario
+## Glossary
 
-- **Dockerfile** - Script di istruzioni per costruire un'immagine.
-- **Build context** - Insieme dei file disponibili durante la build.
-- **Forma exec / shell** - Sintassi con array JSON o con comando come testo.
-- **Multi-stage build** - Build con più `FROM`, per copiare solo gli artefatti.
-- **BuildKit** - Motore di build moderno di Docker.
-- **Tag** - Etichetta che identifica la versione di un'immagine.
-- **.dockerignore** - Elenco di file da escludere dal context.
-- **Image promotion** - Creazione di un'immagine con `docker commit`.
+- **Dockerfile** - Script of instructions to build an image.
+- **Build context** - Set of files available during the build.
+- **Exec / shell form** - JSON array syntax, or command as plain text.
+- **Multi-stage build** - Build with several `FROM`s, copying only the artifacts.
+- **BuildKit** - Docker's modern build engine.
+- **Tag** - Label identifying a version of an image.
+- **.dockerignore** - Patterns of files excluded from the context.
+- **Image promotion** - Creating an image with `docker commit`.
+- **Registry** - Tool that stores and distributes images.

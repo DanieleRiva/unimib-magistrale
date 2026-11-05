@@ -1,101 +1,132 @@
 ---
 title: Kubernetes
-description: Lab 8 - orchestrazione, architettura del control plane e dei worker, stato desiderato, Pod, ConfigMap, Service, DNS e minikube-cloud-lab.
+description: Lab 8 - orchestration, control plane and worker architecture, desired state, Pods, ConfigMaps, Services, DNS and minikube-cloud-lab.
 sidebar:
   order: 6
 ---
 
-:::note[Numerazione]
-Le slide si intitolano *Lab session 8*, il file è `Inf08`, e su e-learning la risorsa si chiama *Lab. Topic 7: Kubernetes 1*: è lo stesso materiale. Trattandosi della prima lezione su Kubernetes, è probabile che ne seguano altre.
+:::note[Numbering]
+The slides are titled *Lab session 8*, the file is `Inf08`, and on e-learning the resource is *Lab. Topic 7: Kubernetes 1*: it is the same material. Since it is the first Kubernetes lecture, more are likely to follow.
 :::
 
-## Dove Siamo
+## Where Are We?
 
-Con Docker abbiamo visto immagini e container, poi la composizione su un nodo. Il passo successivo è l'ambiente **multi-host**, che richiede due funzioni:
+With Docker we covered the architecture and technology, images vs containers, and the **multi-container environment** (composition). The next step is the **multi-host environment**, which requires:
 
-- **Orchestrazione**: coordinamento automatico di task e servizi su più nodi, perché lavorino insieme armonicamente.
-- **Gestione delle risorse**: allocazione e controllo coordinato di CPU, memoria, storage e rete su più nodi.
-
-## Che Cos'è Kubernetes
-
-:::tip[Definizione]
-**Kubernetes** (K8s) è un sistema open source per automatizzare **deployment, scaling e gestione** di applicazioni containerizzate su più macchine, dette **nodi**.
+:::tip[Definitions]
+- **Orchestration**: the **automated coordination, management and organization** of tasks and services **across multiple distributed computing nodes**, so that they work together harmoniously to achieve a desired functionality or workflow.
+- **Resource management**: the **coordinated and efficient allocation, scheduling and control** of resources (CPU time, memory, storage, network bandwidth) **across multiple computational nodes**.
 :::
 
-L'idea è "Docker per cluster di macchine", una sorta di **sistema operativo per i cluster**, che astrae l'infrastruttura sottostante. Nasce da oltre 15 anni di esperienza di Google ed è gestito dalla Cloud Native Computing Foundation. Raggruppa i container di un'applicazione in unità logiche: il focus non è più il singolo container.
+## What Is Kubernetes?
 
-Le funzionalità si reggono su tre fondamenti: **deployment dichiarativo**, **riconciliazione dello stato** da parte del control plane, **API generale ed estensibile**. Su questi si appoggiano scheduling automatico, networking multi-host, service discovery, load balancing, **self-healing**, scaling e deployment A/B e canary.
+:::tip[Definition]
+**Kubernetes (K8s)** is an open-source system for **automating deployment, scaling and management of containerized applications** across multiple machines, referred to as **nodes**.
+:::
 
-## Architettura
+- **Idea**: Docker for clusters of machines. It abstracts away the underlying infrastructure: an **OS for clusters**.
+- Built upon **15+ years of experience** running production workloads at **Google**, with community best practices.
+- **Cloud-native ecosystem**, managed by the **Cloud Native Computing Foundation**.
+- It **groups the containers** of an application into **logical units** for easy management and discovery: objects with different granularities, and the **focus is not on the single container**.
 
-Kubernetes ha un'architettura **manager-worker**:
+In these slides, *workload* and *application* are synonyms. The name comes from Greek κυβερνήτης, helmsman.
+
+### K8s Functionalities
+
+**Fundamentals**:
+
+- **Declarative deployment** through objects.
+- **Control plane**: application/cluster **state reconciliation**.
+- **General and extensible API**.
+
+**More technical functionalities**: managing different types of workloads (flexibility), multi-host networking, service discovery and load balancing, automatic workload placement (efficiency), **auto remediating** (self-healing: resilience and reliability), horizontal/vertical scaling (elasticity), security, A/B and canary deployments (testing).
+
+## Architecture
+
+Kubernetes implements a **manager-worker architecture**:
 
 ![](../../../../assets/cloud-computing/kubernetes-architettura.png)
 
-- Il **Control Plane** (manager) gestisce lo stato del cluster, schedula i carichi e orchestra. Per l'alta disponibilità si usano più nodi di control plane.
-- I **Worker Node** eseguono davvero i carichi, nei container.
+- The **Control Plane** (manager) is responsible for **managing the state of the cluster**, **scheduling workloads** and the overall **orchestration**. Multiple control plane nodes are used for **high availability and failover**.
+- The **Worker Nodes** run the **actual workloads**, in the form of containers.
 
-### Control Plane
+### Control Plane Components
 
-| Componente | Ruolo |
+| Component | Role |
 | --- | --- |
-| **kube-apiserver** | Espone le API: è il **front-end** del control plane. Scala orizzontalmente |
-| **etcd** | Database chiave-valore consistente e ad alta disponibilità, con **tutti i dati del cluster** |
-| **kube-scheduler** | Assegna ai nodi i Pod che ne sono privi, considerando risorse, vincoli, affinità e anti-affinità |
-| **kube-controller-manager** | Esegue i **controller**, processi che portano lo stato corrente verso quello desiderato: node controller, replication controller, service account |
-| **cloud-controller-manager** | Contiene la logica specifica del cloud e collega il cluster alle API del provider |
+| **kube-apiserver** | **Exposes the Kubernetes API**: the **front-end** of the control plane. Designed to **scale horizontally** (more instances) |
+| **etcd** | **Consistent and highly-available key-value store**, holding object definitions: the **backing store for all cluster data** |
+| **kube-scheduler** | Watches for newly created **Pods with no assigned node** and **selects a node** for them, using resource requirements, hardware/software/policy constraints, **affinity and anti-affinity** |
+| **kube-controller-manager** | **Runs the controller processes**, each a separate process |
+| **cloud-controller-manager** | Embeds **cloud-specific control logic** and links the cluster to the **cloud provider's API** |
 
-### Worker Node
+A **controller** is a process that **watches the shared state** of the cluster through the API server and makes changes to **move the current state towards the desired state**. Examples:
 
-| Componente | Ruolo |
+- **Node controller**: notices and responds when nodes go down.
+- **Replication controller**: maintains the correct number of Pods.
+- **Service Account & Token controllers**: create default accounts and API tokens for new namespaces.
+
+### Worker Node Components
+
+| Component | Role |
 | --- | --- |
-| **kubelet** | Agente del nodo: osserva i Pod assegnati, li avvia tramite il runtime, fa health check e riporta lo stato |
-| **kube-proxy** | Fa arrivare le richieste di rete ai Pod giusti, aggiornando le regole di rete |
-| **Container runtime** | Scarica le immagini e gestisce i container. Il kubelet ci parla via **CRI**. Esempi: containerd e CRI-O |
+| **kubelet** | **Node agent**: watches the Pod specs assigned to its node, uses the container runtime to run containers, performs **health checks** and **reports Pod/node status** |
+| **kube-proxy** | Helps network requests **reach the right Pods**, **updating network rules** as Pods are created or removed |
+| **Container runtime** | **Pulls images** and creates, starts and stops containers. The kubelet talks to it through the **Container Runtime Interface (CRI)**. Examples: **containerd** and **CRI-O** |
 
-:::note[Il percorso di un Pod]
-L'utente invia un manifest all'**apiserver**, che lo salva in **etcd**. Un **controller** vede che servono Pod e li crea. Lo **scheduler** assegna ogni Pod a un nodo. Il **kubelet** di quel nodo lo avvia tramite il runtime.
+:::note[The path of a Pod]
+The user sends a manifest to the **apiserver**, which stores it in **etcd**. A **workload controller** sees that Pods are needed and creates them. The **scheduler** assigns each unscheduled Pod to a suitable node. That node's **kubelet** starts it through the runtime.
 :::
 
-## I Pilastri di Kubernetes
+## Kubernetes Pillars
 
-### Stato Desiderato e Riconciliazione
+### The Control Plane and the Desired State
 
-È il concetto più importante. Non si dice a Kubernetes **cosa fare**, ma **cosa si vuole ottenere**:
+The control plane makes **global decisions** about the cluster, and detects and responds to cluster and application **events**. Its components make the **current state match the desired state** by reacting to events: e.g. Kubernetes automatically creates or removes Pod replicas to match the desired replica count.
 
-- **Stato desiderato**: quali applicazioni eseguire, con quali immagini, quante repliche, quali risorse di rete e disco.
-- **Riconciliazione**: il control plane osserva costantemente il cluster e corregge le differenze tra stato corrente e desiderato.
+:::tip[The two key ideas]
+- **Declarative service model**: K8s uses a declarative approach to let you **define the desired state** of the services in your application stack.
+- **Desired state reconciliation**: the control plane **constantly monitors the cluster state** and **reconciles any differences** between the actual state and your desired state.
+:::
 
-Se chiedi 3 repliche e una muore, Kubernetes ne crea un'altra senza che nessuno intervenga. Lo stato del cluster comprende sia i nodi sia le applicazioni.
+The **desired state** is what applications you want to run, which images they use, the number of replicas, which network and disk resources to make available, and more. Users describe it **textually** (declarative model), and controllers automatically manage the cluster to match it. The **cluster state** means both the state of the **nodes** and the state of all **applications** running in the cluster.
 
-Un **oggetto** Kubernetes è un **"record of intent"**: una volta creato, il sistema lavora costantemente per farlo esistere.
+If you ask for 3 replicas and one dies, Kubernetes creates another one with no intervention.
 
-| Vantaggio del modello dichiarativo | Significato |
+:::tip[Record of intent]
+A Kubernetes **object** is a **"record of intent"**: once you create it, the system will **constantly work to ensure that object exists**. By creating an object you tell K8s how you want your cluster's workload to look: this is your cluster's desired state.
+:::
+
+Advantages of the declarative model:
+
+| Advantage | Meaning |
 | --- | --- |
-| **Focalizzato sullo stato** | Definisci il risultato, non i passi |
-| **Idempotente** | Riapplicare lo stesso file non causa modifiche inutili |
-| **Versionabile** | I file stanno in un sistema di controllo versione |
-| **Automatizzabile** | Si descrive il traguardo, non la procedura |
+| **State-focused** | You define what the system should look like ("I want 3 replicas of my app"), and K8s matches it regardless of the current state |
+| **Idempotency** | Re-applying the same file causes **no unnecessary changes** if the cluster already matches |
+| **Version control-friendly** | Configurations are files, which can be version-controlled |
+| **Automation-ready** | It describes the target state, not the steps to reach it |
 
-### Gli Oggetti
+### Objects
 
-| Oggetti base | Astrazioni di livello superiore |
+K8s **objects** are abstractions that represent the state of the system, usually the components of an application.
+
+| Base objects | Higher-level abstractions |
 | --- | --- |
 | Pod, Volume, Namespace, Node | Service, Deployment, StatefulSet, DaemonSet, ReplicaSet, Job |
 
-Gli oggetti base supportano qualsiasi carico. Quelli superiori servono per carichi comuni, come servizi di lunga durata e job batch.
+Base objects support **any type of workload**. Higher-level ones add functionality for **common workloads**, such as long-running service-oriented applications and batch jobs.
 
-### Il Pod
+### The Pod
 
-:::tip[Definizione]
-Il **Pod** è l'**unità di esecuzione di base**, il più piccolo oggetto che si crea o installa. Contiene uno o pochi container strettamente accoppiati che condividono risorse. Di solito contiene **un solo container**.
+:::tip[Definition]
+A **Pod** is the **basic execution unit** of any Kubernetes application: the **smallest and simplest unit** in the object model that you create or deploy. It represents processes running on the cluster, and is composed of either **a single container** or a small number of **tightly coupled containers that share resources**, **but usually one**.
 :::
 
-Un Pod incapsula i container, le risorse di storage, un **IP unico** e le opzioni di esecuzione.
+A Pod encapsulates the application container(s), **storage resources**, a **unique network IP**, and options that govern how the containers run.
 
-### Manifest
+### Manifests
 
-Un **manifest** descrive un oggetto in YAML o JSON:
+A **manifest** describes an object, in YAML or JSON:
 
 ```yaml
 apiVersion: v1
@@ -115,53 +146,59 @@ spec:
           protocol: TCP
 ```
 
-| Campo | Significato |
+| Field | Meaning |
 | --- | --- |
-| `apiVersion` | Versione dell'API |
-| `kind` | Tipo di oggetto: Pod, Deployment, Service, Job |
-| `metadata` | Nome, namespace, **labels** (tag chiave-valore selezionabili) |
-| `spec` | Lo stato desiderato |
-| `status` | Compilato e gestito da Kubernetes |
+| `apiVersion` | API version |
+| `kind` | Object type: Pod, Deployment, Replication Controller, Job, Service |
+| `metadata` | Name, namespace, **labels**: key/value "tags" on any deployable object, **selectable** by actions and other declarations |
+| `spec` | Declares the configuration: the desired state |
+| `status` | Managed by Kubernetes |
 
-### create e apply
+### create vs apply
 
-`kubectl` supporta tre modi di gestire gli oggetti:
+`kubectl` supports three kinds of object management:
 
-| Modo | Esempio |
+| Kind | Example |
 | --- | --- |
-| **Comandi imperativi** | `kubectl run my-pod --image=...` |
-| **Configurazione imperativa** | `kubectl create -f file.yml` |
-| **Configurazione dichiarativa** | `kubectl apply -f file.yml` |
+| **Imperative commands** | `kubectl run my-pod --image=...`, `kubectl create deployment ...` |
+| **Imperative object configuration** | `kubectl create -f file.yml` |
+| **Declarative object configuration** | `kubectl apply -f file.yml` |
 
 :::caution[Slide 15]
-La slide annuncia tre modi e ne elenca due. Il terzo, la configurazione imperativa, è quello di `kubectl create` indicato nella slide 29.
+The slide announces three kinds but lists two. The third, imperative object configuration, is the `kubectl create` one mentioned in slide 29.
 :::
 
 | | `kubectl create` | `kubectl apply` |
 | --- | --- | --- |
-| **Se la risorsa esiste** | Fallisce | La aggiorna |
-| **Aggiorna risorse** | No | Sì |
-| **Dichiarativo** | No | Sì |
-| **Conflitti** | Errore | Risolti aggiornando |
+| **Approach** | Imperative object configuration | Declarative object configuration |
+| **Resource exists** | **Fails** | Creates or updates |
+| **Updates resources** | No | Yes |
+| **On conflict** | Error | Resolved by updating |
 
-`apply` tiene traccia di ciò che è stato applicato, e **applica una patch** invece di sostituire.
+`apply` keeps a **record of what was applied** to the object, and **patches rather than replaces** it.
 
-## Namespace e Addon
+## Namespaces and Addons
 
-Un **namespace** è un **cluster virtuale** dentro quello fisico: dà un ambito ai nomi, che devono essere unici solo al suo interno, e divide le risorse tra utenti con le quote.
+A **namespace** is a mechanism to organize resources: a **virtual cluster** inside the physical one, useful for **multi-tenancy** and isolation. It provides a **scope for names**, which must be unique within a namespace but not across namespaces, and divides cluster resources between users via **resource quotas**.
 
-| Namespace | Contenuto |
+| Namespace | Content |
 | --- | --- |
-| `default` | Oggetti senza namespace specificato |
-| `kube-system` | Oggetti creati da Kubernetes |
-| `kube-public` | Leggibile da tutti, per il bootstrap del cluster |
-| `kube-node-lease` | Oggetti per la gestione dei nodi |
+| `default` | Objects with no namespace |
+| `kube-system` | Objects and resources created by Kubernetes itself |
+| `kube-public` | Readable by all users, reserved for cluster bootstrapping and configuration |
+| `kube-node-lease` | Lease objects needed to manage nodes |
 
-Gli **addon** implementano funzioni del cluster con risorse Kubernetes in `kube-system`: **DNS** (necessario), **Dashboard** (interfaccia web) e **logging** a livello di cluster.
+**Addons** use Kubernetes resources to implement cluster features, in the `kube-system` namespace:
 
-## ConfigMap
+- **DNS** (required): Kubernetes launches a DNS Pod and Service, and the kubelets tell containers to use it.
+- **Dashboard**: a web UI to manage and troubleshoot applications and the cluster.
+- **Cluster-level logging**: saves container logs to a central store with search.
 
-Una **ConfigMap** conserva dati di configurazione **non sensibili** come coppie chiave-valore. **Separa la configurazione dal codice**, e si inietta nei container come variabili d'ambiente, argomenti o file in un volume.
+## ConfigMaps
+
+:::tip[Definition]
+A **ConfigMap** stores **non-sensitive configuration data** in **key-value pairs**. It **separates configuration from application code**, for flexibility and portability, and is injected into containers as **environment variables, command-line arguments or configuration files (volumes)**. ConfigMaps are stored in K8s' internal database as blobs.
+:::
 
 ```yaml
 apiVersion: v1
@@ -173,7 +210,7 @@ data:
     <p><strong>K8s rocks!</strong></p>
 ```
 
-Nel Pod si monta come volume, e il suo contenuto compare come file:
+It can also be created imperatively: `kubectl create configmap literal-example --from-literal=City=Hamburg`, or `--from-file index.html`. In the Pod it is mounted as a volume, and its content appears as files:
 
 ```yaml
 spec:
@@ -189,19 +226,25 @@ spec:
         name: nginx-data
 ```
 
-:::note[Perché l'esercizio 3 fallisce]
-Riapplicando il manifest su un Pod già esistente si ottiene un errore: i volumi di un Pod non si possono modificare a caldo. Bisogna cancellare il Pod e ricrearlo.
+:::note[Why Ex. 3 fails]
+Re-applying the manifest to an existing Pod gives an error: a Pod's volumes cannot be changed on the fly. You must delete the Pod and create it again.
 :::
 
-## Service
+## K8s as a SOA Enabler
 
-I Pod sono **effimeri**: cambiano IP quando vengono ricreati. Come fanno i client a sapere a quale indirizzo connettersi?
+**SOA** builds applications as a collection of **loosely coupled services** communicating over a network, promoting reusability, scalability and maintainability. Kubernetes is a **SOA enabler**: a platform to deploy, scale and manage **microservices**, the modern evolution of SOA, with **independent deployment and scaling** of each service, built-in **service discovery and load balancing** (DNS-based), and **resilience and self-healing** (automatic restarts, replication, health checks).
 
-:::tip[Definizione]
-Un **Service** è un'astrazione che definisce un insieme logico di Pod identici e una politica di accesso. Offre un **punto di ingresso stabile**, con service discovery e load balancing.
+## Services
+
+**Why do we need a Service?** Pods are **ephemeral**, so their IP addresses can change: how do consumers find out which IP to connect to?
+
+:::tip[Definition]
+A **Service** is an abstraction that defines a **logical set of identical Pods** and a **policy to access them**. It offers an **abstract entrypoint** to the Pods, enabling **service discovery** and **load balancing** among them.
 :::
 
-I Pod sono scelti tramite un **selector**, che corrisponde alle **labels**:
+Services control communication with Pods: they **load balance** requests, **don't send traffic to unhealthy** Pods, **only talk to the correct version**, and provide **service discovery** (each Pod just calls the name of the service it wants).
+
+The set of Pods targeted by a Service is usually determined by a **selector**, which matches the Pods' **labels**:
 
 ![](../../../../assets/cloud-computing/kubernetes-selector.png)
 
@@ -216,165 +259,177 @@ spec:
     app.kubernetes.io/name: nginx
   ports:
     - name: http
-      port: 8080        # porta del Service
-      targetPort: 80    # porta del Pod
+      port: 8080        # Service port
+      targetPort: 80    # Pod port
       protocol: TCP
 ```
 
-Il Service **non gestisce i Pod**, li astrae soltanto. Nell'esercizio 4, cancellando il Pod gli **Endpoint** del Service si svuotano, e ricreandolo tornano. Aggiungendo `nginx-2` con la stessa label, gli endpoint diventano due.
+A Service **does not manage Pods and their replicas**: it just **abstracts them**, providing a unified view. In Ex. 4, deleting the Pod empties the Service's **Endpoints**, and re-creating it brings them back. Adding `nginx-2` with the same label gives two endpoints.
 
-| Tipo | Accesso |
+| Type | Access |
 | --- | --- |
-| **ClusterIP** (default) | Solo **dentro** il cluster |
-| **NodePort** | Estende ClusterIP, ed espone una porta su ogni nodo |
-| **LoadBalancer** | Estende NodePort, con un load balancer esterno e un IP esterno |
-| **ExternalName** | Referenzia endpoint **fuori** dal cluster |
+| **ClusterIP** (default) | A service **inside** the cluster, for other apps in the cluster. **No external access** |
+| **NodePort** | Extends ClusterIP. **Exposes a port on every node's IP** |
+| **LoadBalancer** | Extends NodePort. Works with an **external system** to map an **external IP** to the service |
+| **ExternalName** | References endpoints **outside** the cluster |
 
 ![](../../../../assets/cloud-computing/kubernetes-service-types.png)
 
-:::caution[Variabili d'ambiente dei Service]
-Il kubelet inietta nei Pod variabili come `NGINX_SERVICE_HOST` e `NGINX_SERVICE_PORT`, ma **solo se il Service esiste prima del container**. I container già in esecuzione non le ricevono: vanno ricreati. Sono dati di connessione, non credenziali.
+:::caution[Service environment variables]
+The kubelet injects variables like `NGINX_SERVICE_HOST` and `NGINX_SERVICE_PORT` into Pods (the `NGINX_` prefix comes from the Service name). **Timing matters**: create the Service **before the container**. Existing containers do not gain new variables: recreate the Pod. They are connection details (the Service ClusterIP and port), not credentials.
 :::
 
 ### DNS
 
-| Oggetto | Nome DNS |
+Minikube provides a DNS implementation called **kube-dns**.
+
+| Object | DNS name |
 | --- | --- |
-| **Service** | `<svc>.<namespace>.svc.<cluster-domain>` |
-| **Pod** | `<ip-con-trattini>.<namespace>.pod.<cluster-domain>` |
-| **Pod dietro un Service** | `<ip-con-trattini>.<svc>.<namespace>.svc.<cluster-domain>` |
+| **Service** (ClusterIP) | `<my-svc>.<my-namespace>.svc.<cluster-domain>`, resolving to the Service's cluster IP |
+| **Pod** | `<pod-ip-with-dashes>.<my-namespace>.pod.<cluster-domain>` |
+| **Pod exposed by a Service** | `<pod-ip-with-dashes>.<service-name>.<my-namespace>.svc.<cluster-domain>` |
 
-Un Service si risolve anche con il nome breve `nginx`, nello stesso namespace, o con `nginx.default`. Ad esempio, un Pod in `default` con IP `172.17.0.3` si chiama `172-17-0-3.default.pod.cluster.local`.
+A Service also resolves by `my-svc` and `my-svc.my-namespace`: from a Pod in `default`, both `http://nginx:8080/` and `http://nginx.default:8080/` return the nginx page. A Pod in `default` with IP `172.17.0.3` is `172-17-0-3.default.pod.cluster.local`.
 
-## Il Laboratorio: minikube-cloud-lab
+## The Lab: minikube-cloud-lab
 
-**minikube** realizza un cluster Kubernetes locale. **minikube-cloud-lab** simula un cloud provider con nodi Kubernetes reali eseguiti in Docker: si può creare un cluster, scegliere il tipo di macchina, impostare i limiti di nodi e osservare il **Cluster Autoscaler**.
+**minikube** implements a **local Kubernetes cluster** on macOS, Linux and Windows, for local development. **minikube-cloud-lab** is a **simulated cloud provider**, backed by real Kubernetes nodes running in Docker: you can create and delete a cluster, choose a machine type, set node limits, get credentials and watch the **Cluster Autoscaler** add or remove machines. It is a local teaching environment, not a production cloud.
 
 ```bash
 git clone https://github.com/miciav/minikube-cloud-lab.git
 cd minikube-cloud-lab
-source scripts/configure.sh   # da rifare in ogni nuovo terminale
+source scripts/configure.sh   # again in every new terminal
 docker compose up -d
 
 cloud clusters create lab --machine-type lab-small --min-nodes 1 --max-nodes 3
 cloud clusters get-credentials lab
 kubectl get nodes
 
-# a fine lab
+# end of lab
 cloud clusters delete lab
 docker compose down
 ```
 
-`kubectl` legge le credenziali da **kubeconfig** (`~/.kube/config`), e il **context** attivo sceglie cluster e utente. L'autenticazione stabilisce chi sei, **RBAC** cosa puoi fare.
+`kubectl` reads credentials from **kubeconfig** (`~/.kube/config`), and the active **context** selects cluster and user. **Authentication** identifies you, **RBAC** controls access. Keep credentials private and out of Git.
 
-| Comando | A cosa serve |
+| Command | Purpose |
 | --- | --- |
-| `kubectl run my-pod --image=...` | Crea un Pod in modo imperativo |
-| `kubectl apply -f file.yml` | Applica un manifest |
-| `kubectl get pods` / `services` / `nodes` | Elenca gli oggetti, `-A` su tutti i namespace |
-| `kubectl describe pod nginx` | Dettagli ed eventi |
-| `kubectl exec -it my-pod -- sh` | Esegue un comando nel Pod, `--` separa le opzioni dal comando |
-| `kubectl port-forward pod/nginx 18080:80` | Inoltra una porta locale. **Solo per debug** |
-| `kubectl delete pod my-pod` | Elimina |
+| `kubectl run my-pod --image=...` | Create a Pod imperatively |
+| `kubectl apply -f file.yml` | Apply a manifest |
+| `kubectl get pods` / `services` / `nodes` | List objects, `-A` for all namespaces |
+| `kubectl describe pod nginx` | Details and events |
+| `kubectl exec -it my-pod -- sh` | Run a command in the Pod. `--` separates kubectl options from the command |
+| `kubectl port-forward pod/nginx 18080:80` | Forward a local port. **Only for debugging and development** |
+| `kubectl delete pod my-pod` | Delete |
 
-## Autotest
+## Self-Test
 
-**1.** Quali sono i componenti del control plane, e cosa fanno?
+**1.** What are the control plane components, and what do they do?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-**kube-apiserver** espone le API. **etcd** memorizza lo stato. **kube-scheduler** assegna i Pod ai nodi. **kube-controller-manager** riconcilia lo stato. **cloud-controller-manager** si interfaccia con il cloud.
+**kube-apiserver** exposes the API. **etcd** stores all cluster data. **kube-scheduler** assigns Pods to nodes. **kube-controller-manager** runs the controllers that reconcile the state. **cloud-controller-manager** links the cluster to the cloud provider.
 
 </details>
 
-**2.** Quali componenti girano su ogni worker node?
+**2.** Which components run on every worker node?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-kubelet, kube-proxy e il container runtime.
+kubelet, kube-proxy and the container runtime.
 
 </details>
 
-**3.** Che cosa significa che Kubernetes è dichiarativo?
+**3.** What does it mean that Kubernetes is declarative?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Che si descrive lo stato desiderato, non i passi. I controller confrontano continuamente stato corrente e desiderato e correggono le differenze.
+You describe the desired state, not the steps. Controllers continuously compare current and desired state and reconcile the differences.
 
 </details>
 
-**4.** Che cos'è un Pod, e che rapporto ha con i container?
+**4.** What is a Pod, and how does it relate to containers?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-È l'unità minima di deployment. Contiene uno o pochi container accoppiati che condividono risorse e un IP, e di solito uno solo.
+The basic execution unit, the smallest object you deploy. It contains one or a few tightly coupled containers that share resources and an IP, usually just one.
 
 </details>
 
-**5.** Perché servono i Service?
+**5.** Why are Services needed?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Perché i Pod sono effimeri e cambiano IP. Il Service offre un punto di accesso stabile, con service discovery e bilanciamento.
+Pods are ephemeral and change IP. A Service offers a stable entrypoint, with service discovery and load balancing.
 
 </details>
 
-**6.** Come sceglie i Pod un Service?
+**6.** How does a Service choose its Pods?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Con un **selector** che corrisponde alle **labels** dei Pod.
+With a **selector** that matches the Pods' **labels**.
 
 </details>
 
-**7.** Che differenza c'è tra `port` e `targetPort`?
+**7.** What is the difference between `port` and `targetPort`?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-`port` è la porta del Service, `targetPort` quella del container nel Pod.
+`port` is the Service's port, `targetPort` the container's port in the Pod.
 
 </details>
 
-**8.** Quale tipo di Service sceglieresti per un database interno, e quale per esporre un sito sul cloud?
+**8.** Which Service type would you choose for an internal database, and which to expose a website on the cloud?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-**ClusterIP** per il database, che resta interno. **LoadBalancer** per il sito.
+**ClusterIP** for the database, which stays internal. **LoadBalancer** for the website.
 
 </details>
 
-**9.** Che differenza c'è tra `kubectl create` e `kubectl apply`?
+**9.** What is the difference between `kubectl create` and `kubectl apply`?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-`create` è imperativo e fallisce se la risorsa esiste. `apply` è dichiarativo e la crea o aggiorna con una patch.
+`create` is imperative and fails if the resource exists. `apply` is declarative: it creates or updates the resource with a patch.
 
 </details>
 
-## Glossario
+**10.** Define orchestration and resource management.
 
-- **Orchestrazione** - Coordinamento automatico di servizi su più nodi.
-- **Control Plane** - Parte del cluster che ne gestisce lo stato.
-- **Worker Node** - Macchina che esegue i carichi.
-- **kube-apiserver** - Front-end del control plane.
-- **etcd** - Database chiave-valore dello stato del cluster.
-- **kubelet** - Agente su ogni nodo.
-- **kube-proxy** - Gestore delle regole di rete del nodo.
-- **Pod** - Unità minima di esecuzione.
-- **Manifest** - Descrizione di un oggetto in YAML o JSON.
-- **Label / Selector** - Etichette degli oggetti e criterio per sceglierli.
-- **Service** - Punto di accesso stabile a un insieme di Pod.
-- **ConfigMap** - Configurazione non sensibile separata dal codice.
-- **Namespace** - Cluster virtuale dentro il cluster.
-- **CRI / CNI** - Interfacce standard per runtime e rete.
-- **RBAC** - Controllo degli accessi basato sui ruoli.
-- **Riconciliazione** - Correzione continua dello stato corrente verso quello desiderato.
+<details>
+<summary>Solution</summary>
+
+Orchestration is the automated coordination and management of tasks and services across multiple nodes. Resource management is the coordinated allocation, scheduling and control of CPU, memory, storage and bandwidth across multiple nodes.
+
+</details>
+
+## Glossary
+
+- **Orchestration** - Automated coordination of services across nodes.
+- **Control Plane** - Part of the cluster that manages its state.
+- **Worker Node** - Machine that runs the workloads.
+- **kube-apiserver** - Front-end of the control plane.
+- **etcd** - Key-value store of all cluster data.
+- **Controller** - Process that moves the current state towards the desired one.
+- **kubelet** - Agent on every node.
+- **kube-proxy** - Manager of the node's network rules.
+- **Pod** - Basic execution unit.
+- **Manifest** - Description of an object in YAML or JSON.
+- **Label / Selector** - Object tags, and the criterion to choose objects.
+- **Service** - Stable entrypoint to a set of Pods.
+- **ConfigMap** - Non-sensitive configuration separated from code.
+- **Namespace** - Virtual cluster within the cluster.
+- **CRI / CNI** - Standard interfaces for runtime and networking.
+- **RBAC** - Role-based access control.
+- **Reconciliation** - Continuous correction of the current state towards the desired one.

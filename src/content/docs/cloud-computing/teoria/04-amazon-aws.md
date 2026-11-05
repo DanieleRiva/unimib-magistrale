@@ -1,209 +1,267 @@
 ---
-title: Deep Dive su Amazon AWS
-description: Concetti chiave di AWS, EC2, S3, EBS, security group, risorse effimere e persistenti, modelli di prezzo.
+title: Deep Dive on Amazon AWS
+description: AWS key concepts, S3, EBS, security groups, EC2 images and instances, ephemeral and persistent resources, pricing model.
 sidebar:
   order: 4
 ---
 
-## Che Cos'è AWS
+## Amazon AWS Is...
 
-**Amazon Web Services** è un insieme di **servizi-mattone**, progettati per funzionare indipendentemente ma anche insieme. Condividono convenzione sui nomi e autenticazione, e riducono al minimo connessioni e dipendenze interne. Ogni attività, come avviare un server o allocare un IP, si fa con una **chiamata a un web service**.
+**Amazon Web Services** is a set of **building-block services**, designed to **work independently** but able to **work well together**:
 
-I tre concetti di base:
+- They share a **common naming convention and authentication**.
+- They **minimize internal connections and dependencies**.
+- **Every activity** in AWS can be accessed by making a **web service call**: start a server, create a load balancer, allocate an IP address, attach a persistent storage volume.
 
-| Servizio | Ruolo | Idea |
+The three key concepts:
+
+| Service | Role | Idea |
 | --- | --- | --- |
-| **EC2** | Calcolo | Esegue il software |
-| **S3** | Object storage | Conserva oggetti accessibili via API |
-| **EBS** | Block storage | Fornisce un disco alla VM |
+| **EC2** | Compute | Runs the software |
+| **S3** | Object storage | Stores objects accessible through APIs |
+| **EBS** | Block storage | Provides a disk for the virtual machine |
 
-L'organizzazione geografica è quella già vista: [region e availability zone](../01-introduzione-al-cloud/#region-e-availability-zone).
+Over time AWS added IaaS functionality, new data centers, enhanced storage solutions, PaaS functionality and partnerships with software companies. The geographic organization is the one already seen: [regions and availability zones](../01-introduzione-al-cloud/#regions-and-availability-zones).
 
-## Lo Storage: S3 ed EBS
+## Storage: S3 and EBS
 
 ### S3 - Simple Storage Service
 
-**S3** è una soluzione di **object storage** con interfaccia web. Un *object store* gestisce i dati come **oggetti**, non come file in un filesystem o blocchi. Ogni oggetto ha tre parti:
+**S3** is an **object storage** solution with a **web interface** (REST, SOAP, BitTorrent).
 
-1. **Dati**: il contenuto vero e proprio.
-2. **Metadati**: nome, data di creazione e altre informazioni descrittive.
-3. **Identificatore unico**: una chiave che permette di recuperare l'oggetto senza conoscerne la posizione.
+:::tip[Object store]
+An **object store** manages and stores data **as objects**, rather than as files in a file system or blocks in a traditional storage system. Each object has three components:
 
-Lo spazio di indirizzamento è **piatto**, senza directory gerarchiche: ogni oggetto sta allo stesso livello.
+1. **Data**: the actual content, such as a file, video or image.
+2. **Metadata**: descriptive information, like name and creation date.
+3. **Unique Identifier**: a key that allows the object to be retrieved **without knowing the location** of the data (e.g., a file path).
 
-Oggetti fino a **5 TB**, distribuiti in almeno **tre AZ** e replicati automaticamente. SLA del 99,99% di uptime mensile. Si usa per backup, archiviazione e disaster recovery.
+Unlike file systems with hierarchical directories, object stores use a **flat address space**: every object is stored at the same level.
+:::
+
+S3 facts from the slides:
+
+- Objects up to **5 TB** each.
+- Data automatically distributed across a minimum of **three AZs** (**availability**), with automatic data replication (**durability**).
+- Can be queried with SQL or processed by Big Data solutions.
+- Public since **2006**, used in production for Amazon's e-commerce. 2 trillion objects in 2013.
+- **SLA: 99.99% monthly uptime**, no more than about 4 minutes per month of downtime.
+- Useful for **backup and recovery, archiving and disaster recovery**.
 
 ### EBS - Elastic Block Store
 
-Un **volume EBS** è un disco indirizzabile che si collega a una istanza in esecuzione **nella stessa Availability Zone**. Può essere formattato, montato e usato come un disco locale, su HDD o SSD. Il suo ciclo di vita è **indipendente** dalle istanze: può esistere anche senza VM in esecuzione.
+An **EBS volume** is an **addressable disk volume** that can be attached to any running instance (VM) **in the same Availability Zone**, on HDD or SSD. It can be formatted, mounted and used **as if it were a local disk drive**. Volumes have a **lifetime independent of any instance**: a volume persists even when no instances are running. First introduced in 2008, up to 16 TB.
 
-Un *block store* divide i dati in blocchi di dimensione fissa, ciascuno con un indirizzo. Il sistema operativo legge e scrive i singoli blocchi, e un filesystem li organizza in file.
-
-| | S3 (object) | EBS (block) | Dischi locali EC2 |
-| --- | --- | --- | --- |
-| **Accesso** | API web | Come un disco | Come un disco |
-| **Persistenza** | Persistente | Persistente | **Effimera** |
-| **Portata** | Tra AZ | Una sola AZ | L'istanza |
-| **Uso tipico** | Backup, file, dati | Database, sistema operativo | Dati temporanei |
-
-## Security Group
-
-Un **Security Group** è un **firewall virtuale** per le istanze EC2. Definisce le connessioni di rete ammesse in ingresso e in uscita, con regole basate su protocollo, porta e intervallo di indirizzi IP.
-
-Un gruppo si può applicare a più istanze, e un'istanza può avere più gruppi. Ad esempio, una regola che ammette TCP sulla porta 443 da qualsiasi IP abilita HTTPS.
-
-:::tip[Da ricordare]
-I security group sono **stateful**: il traffico di risposta a una connessione ammessa è permesso automaticamente, senza bisogno di una regola apposita.
+:::tip[Block store]
+A **block store** divides data into **fixed-size chunks called blocks**, each identified by an **address** in the volume. The OS or application reads and writes individual blocks, while a file system organizes them into files. It is used by hard drives and SSDs, and in cloud storage.
 :::
 
-## Altri Servizi
+| | S3 (object) | EBS (block) | EC2 local disk |
+| --- | --- | --- | --- |
+| **Access** | Web API | Like a disk | Like a disk |
+| **Persistence** | Persistent | Persistent | **Ephemeral** |
+| **Scope** | Across AZs | One AZ | The instance |
+| **Typical use** | Backup, files, archives | Databases, OS | Temporary data |
 
-| Servizio | Cosa offre |
+## Security Groups
+
+A **Security Group** acts as a **virtual firewall** for an EC2 instance. It defines the allowable set of **inbound and outbound** network connections:
+
+- Each group is named and consists of a list of **protocols, ports and IP address ranges**.
+- A group can be applied to **multiple instances**, and an instance can have **multiple groups**.
+- Example: a rule allowing TCP on port 443 from any IP address enables HTTPS connections to the instance.
+
+:::tip[Important]
+Security groups are **stateful**: **response traffic** for an allowed connection is **automatically permitted**.
+:::
+
+## AWS Infrastructure Services (Selected Examples)
+
+| Service | What it offers |
 | --- | --- |
-| **SQS** | Code di messaggi gestite, per comunicazione asincrona tra componenti |
-| **RDS** | Database relazionali gestiti (MySQL, PostgreSQL) |
-| **DynamoDB** | Database NoSQL gestito, chiave-valore e documenti |
-| **ElastiCache** | Cache in memoria gestita |
-| **EMR** | Elaborazione distribuita di dati (Apache Spark) |
-| **ELB** | Distribuisce il traffico in ingresso tra più target |
-| **Lambda** | Esegue codice in risposta a eventi, senza gestire server: è il [serverless](../07-serverless/) |
+| **Simple Queue Service (SQS)** | Managed message queues for **asynchronous** communication between components |
+| **Relational Database Service (RDS)** | Managed relational databases (MySQL, PostgreSQL) |
+| **DynamoDB** | Managed **NoSQL** database, key-value and document models. Complements RDS |
+| **ElastiCache** | Managed **in-memory caching** |
+| **Elastic MapReduce (EMR)** | Managed distributed data processing (Apache Spark), for big data |
+| **Elastic Load Balancing (ELB)** | Distributes incoming traffic across multiple targets, such as EC2 instances |
+| **AWS Lambda** | Runs code **in response to events** without managing servers: it is [serverless](../07-serverless/) |
 
 ## EC2 - Elastic Compute Cloud
 
-EC2 realizza la metafora del **data center programmabile**, che in seguito verrà chiamata **Infrastructure as Code (IaC)**. Server, immagini, firewall, load balancer, IP e dischi sono disponibili in pochi secondi con una richiesta web.
+EC2 implements the **programmable data center** metaphor, later called **Infrastructure as Code (IaC)**. You access multiple AZs in multiple regions and provision your virtualized data center **on demand**: servers, OS images, firewall entries, load balancers, IP addresses and disk volumes are available **in seconds**, with a web service request "to the cloud".
 
-### Immagine e Istanza
+### Image vs Instance
 
-| Concetto | Significato |
+| Concept | Meaning |
 | --- | --- |
-| **AMI** (*Amazon Machine Image*) | Modello con il sistema operativo ed eventuale software aggiuntivo. Si può personalizzare, condividere e vendere. Ha un ID unico |
-| **Istanza** | Una copia **in esecuzione** di una AMI. Si possono lanciare quante copie si vuole |
-| **Elastic IP** | Indirizzo IP statico assegnabile a un'istanza. Se questa si guasta, viene riassegnato a un'altra |
+| **Amazon Machine Image (AMI)** | Contains the **operating system** and possibly additional software and application layers (database servers, middleware, web servers). Prebuilt AMIs can be started, and AMIs can be **customized, shared, or even sold**. Each has a **unique ID** (e.g., `ami-bf5eb9d6`) |
+| **Instance** | **One running copy of an AMI**. Any number of copies of the same AMI can be launched |
+| **Elastic IP Address** | A **static IP address** you allocate and attach to an instance, at most one per instance. When the instance fails, the address is **remapped to another VM** |
 
-:::tip[Analogia con Docker]
-AMI sta a istanza come **immagine** Docker sta a **container**: un modello di sola lettura e le sue copie in esecuzione. Il parallelo aiuta a ricordare [il laboratorio](../../laboratorio/01-docker-introduzione/#immagini-e-container).
+:::tip[Analogy with Docker]
+AMI is to instance what a Docker **image** is to a **container**: a read-only template and its running copies. The parallel helps with [the lab](../../laboratorio/01-docker-introduzione/).
 :::
 
-Quando lanci un'istanza devi specificare il **tipo**: numero di vCPU, modello del processore (Intel Xeon, AMD EPYC, AWS Graviton), frequenza, core fisici e thread.
+An instance can run several operating systems, including Linux and Windows Server. When you start an instance you must specify the **instance type**: number of vCPUs, processor model (Intel Xeon, AMD EPYC, AWS Graviton), clock speed, physical cores vs threads.
 
-### Risorse Effimere e Persistenti
+### Ephemeral Resources
 
-Una distinzione d'esame: **le risorse effimere esistono solo finché l'istanza è in esecuzione**.
+:::tip[Definition]
+**Ephemeral resources** only exist **while an instance is running**, and are **lost when the instance stops or terminates**.
+:::
 
-**Le istanze EC2 sono effimere**: in caso di guasto, dati e stato di solito si perdono. Per la produzione servono ridondanza su più AZ, failover automatico e backup. Sono adatte ad applicazioni **stateless**.
+**EC2 instances are ephemeral**: in case of failures, stored data and state are generally lost. For production workloads, implement:
 
-Il **disco locale** è effimero: i dati sopravvivono a un riavvio ma si perdono quando l'istanza viene terminata. Per conservarli si usa EBS, S3 o EFS (filesystem condiviso).
+- **Redundancy**: multiple instances across availability zones.
+- **Failover**: automatic instance replacement.
+- **Recovery**: regular backups and automation scripts.
 
-Le **risorse persistenti** restano operative nonostante i guasti, grazie a ridondanza, failover e recovery automatici:
+Instances are **best suited for stateless application patterns**.
 
-- Elastic IP
-- Volumi EBS
-- Elastic Load Balancer
-- Security Group
-- AMI salvate su S3 o come snapshot EBS
+The **local disk storage** of each instance is ephemeral too: it **remains intact if the instance is rebooted**, but data is **permanently lost when the instance terminates**. Use persistent storage instead: **EBS** for block storage, **S3** for object storage, **EFS** for shared file systems.
 
-## I Modelli di Prezzo
+### Persistent Resources
 
-Il costo totale è **uso del calcolo + risorse collegate + trasferimento dati**. Non esiste un unico prezzo: dipende da tipo e dimensione dell'istanza, sistema operativo, region, modalità d'acquisto e costi aggiuntivi (EBS, IPv4 pubblico, monitoring).
+**Persistent resources**, once allocated to your account, are expected to **remain operational in the face of transient or permanent hardware or software failures**. Amazon uses **redundancy, automated failover and automatic recovery**. The persistent EC2 resources are:
 
-| Opzione | Come funziona | Adatta a |
+- Elastic IP Addresses.
+- EBS Volumes.
+- Elastic Load Balancers.
+- Security Groups.
+- AMIs stored in S3 or as EBS snapshots.
+
+:::note[EC2 takeaway]
+Launch a set of instances from a set of AMIs. Instance types offer a wide range of memory, processing power and local storage. Instances can be launched in any region, optionally in a chosen AZ, attached to persistent storage (EBS, created and attached in the **same AZ**), and associated with any number of security groups.
+:::
+
+## EC2 Pricing
+
+The pricing model determines how compute capacity is paid for, and what flexibility you keep.
+
+:::tip[Cost formula]
+**Cost = compute usage + related resources and data transfer.**
+
+There is **no single EC2 price**: it depends on the workload, configuration, region and usage pattern.
+:::
+
+| Compute configuration | Purchase option | Additional costs |
 | --- | --- | --- |
-| **On-Demand** | Paghi ciò che usi, senza impegni | Sviluppo, carichi variabili o incerti |
-| **Savings Plans** | Ti impegni per 1 o 3 anni su un consumo costante, in cambio di tariffe più basse | Consumo di base prevedibile, con flessibilità |
-| **Reserved Instances** | Impegno di 1 o 3 anni su una configurazione definita | Configurazioni stabili |
-| **Spot** | Capacità inutilizzata a sconto variabile, **AWS può interromperla** | Batch tolleranti ai guasti e riprendibili |
+| Instance family and size | On-Demand, Savings Plans, Reserved Instances or Spot | EBS storage and performance |
+| Operating system / software | Each trades cost against flexibility | Data transfer and public IPv4 |
+| Region and tenancy | | Monitoring and other services |
 
-| Carico | Punto di partenza | Compromesso |
+The main purchasing options:
+
+| Option | How it works | Best for |
 | --- | --- | --- |
-| Nuovo o incerto | On-Demand | Prezzo unitario più alto |
-| Base stabile | Savings Plans, confronta con RI | L'impegno può durare più della domanda |
-| Batch flessibile | Spot | La capacità può sparire |
-| Capacità garantita | Capacity Reservation | È distinta dallo sconto |
+| **On-Demand** | Pay for the compute you use, **no long-term commitment** | Learning, development, variable or uncertain demand |
+| **Savings Plans** | **Commit to a consistent amount** of compute usage for **1 or 3 years**, in exchange for lower rates | Predictable baseline usage, with flexibility |
+| **Reserved Instances** | A 1- or 3-year commitment for a **defined EC2 configuration** | Stable configurations. Compare with Savings Plans first |
+| **Spot Instances** | Spare EC2 capacity at a variable discount. **AWS can interrupt it** when capacity is needed | Fault-tolerant batch jobs and workloads that can resume |
 
-:::tip[Regola pratica]
-Serve flessibilità: **On-Demand**. Carico costante: **Savings Plans o Reserved**. Carico interrompibile: **Spot**.
+:::tip[Rule of thumb]
+Flexibility → **On-Demand**. Steady commitment → **Savings Plans / RIs**. Interruption-tolerant → **Spot**.
 :::
 
-:::caution[Sconto e capacità sono cose diverse]
-Le opzioni d'acquisto riguardano il **prezzo**. La **Capacity Reservation** garantisce invece che la capacità esista in una data AZ. Risolvono problemi differenti e si possono combinare.
+Choosing by workload:
+
+| Workload pattern | Starting point | Why it fits | Main trade-off |
+| --- | --- | --- | --- |
+| New / uncertain | On-Demand | No long-term commitment | Higher unit price |
+| Stable baseline | Savings Plans, compare RIs | Discount for commitment | Commitment may outlast demand |
+| Flexible batch work | Spot | Reduces compute cost | Capacity can be interrupted |
+| Guaranteed capacity | Capacity Reservation + suitable pricing | Capacity held in a specified AZ | Reservation is separate from discount |
+
+:::caution[Discount and capacity are different things]
+Purchasing options are about **price**. A **Capacity Reservation** guarantees that capacity exists in a given AZ. They solve different problems and **can be combined**.
 :::
 
-Per i prezzi attuali vanno usati il listino ufficiale e il *Pricing Calculator*: definisci il carico, aggiungi le risorse collegate e confronta gli scenari.
+To obtain current prices: (1) define the workload (region, AZ, instance family and size, OS, tenancy), (2) add related resources (EBS, data transfer, public IPv4, monitoring), (3) compare scenarios with the official pricing page and the **AWS Pricing Calculator**.
 
-## Autotest
+## Self-Test
 
-**1.** Che differenza c'è tra S3 ed EBS?
+**1.** What is the difference between S3 and EBS?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-S3 è un **object store** accessibile via API, con spazio piatto e replica su più AZ. EBS è un **block store** che si comporta come un disco, collegato a un'istanza nella stessa AZ.
+S3 is an **object store** accessed through APIs, with a flat address space and replication across at least three AZs. EBS is a **block store** that behaves like a disk, attached to an instance in the same AZ.
 
 </details>
 
-**2.** Un'istanza viene terminata. Quali dati si perdono?
+**2.** An instance is terminated. Which data is lost?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Quelli sul disco locale effimero. Sopravvivono i dati su EBS e S3. Con un semplice riavvio il disco locale resta integro.
+The data on the ephemeral local disk. Data on EBS and S3 survives. A simple reboot keeps the local disk intact.
 
 </details>
 
-**3.** Che cosa significa che i Security Group sono stateful?
+**3.** What does it mean that Security Groups are stateful?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Che il traffico di risposta a una connessione ammessa è consentito automaticamente, senza una regola dedicata.
+Response traffic for an allowed connection is automatically permitted, without a dedicated rule.
 
 </details>
 
-**4.** Elenca le risorse EC2 persistenti.
+**4.** List the persistent EC2 resources.
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Elastic IP, volumi EBS, Elastic Load Balancer, Security Group e AMI su S3 o snapshot EBS.
+Elastic IP addresses, EBS volumes, Elastic Load Balancers, Security Groups, and AMIs stored in S3 or as EBS snapshots.
 
 </details>
 
-**5.** Quale opzione di prezzo sceglieresti per un job di elaborazione notturno che può riprendere se interrotto?
+**5.** Which purchasing option fits a nightly batch job that can resume if interrupted?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-**Spot**, perché è il più economico e il job tollera le interruzioni.
+**Spot**, the cheapest, since the job tolerates interruptions.
 
 </details>
 
-**6.** Che differenza c'è tra AMI e istanza?
+**6.** What is the difference between an AMI and an instance?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-La AMI è il modello, con sistema operativo e software. L'istanza è una sua copia in esecuzione.
+The AMI is the template with the OS and software. The instance is one running copy of it.
 
 </details>
 
-**7.** Perché le istanze EC2 si prestano ad applicazioni stateless?
+**7.** Why are EC2 instances best suited for stateless applications?
 
 <details>
-<summary>Soluzione</summary>
+<summary>Solution</summary>
 
-Perché sono effimere: se un'istanza sparisce, un'applicazione senza stato locale viene semplicemente sostituita da un'altra istanza.
+Because they are ephemeral: if an instance fails, a stateless application can simply be replaced by another instance, without losing state.
 
 </details>
 
-## Glossario
+**8.** What are the three components of an object in an object store?
 
-- **EC2** - Servizio di calcolo di AWS.
-- **S3** - Object storage di AWS.
-- **EBS** - Block storage di AWS, collegabile alle istanze.
-- **AMI** - Immagine da cui si lanciano le istanze.
-- **Istanza** - Copia in esecuzione di una AMI.
-- **Security Group** - Firewall virtuale e stateful di un'istanza.
-- **Elastic IP** - Indirizzo IP statico riassegnabile.
-- **Risorsa effimera** - Risorsa che esiste solo finché l'istanza è attiva.
-- **Spot Instance** - Capacità inutilizzata, scontata e interrompibile.
-- **Infrastructure as Code (IaC)** - Definizione dell'infrastruttura tramite codice e API.
+<details>
+<summary>Solution</summary>
+
+Data, metadata and a unique identifier.
+
+</details>
+
+## Glossary
+
+- **EC2** - AWS compute service.
+- **S3** - AWS object storage.
+- **EBS** - AWS block storage, attached to instances in the same AZ.
+- **AMI** - Image from which instances are launched.
+- **Instance** - Running copy of an AMI.
+- **Security Group** - Stateful virtual firewall of an instance.
+- **Elastic IP** - Static IP address that can be remapped.
+- **Ephemeral resource** - Resource that exists only while the instance runs.
+- **Spot Instance** - Spare, discounted, interruptible capacity.
+- **Infrastructure as Code (IaC)** - Defining infrastructure through code and APIs.
