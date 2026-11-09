@@ -15,7 +15,7 @@ The written exam covers **lectures and lab**, with questions on concepts and sim
 | Open questions | 2 × 4 points | 8 |
 | **Total** | | **28** |
 
-Full rules and dates are on the [course page](../).
+Full rules and dates are on the [course page](../). A [past partial exam](./past-partial-exam/) with explained solutions shows what the questions look like.
 
 The official examples show that at least one kind of open question is: **"Comment adequately on the following DOCKERFILE / DOCKER COMPOSE file"**. On e-learning there are also self-assessment quizzes (Virtualization, Cloud Computing, IaaS, PaaS, Serverless) and a sample of mixed questions, which covers another course and is only useful to see the format.
 

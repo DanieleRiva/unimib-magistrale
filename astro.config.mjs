@@ -158,6 +158,10 @@ const sidebarCorsi = [
                         label: 'Exam Preparation',
                         link: '/cloud-computing/esami/'
                     },
+                    {
+                        label: 'Past Partial Exam',
+                        link: '/cloud-computing/esami/past-partial-exam/'
+                    },
                 ]
             },
         ]
